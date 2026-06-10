@@ -612,7 +612,7 @@ const WEAPONS = [
     desc: 'Splits off orbiting sub-clones that body-block, inherit weapon damage, and shield the core.',
     fact: 'Mitosis is how one cell divides into two genetically identical daughter cells — DNA is copied, condensed into chromosomes, and split.',
     levelText: [
-      '1 clone · 120px orbit · 30% inherited dmg · melts after 3 hits · 15s cd',
+      '1 clone · 120px orbit · 30% inherited dmg · melts after 3 hits · 7s cd',
       'clone limit → 2',
       'inherited damage → 40%',
       'durability → melts after 5 hits',
@@ -622,7 +622,7 @@ const WEAPONS = [
       'on melt: cellular explosion, 250 dmg in 150px'
     ],
     getStats(L) {
-      const s = { count: 1, orbit: 120, scalar: 0.30, hits: 3, cooldown: 15, knockback: 0, explode: 0, explodeRadius: 0, spin: 1.4 };
+      const s = { count: 1, orbit: 120, scalar: 0.30, hits: 3, cooldown: 7, knockback: 0, explode: 0, explodeRadius: 0, spin: 2.2 };
       if (L >= 2) { s.count = 2; }
       if (L >= 3) { s.scalar = 0.40; }
       if (L >= 4) { s.hits = 5; }
@@ -639,7 +639,7 @@ const WEAPONS = [
     desc: 'Drops volatile spore mines behind your path that detonate on contact.',
     fact: 'Spores are dormant survival capsules. Some bacterial endospores can lie inert for thousands of years, then revive when conditions improve.',
     levelText: [
-      '1 spore / 1.8s · 18 dmg · 60px blast',
+      '1 spore / 1.5s · 18 dmg · 60px blast',
       '2 spores per drop (cluster)',
       '+8 damage · +25% blast radius',
       'leaves toxic cloud: 2.0s, 5 dmg/s',
@@ -649,7 +649,7 @@ const WEAPONS = [
       'spores gain magnetic tracking (100px)'
     ],
     getStats(L) {
-      const s = { count: 1, cooldown: 1.8, damage: 18, blast: 60, cloudDur: 0, cloudDps: 0, magnetic: false, arm: 0.35, trigger: 64 };
+      const s = { count: 1, cooldown: 1.5, damage: 18, blast: 60, cloudDur: 0, cloudDps: 0, magnetic: false, arm: 0.3, trigger: 90 };
       if (L >= 2) { s.count = 2; }
       if (L >= 3) { s.damage += 8; s.blast *= 1.25; }
       if (L >= 4) { s.cloudDur = 2.0; s.cloudDps = 5; }
@@ -814,8 +814,8 @@ const CHARACTERS = [
     fact: 'Yeasts reproduce by budding — a daughter pinches off the parent. They leaven bread and ferment every beer and wine.',
     unlock: { stat: 'bossKills', value: 1, hint: 'Defeat the Macrophage Sentinel boss.' } },
   { id: 'volvox', name: 'Volvox Colony', cell: 'Volvox aureus', icon: '⚭', color: '#2ff6ff',
-    weapon: 'mitosis', mods: { maxHp: 1.10, area: 1.08 }, passiveStart: { id: 'ribo', tier: 1 },
-    desc: 'A colonial swarm-keeper: sturdier, with a damage head start. Opens with Mitosis Clones.',
+    weapon: 'mitosis', weaponLevel: 2, mods: { maxHp: 1.10, area: 1.08 }, passiveStart: { id: 'ribo', tier: 1 },
+    desc: 'A colonial swarm-keeper: sturdier, with a damage head start. Opens with TWO orbiting Mitosis Clones.',
     fact: 'Volvox is a hollow sphere of hundreds–thousands of cells living as one — an early experiment in multicellular life.',
     unlock: { stat: 'bestTime', value: 600, hint: 'Survive 10:00 in a single run.' } },
 ];
@@ -839,6 +839,49 @@ function evaluateUnlocks() {
   for (const c of CHARACTERS) if (!SAVE.chars[c.id] && charUnlocked(c)) { SAVE.chars[c.id] = true; newly.push(c); }
   if (newly.length) commitSave();
   return newly;
+}
+
+/* ======================================================================== *
+ *  SECTION 4c — MICRO-BOOST PADS (Grind-Survivors-style channel circles)     *
+ *  Glowing circles appear in the world. Stand inside one to channel it;      *
+ *  finishing grants a PERMANENT (for this run) stat boost. The pad's colour   *
+ *  telegraphs its rarity tier — and the numbers — before you commit to        *
+ *  standing still in the middle of a swarm.                                  *
+ * ======================================================================== */
+const BOOST_RARITIES = [
+  { id: 'green',  name: 'Adaptive',  dot: '🟢', color: '#6dff8a', rgb: '109,255,138', weight: 56, channel: 3.0 },
+  { id: 'blue',   name: 'Enhanced',  dot: '🔵', color: '#5fc8ff', rgb: '95,200,255',  weight: 27, channel: 3.6 },
+  { id: 'purple', name: 'Mutagenic', dot: '🟣', color: '#b07bff', rgb: '176,123,255', weight: 13, channel: 4.2 },
+  { id: 'orange', name: 'LEGENDARY', dot: '🟠', color: '#ff9d3a', rgb: '255,157,58',  weight: 4,  channel: 5.0 },
+];
+/* values[] indexes match BOOST_RARITIES order: [green, blue, purple, orange]. */
+const BOOST_STATS = [
+  { id: 'atkspd', name: 'Attack Speed',   icon: '⚡', values: [0.05, 0.08, 0.12, 0.18],
+    fmt: v => '−' + Math.round(v * 100) + '% weapon cooldown', apply: (bo, v) => { bo.cooldownMul *= (1 - v); } },
+  { id: 'movspd', name: 'Movement Speed', icon: '🏃', values: [0.08, 0.12, 0.18, 0.25],
+    fmt: v => '+' + Math.round(v * 100) + '% movement speed', apply: (bo, v) => { bo.speedMul *= (1 + v); } },
+  { id: 'range',  name: 'Range & Area',   icon: '📐', values: [0.10, 0.14, 0.20, 0.30],
+    fmt: v => '+' + Math.round(v * 100) + '% weapon range / area', apply: (bo, v) => { bo.areaMul *= (1 + v); } },
+  { id: 'magnet', name: 'Pickup Radius',  icon: '🧲', values: [0.10, 0.16, 0.24, 0.40],
+    fmt: v => '+' + Math.round(v * 100) + '% pickup radius', apply: (bo, v) => { bo.pickupMul *= (1 + v); } },
+  { id: 'power',  name: 'Damage',         icon: '💥', values: [0.05, 0.08, 0.12, 0.20],
+    fmt: v => '+' + Math.round(v * 100) + '% damage', apply: (bo, v) => { bo.damageMul *= (1 + v); } },
+  { id: 'vital',  name: 'Max Health',     icon: '❤️', values: [0.08, 0.12, 0.18, 0.28],
+    fmt: v => '+' + Math.round(v * 100) + '% max HP', apply: (bo, v) => { bo.hpMul *= (1 + v); } },
+  { id: 'regen',  name: 'Regeneration',   icon: '♻️', values: [0.4, 0.7, 1.1, 1.8],
+    fmt: v => '+' + v + ' HP/s regeneration', apply: (bo, v) => { bo.regenFlat += v; } },
+  { id: 'crit',   name: 'Critical Chance', icon: '🎯', values: [0.02, 0.03, 0.05, 0.08],
+    fmt: v => '+' + Math.round(v * 100) + '% crit chance', apply: (bo, v) => { bo.critAdd += v; } },
+];
+const BOOST_STAT_BY_ID = Object.fromEntries(BOOST_STATS.map(s => [s.id, s]));
+function defaultBoosts() {
+  return { cooldownMul: 1, speedMul: 1, areaMul: 1, pickupMul: 1, damageMul: 1, hpMul: 1, regenFlat: 0, critAdd: 0 };
+}
+function rollBoostRarity() {
+  let total = 0; for (const r of BOOST_RARITIES) total += r.weight;
+  let roll = rand(0, total);
+  for (let i = 0; i < BOOST_RARITIES.length; i++) { roll -= BOOST_RARITIES[i].weight; if (roll <= 0) return i; }
+  return 0;
 }
 
 /* ======================================================================== *
@@ -1202,6 +1245,7 @@ const game = {
   time: 0,                // elapsed run time (s) — drives every scaling matrix
   dt: 0,
   env: [], objective: null, showMinimap: true,   // environment hazards / objective / sensor map
+  pads: [], boosts: null, boostLog: [],          // micro-boost channel pads + run-permanent gains
   camera: { x: 0, y: 0 },
   shake: 0,
   flash: 0, flashColor: '#fff',
@@ -1263,6 +1307,7 @@ function xpForLevel(N) { return Math.round(10 * Math.pow(N, 1.6) + 25); }
 function recomputeStats() {
   const p = game.player, pv = p.passives;
   const tier = id => pv[id] || 0;
+  const bo = game.boosts || defaultBoosts();     // run-permanent micro-boost gains
 
   // Ribosomes -> additive damage multiplier term used by the damage pipeline.
   p.mult.ribosome = tier('ribo') ? PASSIVE_BY_ID.ribo.values[tier('ribo') - 1] : 0;
@@ -1279,7 +1324,7 @@ function recomputeStats() {
   const cytoT = tier('cyto');
   p.mult.flatReduce = (cytoT ? PASSIVE_BY_ID.cyto.values[cytoT - 1] : 0) + p.armor;
   const hpBonus = cytoT ? PASSIVE_BY_ID.cyto.hpBonus[cytoT - 1] : 0;
-  const newMax = Math.round(p.baseMaxHp * (1 + hpBonus));
+  const newMax = Math.round(p.baseMaxHp * (1 + hpBonus) * bo.hpMul);
   if (newMax !== p.maxHp) { const ratio = p.hp / p.maxHp; p.maxHp = newMax; p.hp = Math.min(p.maxHp, Math.round(p.maxHp * ratio)); }
   // Eco -> coin & XP gain (meta only).
   p.mult.ecoGain = 1 + metaTier('UPG_ECO') * 0.08;
@@ -1291,6 +1336,14 @@ function recomputeStats() {
   p.mult.projDur  *= (cm.projDur || 1);
   if (cm.cooldown) p.mult.cooldown *= cm.cooldown;
   p.mult.damageMul = (cm.damage || 1);
+  // Micro-boost pads stack multiplicatively on top of everything above.
+  p.mult.cooldown *= bo.cooldownMul;
+  p.mult.area     *= bo.areaMul;
+  p.mult.pickup   *= bo.pickupMul;
+  p.mult.damageMul *= bo.damageMul;
+  p.mult.crit = 0.05 + bo.critAdd;
+  p.speed = p.baseSpeed * bo.speedMul;
+  p.regen = 0.5 + bo.regenFlat;
   // Pickup radius in world units.
   p.pickupRadius = 90 * p.mult.pickup;
 }
@@ -1313,6 +1366,7 @@ function computeDamage(base, flat = 0, forceCrit = null) {
   const p = game.player;
   let dmg = (base + flat) * (1 + p.mult.ribosome) * META_DAMAGE_BONUS * (p.mult.damageMul || 1);
   dmg += rand(-0.05, 0.05) * dmg;                       // ±5% variance
+  if (!isFinite(dmg)) dmg = 1;                          // never poison an enemy's hp with NaN
   const crit = forceCrit == null ? chance(p.mult.crit) : forceCrit;
   if (crit) dmg *= p.mult.critMult;
   return { dmg: Math.max(1, dmg), crit };
@@ -1374,7 +1428,12 @@ function killEnemy(e, opts = {}) {
   // Objective hooks: count purge-zone kills; reward the Golden Plasmid.
   const obj = game.objective;
   if (obj && obj.type === 'purge' && dist2(e.x, e.y, obj.x, obj.y) < obj.r * obj.r) obj.count++;
-  if (e.golden) { for (let i = 0; i < 8; i++) spawnPickup('coin', e.x + rand(-30, 30), e.y + rand(-30, 30), 20); spawnRing(e.x, e.y, '#ffd166', 70, 0.5); }
+  if (e.golden) {
+    for (let i = 0; i < 8; i++) spawnPickup('coin', e.x + rand(-30, 30), e.y + rand(-30, 30), 20);
+    spawnRing(e.x, e.y, '#ffd166', 70, 0.5);
+    // record the kill NOW — the pooled object may be recycled before the next objective tick
+    if (obj && obj.type === 'hunt' && obj.target === e) obj.targetDown = true;
+  }
   spawnParticles(e.x, e.y, def.glow, e.boss ? 60 : (e.elite ? 28 : 8), { speed: e.boss ? 320 : 160, size: e.boss ? 6 : 3, life: 0.6 });
   spawnRing(e.x, e.y, def.glow, e.r * 2.2, 0.4);
 
@@ -1457,6 +1516,7 @@ function spawnEnemy(typeId, x, y, opts = {}) {
   e.bossClone = !!opts.asClone;
   e.behavior = opts.asClone ? 'juggernaut' : def.behavior;
   e.invulnShield = false; e.fungal = null;
+  e.golden = false; e.tendrilActive = false;      // pooled-object hygiene: clear recycled flags
   e.kbImmune = e.behavior === 'juggernaut' || e.behavior === 'boss';
   e.mass = e.boss ? 14 : (e.elite ? 6 : (def.weight * 0.35 + 0.7));
   e.hitFlash = 0; e.amplify = 0; e.amplifyT = 0; e.bleed = 0; e.bleedT = 0; e.bleedTick = 0;
@@ -1501,6 +1561,7 @@ function createDirector() {
     endlessEliteT: 90, endlessBossT: 300, endlessWave: 0,
     objT: 90, objCount: 0,        // challenge-objective scheduler
     envT: 0,                      // environment-hazard streaming throttle
+    padT: 30,                     // first micro-boost pad lands at 0:30
   };
 }
 
@@ -1517,6 +1578,7 @@ function activeTypes(t) {
   return out;
 }
 function weightedPickType(pool) {
+  if (!pool.length) return null;                 // spawn windows can all be closed late-game
   let total = 0; for (const d of pool) total += d.freq;
   let r = rand(0, total);
   for (const d of pool) { r -= d.freq; if (r <= 0) return d.id; }
@@ -1964,11 +2026,11 @@ function updateClones(dt) {
     }
     // contact damage + durability
     if (c.touchCd <= 0) {
-      const list = enemiesInRadius(c.x, c.y, 18);
+      const list = enemiesInRadius(c.x, c.y, 22);
       for (let j = 0; j < list.length; j++) { const e = list[j]; if (e.dead || e.charmed) continue;
-        if (dist2(c.x, c.y, e.x, e.y) < (18 + e.r) * (18 + e.r)) {
-          const { dmg, crit } = computeDamage(36 * c.scalar); damageEnemy(e, dmg, { crit, knockback: c.knockback, fromX: c.x, fromY: c.y });
-          c.touchCd = 0.3; if (!c.apex) c.hits--; break;
+        if (dist2(c.x, c.y, e.x, e.y) < (22 + e.r) * (22 + e.r)) {
+          const { dmg, crit } = computeDamage(44 * c.scalar); damageEnemy(e, dmg, { crit, knockback: c.knockback, fromX: c.x, fromY: c.y });
+          c.touchCd = 0.24; if (!c.apex) c.hits--; break;
         } }
     }
     if (!c.apex && c.hits <= 0) { meltClone(c, i); }
@@ -2394,6 +2456,51 @@ function updateEnvironment(dt) {
   }
 }
 
+/* ---- Micro-boost pads: spawn, channel, grant ---------------------------- */
+function spawnBoostPad() {
+  const rIdx = rollBoostRarity();
+  const a = rand(0, TAU), dst = rand(380, 640);
+  game.pads.push({
+    x: game.player.x + Math.cos(a) * dst, y: game.player.y + Math.sin(a) * dst,
+    r: 64, rarityIdx: rIdx, stat: pick(BOOST_STATS),
+    progress: 0, need: BOOST_RARITIES[rIdx].channel, life: 45,
+  });
+}
+function applyBoost(pad) {
+  const rar = BOOST_RARITIES[pad.rarityIdx], stat = pad.stat, v = stat.values[pad.rarityIdx];
+  if (!game.boosts) game.boosts = defaultBoosts();
+  stat.apply(game.boosts, v);
+  game.boostLog.push({ s: stat.id, r: pad.rarityIdx });
+  recomputeStats();
+  const msg = rar.dot + ' ' + rar.name + ' BOOST — ' + stat.icon + ' ' + stat.fmt(v);
+  if (rar.id === 'orange') { bigBanner(msg, 3.2); game.shake = Math.max(game.shake, 10); game.flash = 0.2; game.flashColor = 'rgba(255,157,58,'; }
+  else toast(msg, 2.8);
+  spawnRing(pad.x, pad.y, rar.color, pad.r * 2.2, 0.5);
+  spawnParticles(pad.x, pad.y, rar.color, 26, { speed: 240, life: 0.7 });
+}
+function updateBoostPads(dt) {
+  const dir = game.director, p = game.player;
+  // scheduling: first pad at 0:30, then every 40–60s, max 2 waiting in the world
+  dir.padT -= dt;
+  if (dir.padT <= 0) {
+    if (game.pads.length < 2) spawnBoostPad();
+    dir.padT = rand(40, 60);
+  }
+  for (let i = game.pads.length - 1; i >= 0; i--) {
+    const pad = game.pads[i];
+    pad.life -= dt;
+    if (pad.life <= 0 || dist2(pad.x, pad.y, p.x, p.y) > 4000 * 4000) { game.pads.splice(i, 1); continue; }
+    if (dist(pad.x, pad.y, p.x, p.y) < pad.r + p.r * 0.5) {
+      pad.progress += dt;
+      if (chance(dt * 14)) spawnParticles(pad.x + rand(-pad.r, pad.r) * 0.7, pad.y + rand(-pad.r, pad.r) * 0.7,
+        BOOST_RARITIES[pad.rarityIdx].color, 1, { speed: 50, life: 0.5 });
+      if (pad.progress >= pad.need) { applyBoost(pad); game.pads.splice(i, 1); }
+    } else {
+      pad.progress = Math.max(0, pad.progress - dt * 0.8);   // channel decays when you step out
+    }
+  }
+}
+
 /* ======================================================================== *
  *  SECTION 17c — IN-RUN OBJECTIVES (timed challenge events)                  *
  *  A rotating "do a task" beat: hold a zone, purge a zone, harvest spores,    *
@@ -2480,7 +2587,7 @@ function updateObjective(dt) {
     o.count = o.need - remaining;
     if (remaining === 0) { rewardObjective(); return; }
   } else if (o.type === 'hunt') {
-    if (!o.target || o.target.dead) { rewardObjective(); return; }
+    if (o.targetDown || !o.target || o.target.dead) { rewardObjective(); return; }
   } else if (o.type === 'survive') {
     if (left <= 0) { rewardObjective(); return; }
     if (chance(dt * 3)) { const ty = weightedPickType(activeTypes(game.time)) || 'virus'; spawnRingEnemy(ty); }
@@ -2538,6 +2645,7 @@ function render(time) {
   drawGrid(cam);
   if (game.state !== 'menu') {
     drawEnvironment(t);
+    drawBoostPads(t);
     drawObjective(t);
     drawHazards(t);
     drawPickups(t);
@@ -2790,6 +2898,43 @@ function drawEnvironment(t) {
   }
 }
 
+/* ---- Micro-boost channel pads ------------------------------------------ */
+function drawBoostPads(t) {
+  for (const pad of game.pads) {
+    if (!onScreen(pad.x, pad.y, pad.r + 50)) continue;
+    const rar = BOOST_RARITIES[pad.rarityIdx];
+    const fadeIn = clamp((45 - pad.life) * 2, 0, 1);           // pop in
+    const fadeOut = clamp(pad.life / 5, 0, 1);                 // wink out near expiry
+    const alpha = Math.min(fadeIn, fadeOut);
+    const channeling = pad.progress > 0.01;
+    const pulse = 1 + (channeling ? 0.05 * Math.sin(t * 10) : 0.025 * Math.sin(t * 3));
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    // soft fill
+    const g = ctx.createRadialGradient(pad.x, pad.y, 4, pad.x, pad.y, pad.r);
+    g.addColorStop(0, `rgba(${rar.rgb},0.22)`); g.addColorStop(0.8, `rgba(${rar.rgb},0.10)`); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(pad.x, pad.y, pad.r * pulse, 0, TAU); ctx.fill();
+    // rim
+    ctx.strokeStyle = `rgba(${rar.rgb},0.75)`; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(pad.x, pad.y, pad.r * pulse, 0, TAU); ctx.stroke();
+    // channel progress arc (thick, from 12 o'clock)
+    if (channeling) {
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.strokeStyle = rar.color; ctx.lineWidth = 6; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(pad.x, pad.y, pad.r - 8, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(pad.progress / pad.need, 0, 1));
+      ctx.stroke();
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    // stat glyph + rarity label
+    ctx.shadowColor = rar.color; ctx.shadowBlur = 12;
+    ctx.font = '26px Segoe UI, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#ffffff'; ctx.fillText(pad.stat.icon, pad.x, pad.y - 4);
+    ctx.shadowBlur = 0; ctx.font = 'bold 10px Segoe UI, sans-serif';
+    ctx.fillStyle = rar.color; ctx.fillText(rar.name, pad.x, pad.y + 20);
+    ctx.restore();
+  }
+}
+
 /* ---- Objective zone ring (hold / purge / collect) ---------------------- */
 function drawObjective(t) {
   const o = game.objective; if (!o || o.type === 'survive' || o.type === 'hunt') return;
@@ -2824,6 +2969,11 @@ function drawMinimap() {
   mmRoundRect(x0, y0, size, size, 10); ctx.clip();
   // environment hazards
   for (const h of game.env) { const m = toMap(h.x, h.y); ctx.fillStyle = h.kind === 'vent' ? 'rgba(255,138,58,0.7)' : h.kind === 'current' ? 'rgba(95,200,255,0.6)' : 'rgba(157,255,95,0.6)'; ctx.fillRect(m[0] - 2, m[1] - 2, 4, 4); }
+  // micro-boost pads — pulsing ring in rarity colour so they're worth chasing
+  for (const pad of game.pads) { const m = toMap(pad.x, pad.y); const rar = BOOST_RARITIES[pad.rarityIdx];
+    ctx.strokeStyle = rar.color; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(m[0], m[1], 4.5, 0, TAU); ctx.stroke();
+    ctx.fillStyle = rar.color; ctx.beginPath(); ctx.arc(m[0], m[1], 1.6, 0, TAU); ctx.fill(); }
   // objective
   const o = game.objective;
   if (o) {
@@ -3096,6 +3246,7 @@ function startRun(mode) {
   game.enemies = []; game.projectiles = []; game.pickups = []; game.hazards = [];
   game.particles = []; game.floaters = []; game.clones = []; game.effects = [];
   game.env = []; game.objective = null; game._finalized = false;
+  game.pads = []; game.boosts = defaultBoosts(); game.boostLog = [];
   game.kills = 0; game.killsByType = {}; game.coinsThisRun = 0; game.xpOrbsAlive = 0;
   game.pendingLevelUps = 0; game.apexOffered = {}; game.boss = null; game.bossSpawned = false;
   game.win = false; game.questsCompletedThisRun = [];
@@ -3107,7 +3258,7 @@ function startRun(mode) {
   const ch = CHAR_BY_ID[game.character];
   game.player = createPlayer();
   // The cell line dictates the opening weapon (and any starting organelle).
-  game.player.weapons.push({ id: ch.weapon, level: 1, timer: 0, apex: false, apexId: null });
+  game.player.weapons.push({ id: ch.weapon, level: ch.weaponLevel || 1, timer: 0, apex: false, apexId: null });
   markCodex(ch.weapon);
   if (ch.passiveStart) { game.player.passives[ch.passiveStart.id] = ch.passiveStart.tier; markCodex(ch.passiveStart.id); }
   recomputeStats();
@@ -3127,6 +3278,7 @@ function togglePause() {
       ['Time', `${mm}:${String(ss).padStart(2, '0')}`], ['Level', p.level],
       ['Kills', game.kills.toLocaleString()], ['Run Coins', game.coinsThisRun.toLocaleString()],
       ['Weapons', p.weapons.length + '/6'], ['Passives', Object.keys(p.passives).length + '/6'],
+      ['Boosts', (game.boostLog || []).length + ' channeled'], ['Challenges', (game.director ? game.director.objCount : 0) + ' triggered'],
     ]);
     showOverlay('pause-modal');
   } else if (game.state === 'paused') { resumeRun(); }
@@ -3189,6 +3341,8 @@ function serializeRun() {
     apexOffered: Object.assign({}, game.apexOffered),
     quest: { cloneStreak: game.quest ? game.quest.cloneStreak : 0, shieldBroke: game.quest ? game.quest.shieldBroke : false },
     questsDone: (game.questsCompletedThisRun || []).map(q => q.id),
+    boosts: Object.assign({}, game.boosts || defaultBoosts()),
+    boostLog: (game.boostLog || []).slice(),
     win: game.win,
     director: {
       weight: d.weight || 0, spawnTimer: d.spawnTimer || 0, eliteIdx: d.eliteIdx || 0, bossDone: !!d.bossDone,
@@ -3222,6 +3376,9 @@ function resumeSavedRun() {
   game.enemies = []; game.projectiles = []; game.pickups = []; game.hazards = [];
   game.particles = []; game.floaters = []; game.clones = []; game.effects = [];
   game.env = []; game.objective = null; game._finalized = false;
+  // restore run-permanent boosts BEFORE recomputeStats folds them in
+  game.pads = []; game.boosts = Object.assign(defaultBoosts(), snap.boosts || {});
+  game.boostLog = (snap.boostLog || []).slice();
   game.kills = snap.kills || 0; game.killsByType = Object.assign({}, snap.killsByType || {});
   game.coinsThisRun = snap.coinsThisRun || 0; game.xpOrbsAlive = 0;
   game.pendingLevelUps = snap.pendingLevelUps || 0; game.apexOffered = Object.assign({}, snap.apexOffered || {});
@@ -3392,7 +3549,7 @@ const DEV_TABS = [
   { id: 'weapons', label: '🧬 Weapons' }, { id: 'passives', label: '🔬 Organelles' },
   { id: 'apex', label: '⚛ Apex' }, { id: 'chars', label: '🧫 Cells' },
   { id: 'objectives', label: '🎯 Objectives' }, { id: 'env', label: '🌋 Hazards' },
-  { id: 'formulas', label: '📐 Formulas' },
+  { id: 'boosts', label: '⬆ Boosts' }, { id: 'formulas', label: '📐 Formulas' },
 ];
 let devTab = 'enemies';
 function openDev() { hideAllOverlays(); buildDevTabs(); buildDev(); showOverlay('dev-modal'); }
@@ -3458,6 +3615,16 @@ function buildDev() {
       <tr><td>🟠 <b>Thermal Vent</b></td><td class="dev-note">16 burst damage on eruption (cycle 2.2–3.6s)</td><td class="dev-note">40 damage to enemies in the blast</td></tr>
       <tr><td>🔵 <b>Riptide Current</b></td><td class="dev-note">shoves you 70px/s along the flow</td><td class="dev-note">shoves enemies 55px/s — kite them!</td></tr></table>
       <p class="dev-note" style="margin-top:10px">Hazards stream in around the player (target density <code>5 + min(5, floor(t/180))</code>) and are culled once far off-screen. They show on the sensor map.</p>`;
+  } else if (devTab === 'boosts') {
+    h += `<table class="dev-table"><tr><th>Stat</th>`;
+    for (const r of BOOST_RARITIES) h += `<th style="color:${r.color}">${r.dot} ${r.name} (${r.weight}%)</th>`;
+    h += `</tr>`;
+    for (const s of BOOST_STATS) {
+      h += `<tr><td>${s.icon} <b>${s.name}</b></td>`;
+      for (let i = 0; i < BOOST_RARITIES.length; i++) h += `<td class="num" style="color:${BOOST_RARITIES[i].color}">${s.fmt(s.values[i])}</td>`;
+      h += `</tr>`;
+    }
+    h += `</table><p class="dev-note" style="margin-top:10px">Channel circles spawn near the player — first at <code>0:30</code>, then every <code>40–60s</code> (max 2 in the world, 45s lifetime). Stand inside for <code>${BOOST_RARITIES.map(r => r.channel + 's').join(' / ')}</code> (green→orange) to claim; stepping out drains progress at <code>0.8×</code>. Gains are permanent for the run, stack multiplicatively, and are kept by Save &amp; Quit.</p>`;
   } else {
     h += `<div class="dev-sect"><h3>Core formulas</h3><table class="dev-table"><tr><th>System</th><th>Formula</th></tr>
       <tr><td>XP to next level</td><td class="num">round(10·N^1.6 + 25)</td></tr>
@@ -3559,6 +3726,7 @@ function stepGame(dt) {
   buildQuadtree();
   updateDirector(dt);
   updateEnvironment(dt);
+  updateBoostPads(dt);
   updateObjective(dt);
   updateWeapons(dt);
   updateClones(dt);
@@ -3576,6 +3744,9 @@ function stepGame(dt) {
 
 let lastTime = 0;
 function frame(now) {
+  // Schedule the next frame FIRST: an exception below then costs one frame's
+  // work, not the entire game (a dead rAF chain looks like a total freeze).
+  requestAnimationFrame(frame);
   if (!lastTime) lastTime = now;
   let dt = (now - lastTime) / 1000; lastTime = now;
   if (dt > 0.05) dt = 0.05;                            // clamp big tab-switch gaps
@@ -3583,7 +3754,6 @@ function frame(now) {
   if (game.state === 'running') stepGame(dt);
   render(now);
   if (game.state !== 'menu' && game.player) { updateHUD(); updateObjectiveHUD(); }
-  requestAnimationFrame(frame);
 }
 
 function init() {
