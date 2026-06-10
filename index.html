@@ -242,6 +242,20 @@
   .credit { position: absolute; bottom: 10px; right: 14px; color: var(--ink-dim); font-size: 11px; opacity: 0.6; }
   .coinline { color: var(--bio-amber); font-weight: 800; font-size: 18px; }
 
+  /* ---- Save / backup modal ---- */
+  #save-modal .panel { max-width: 720px; width: 92vw; max-height: 92vh; overflow-y: auto; }
+  .save-box { margin: 14px auto 0; text-align: left; width: min(640px, 86vw); }
+  .save-box label { display: block; font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--ink-dim); margin-bottom: 6px; }
+  .save-box textarea {
+    width: 100%; height: 64px; resize: vertical; padding: 10px; line-height: 1.45;
+    background: rgba(3, 12, 18, 0.85); border: 1px solid var(--panel-edge); border-radius: 10px;
+    color: var(--bio-cyan); font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 11px;
+    word-break: break-all;
+  }
+  .save-box textarea:focus { outline: none; border-color: var(--bio-cyan); box-shadow: 0 0 0 2px rgba(47,246,255,0.15); }
+  #save-msg { min-height: 18px; margin-top: 8px; font-weight: 600; }
+
   /* mobile joystick */
   #stick { position: absolute; z-index: 11; display: none; width: 120px; height: 120px;
     border-radius: 50%; border: 2px solid rgba(74,226,255,0.3); background: rgba(6,18,26,0.3); }
@@ -295,10 +309,11 @@
     <div class="title">BIOEVOLUTION</div>
     <div class="subtitle">Survive the Microbial Apocalypse · Evolve · Mutate</div>
     <div class="menu-actions">
-      <button class="btn primary" data-act="play">▶ BEGIN INCUBATION</button>
+      <button class="btn primary" id="btn-continue" data-act="continue" style="display:none">▶ CONTINUE RUN</button>
+      <button class="btn" data-act="play">▶ BEGIN INCUBATION</button>
       <button class="btn" data-act="shop">🧪 Genome Lab (Meta-Upgrades)</button>
       <button class="btn" data-act="codex">📖 Bio-Codex</button>
-      <button class="btn ghost small" data-act="reset">Reset Save Data</button>
+      <button class="btn ghost small" data-act="savedata">💾 Save · Backup &amp; Transfer</button>
     </div>
     <div class="hint">
       Move: <span class="kbd">W</span><span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>
@@ -349,7 +364,8 @@
       <div id="pause-stats" class="stat-grid"></div>
       <div class="menu-actions">
         <button class="btn primary" data-act="resume">▶ Resume</button>
-        <button class="btn" data-act="quit">⬛ Abandon Run</button>
+        <button class="btn" data-act="savequit">💾 Save &amp; Quit to Menu</button>
+        <button class="btn ghost" data-act="quit">⬛ Abandon Run</button>
       </div>
     </div>
   </div>
@@ -388,6 +404,32 @@
       <div class="codex-tabs" id="codex-tabs"></div>
       <div class="codex-list" id="codex-list"></div>
       <div class="row" style="margin-top:18px;"><button class="btn" data-act="back-main">← Back to Menu</button></div>
+    </div>
+  </div>
+
+  <!-- ===== Save / Backup / Transfer ===== -->
+  <div class="overlay" id="save-modal">
+    <div class="panel">
+      <div class="modal-head"><h2>💾 SAVE · BACKUP · TRANSFER</h2>
+        <p>Progress is stored in <b>this browser</b>. Copy your save code to back it up, or paste one in to move your DNA to another device or browser.</p></div>
+      <div id="save-stats" class="stat-grid"></div>
+      <div class="save-box">
+        <label>Your save code — copy &amp; keep it safe</label>
+        <textarea id="save-export" readonly spellcheck="false"></textarea>
+        <div class="row" style="justify-content:flex-start; gap:8px; margin-top:8px;">
+          <button class="btn small primary" id="save-copy">📋 Copy code</button>
+        </div>
+      </div>
+      <div class="save-box">
+        <label>Import a save code — paste &amp; load</label>
+        <textarea id="save-import" spellcheck="false" placeholder="Paste a BIOEVO… code here to restore progress"></textarea>
+        <div class="row" style="justify-content:flex-start; gap:8px; margin-top:8px;">
+          <button class="btn small" id="save-load">⤵ Load code</button>
+          <button class="btn small ghost" id="save-reset" style="color:var(--bio-red); border-color:rgba(255,90,90,0.4)">🗑 Erase all data</button>
+        </div>
+      </div>
+      <div id="save-msg" class="hint"></div>
+      <div class="row" style="margin-top:14px;"><button class="btn" data-act="back-main">← Back to Menu</button></div>
     </div>
   </div>
 </div>
@@ -800,7 +842,8 @@ const DEFAULT_SAVE = () => ({
   quests: {},               // questId -> true once completed
   flags: {},                // FLAG_* -> true
   codex: {},                // entity id -> true once encountered
-  best: { time: 0, kills: 0, level: 0, endless: 0 }
+  best: { time: 0, kills: 0, level: 0, endless: 0 },
+  suspended: null           // snapshot of an in-progress run (for "Continue Run")
 });
 let SAVE = DEFAULT_SAVE();
 
@@ -820,6 +863,19 @@ function commitSave() {
 }
 function metaTier(id) { return SAVE.upgrades[id] || 0; }
 function markCodex(id) { if (!SAVE.codex[id]) { SAVE.codex[id] = true; commitSave(); } }
+
+/* Portable save codes — base64 of the whole SAVE object (meta + suspended run) *
+ * so players can back progress up or carry it to another browser / device.    */
+function encodeSave(obj) {
+  try { return 'BIOEVO1.' + btoa(unescape(encodeURIComponent(JSON.stringify(obj)))); }
+  catch (e) { return ''; }
+}
+function decodeSave(str) {
+  str = String(str).trim();
+  const dot = str.indexOf('.');
+  const body = (str.slice(0, 6) === 'BIOEVO' && dot >= 0) ? str.slice(dot + 1) : str;
+  return JSON.parse(decodeURIComponent(escape(atob(body))));
+}
 
 /* ======================================================================== *
  *  SECTION 9 — GLOW SPRITE FACTORY                                          *
@@ -2590,6 +2646,8 @@ $('apex-skip').onclick = () => { hideOverlay('apex-modal'); resumeRun(); };
 function setHud(v) { $('hud').style.display = v ? 'block' : 'none'; }
 
 function startRun(mode) {
+  clearSuspended();                 // a fresh run discards any suspended one
+  _autosaveT = 0;
   RNG = makeRNG((Math.random() * 1e9) | 0);
   game.mode = mode; game.state = 'running'; game.time = 0;
   game.enemies = []; game.projectiles = []; game.pickups = []; game.hazards = [];
@@ -2634,6 +2692,7 @@ function finalizeRun() {
   SAVE.best.kills = Math.max(SAVE.best.kills, game.kills);
   SAVE.best.level = Math.max(SAVE.best.level, game.player.level);
   if (game.mode === 'endless') SAVE.best.endless = Math.max(SAVE.best.endless, game.time);
+  SAVE.suspended = null;            // a finished run is no longer resumable
   commitSave();
 }
 function endRun(win) {
@@ -2656,8 +2715,117 @@ function endRun(win) {
 function quitRun() { finalizeRun(); game.state = 'menu'; setHud(false); backToMenu(); }
 function fmtTime(s) { const m = Math.floor(s / 60), ss = Math.floor(s % 60); return m + ':' + String(ss).padStart(2, '0'); }
 
+/* ---- Mid-run suspend / resume ("Continue Run") -------------------------- *
+ * The live swarm (enemies / projectiles / hazards) is procedural and          *
+ * ephemeral, and the transient entities hold sprite & callback references     *
+ * that don't serialize. So a snapshot stores only what the player EARNED —    *
+ * build, level, position, resources, Director cadence and any active boss —   *
+ * and the Director simply repopulates the field on resume. Tiny + robust.     */
+let _autosaveT = 0;
+function runInProgress() {
+  return game.player && game.player.hp > 0 &&
+         (game.state === 'running' || game.state === 'paused' || game.state === 'levelup');
+}
+function serializeRun() {
+  const p = game.player; if (!p) return null;
+  const d = game.director || {};
+  return {
+    v: 2, mode: game.mode, time: game.time,
+    kills: game.kills, killsByType: Object.assign({}, game.killsByType),
+    coinsThisRun: game.coinsThisRun, pendingLevelUps: game.pendingLevelUps, rerolls: game.rerolls,
+    apexOffered: Object.assign({}, game.apexOffered),
+    quest: { cloneStreak: game.quest ? game.quest.cloneStreak : 0, shieldBroke: game.quest ? game.quest.shieldBroke : false },
+    questsDone: (game.questsCompletedThisRun || []).map(q => q.id),
+    win: game.win,
+    director: {
+      weight: d.weight || 0, spawnTimer: d.spawnTimer || 0, eliteIdx: d.eliteIdx || 0, bossDone: !!d.bossDone,
+      endlessEliteT: d.endlessEliteT != null ? d.endlessEliteT : 90,
+      endlessBossT: d.endlessBossT != null ? d.endlessBossT : 300, endlessWave: d.endlessWave || 0,
+    },
+    boss: (game.boss && !game.boss.dead) ? { hp: game.boss.hp, maxHp: game.boss.maxHp, state: game.boss.bossState || 1 } : null,
+    player: {
+      x: p.x, y: p.y, angle: p.angle,
+      baseMaxHp: p.baseMaxHp, maxShield: p.maxShield, shieldHp: p.shieldHp, hp: p.hp, armor: p.armor,
+      level: p.level, xp: p.xp, xpNext: p.xpNext,
+      weapons: p.weapons.map(w => ({ id: w.id, level: w.level, apex: !!w.apex, apexId: w.apexId || null })),
+      passives: Object.assign({}, p.passives),
+    },
+    savedAt: Date.now(),
+  };
+}
+function saveRunSnapshot() {
+  if (!runInProgress()) return;
+  const snap = serializeRun(); if (!snap) return;
+  SAVE.suspended = snap; commitSave();
+}
+function clearSuspended() { if (SAVE.suspended) { SAVE.suspended = null; commitSave(); } }
+
+function resumeSavedRun() {
+  const snap = SAVE.suspended;
+  if (!snap || !snap.player) { backToMenu(); return; }
+  RNG = makeRNG((Math.random() * 1e9) | 0);
+  game.mode = snap.mode; game.state = 'running'; game.time = snap.time || 0;
+  game.enemies = []; game.projectiles = []; game.pickups = []; game.hazards = [];
+  game.particles = []; game.floaters = []; game.clones = []; game.effects = [];
+  game.kills = snap.kills || 0; game.killsByType = Object.assign({}, snap.killsByType || {});
+  game.coinsThisRun = snap.coinsThisRun || 0; game.xpOrbsAlive = 0;
+  game.pendingLevelUps = snap.pendingLevelUps || 0; game.apexOffered = Object.assign({}, snap.apexOffered || {});
+  game.win = !!snap.win; game.bossSpawned = !!snap.boss;
+  game.rerolls = snap.rerolls != null ? snap.rerolls : metaTier('UPG_RER');
+  game.quest = { cloneStreak: snap.quest ? snap.quest.cloneStreak : 0, shieldBroke: snap.quest ? snap.quest.shieldBroke : false };
+  game.questsCompletedThisRun = (snap.questsDone || []).map(id => QUESTS.find(q => q.id === id)).filter(Boolean);
+
+  const p = createPlayer(), ps = snap.player;
+  p.x = ps.x; p.y = ps.y; p.angle = ps.angle || 0;
+  p.baseMaxHp = ps.baseMaxHp; p.armor = ps.armor || 0; p.maxShield = ps.maxShield || 30;
+  p.level = ps.level; p.xp = ps.xp; p.xpNext = ps.xpNext || xpForLevel(p.level);
+  p.weapons = (ps.weapons || []).map(w => ({ id: w.id, level: w.level, timer: 0, apex: !!w.apex, apexId: w.apexId || null }));
+  p.passives = Object.assign({}, ps.passives || {});
+  game.player = p;
+  recomputeStats();                                  // rebuild derived multipliers + maxHp from baseMaxHp + passives
+  p.hp = clamp(ps.hp != null ? ps.hp : p.maxHp, 1, p.maxHp);
+  p.shieldHp = clamp(ps.shieldHp != null ? ps.shieldHp : p.maxShield, 0, p.maxShield);
+  game.camera.x = p.x; game.camera.y = p.y;
+
+  game.director = createDirector();
+  Object.assign(game.director, snap.director || {});
+  game.boss = null;
+  if (snap.boss) {                                   // an Extinction boss was mid-fight: re-engage at saved HP
+    game.director.weight = 0;
+    const b = spawnEnemy('macrophage', p.x, p.y - camHalfDiag() - 120, {});
+    b.maxHp = snap.boss.maxHp || b.maxHp; b.hp = clamp(snap.boss.hp || b.hp, 1, b.maxHp);
+    game.boss = b;
+  }
+
+  refreshTray();
+  hideAllOverlays(); $('banner').innerHTML = ''; setHud(true);
+  _autosaveT = 0;
+  bigBanner('RUN RESUMED — ' + fmtTime(game.time) + ' · LEVEL ' + p.level, 2.4);
+  if (snap.boss) toast('Macrophage Sentinel re-engaged', 2.2);
+  if (game.pendingLevelUps > 0) setTimeout(openLevelUp, 220);
+}
+
+/* Pause-menu "Save & Quit": snapshot now, return to the menu (coins are NOT  *
+ * banked — the run lives on and can be continued later).                     */
+function saveAndExit() {
+  saveRunSnapshot();
+  toast('Run saved — pick it back up from “Continue Run”.', 2.6);
+  backToMenu();
+}
+
 /* ---- Menu navigation ---- */
-function backToMenu() { hideAllOverlays(); setHud(false); game.state = 'menu'; showOverlay('menu-main'); }
+function backToMenu() {
+  hideAllOverlays(); setHud(false); game.state = 'menu';
+  const cont = $('btn-continue');
+  if (cont) {
+    const s = SAVE.suspended;
+    if (s && s.player) {
+      cont.style.display = '';
+      cont.textContent = `▶ CONTINUE RUN — ${fmtTime(s.time)} · Lv ${s.player.level} · ${s.mode === 'endless' ? 'Endless' : 'Extinction'}`;
+    } else { cont.style.display = 'none'; }
+  }
+  showOverlay('menu-main');
+}
 function openModeSelect() {
   const wrap = $('mode-cards'); wrap.innerHTML = '';
   const modes = [
@@ -2733,8 +2901,53 @@ function buildCodex() {
 }
 
 function resetSave() {
-  if (!confirm('Erase all Genetic Code, meta-upgrades, quests and codex unlocks? This cannot be undone.')) return;
+  if (!confirm('Erase ALL progress — Genetic Code, meta-upgrades, quests, codex unlocks AND any suspended run? This cannot be undone.')) return;
   SAVE = DEFAULT_SAVE(); commitSave(); toast('Save data reset.');
+  if ($('save-modal').classList.contains('show')) openSaveModal();
+  else backToMenu();
+}
+
+/* ---- Save / Backup / Transfer modal ---- */
+function openSaveModal() {
+  hideAllOverlays();
+  $('save-export').value = encodeSave(SAVE);
+  $('save-import').value = '';
+  $('save-stats').innerHTML = statRows([
+    ['Genetic Code', SAVE.coins.toLocaleString()],
+    ['Meta Upgrades', Object.values(SAVE.upgrades).reduce((a, b) => a + b, 0) + ' tiers'],
+    ['Best Survival', fmtTime(SAVE.best.time || 0)],
+    ['Suspended Run', SAVE.suspended && SAVE.suspended.player ? (fmtTime(SAVE.suspended.time) + ' · Lv ' + SAVE.suspended.player.level) : 'none'],
+  ]);
+  $('save-msg').textContent = '';
+  showOverlay('save-modal');
+}
+function setupSaveModal() {
+  $('save-copy').onclick = () => {
+    const ta = $('save-export'); ta.focus(); ta.select(); ta.setSelectionRange(0, 99999);
+    const ok = () => { $('save-msg').style.color = 'var(--bio-green)'; $('save-msg').textContent = 'Copied to clipboard ✓  — paste it somewhere safe.'; };
+    if (navigator.clipboard && navigator.clipboard.writeText)
+      navigator.clipboard.writeText(ta.value).then(ok, () => { try { document.execCommand('copy'); ok(); } catch (e) {} });
+    else { try { document.execCommand('copy'); ok(); } catch (e) {} }
+  };
+  $('save-load').onclick = () => {
+    const raw = $('save-import').value.trim();
+    if (!raw) { $('save-msg').style.color = 'var(--ink-dim)'; $('save-msg').textContent = 'Paste a save code first.'; return; }
+    try {
+      const obj = decodeSave(raw);
+      if (!obj || typeof obj.coins !== 'number' || !obj.upgrades) throw new Error('shape');
+      SAVE = Object.assign(DEFAULT_SAVE(), obj);
+      SAVE.upgrades = Object.assign(DEFAULT_SAVE().upgrades, obj.upgrades || {});
+      SAVE.best = Object.assign(DEFAULT_SAVE().best, obj.best || {});
+      commitSave();
+      openSaveModal();
+      $('save-msg').style.color = 'var(--bio-green)';
+      $('save-msg').textContent = 'Save imported ✓ — all progress loaded into this browser.';
+    } catch (e) {
+      $('save-msg').style.color = 'var(--bio-red)';
+      $('save-msg').textContent = 'Invalid save code — make sure you copied the whole string.';
+    }
+  };
+  $('save-reset').onclick = resetSave;
 }
 
 /* Delegated menu/button handling. */
@@ -2743,6 +2956,7 @@ document.addEventListener('click', (e) => {
   const act = btn.getAttribute('data-act');
   ({
     play: openModeSelect, shop: openShop, codex: openCodex, reset: resetSave,
+    continue: resumeSavedRun, savedata: openSaveModal, savequit: saveAndExit,
     'back-main': backToMenu, resume: () => resumeRun(), quit: quitRun,
     retry: () => startRun(game.mode), 'to-shop': openShop, 'to-menu': backToMenu,
   })[act]?.();
@@ -2781,6 +2995,9 @@ function stepGame(dt) {
   updateEffects(dt);
   updatePlayer(dt);
   updateParticles(dt);
+  // Autosave the run every few seconds so "Continue Run" is always current.
+  _autosaveT += dt;
+  if (_autosaveT >= 5) { _autosaveT = 0; saveRunSnapshot(); }
 }
 
 let lastTime = 0;
@@ -2800,6 +3017,10 @@ function init() {
   buildSprites();
   setupCanvas();
   setupInput();
+  setupSaveModal();
+  // Persist the run if the player tabs away or closes the page mid-fight.
+  document.addEventListener('visibilitychange', () => { if (document.hidden) saveRunSnapshot(); });
+  window.addEventListener('beforeunload', () => { saveRunSnapshot(); });
   setHud(false);
   backToMenu();
   requestAnimationFrame(frame);
