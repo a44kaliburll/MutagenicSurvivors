@@ -542,6 +542,10 @@ function shuffle(arr) {
 /* Angle helpers */
 const angTo = (ax, ay, bx, by) => Math.atan2(by - ay, bx - ax);
 function angLerp(a, b, t) { let d = ((b - a + Math.PI) % TAU) - Math.PI; if (d < -Math.PI) d += TAU; return a + d * t; }
+/* Signed smallest difference between two angles, normalized to (-π, π].     *
+ * Robust for ANY input magnitude (JS `%` keeps the dividend's sign, so the   *
+ * naive one-liner breaks once an accumulating angle passes ±2π).             */
+function angDiff(a, b) { return a - b - TAU * Math.round((a - b) / TAU); }
 
 /* ======================================================================== *
  *  SECTION 2 — MODULAR ARSENAL DATA DICTIONARY (WEAPONS)                     *
@@ -1703,7 +1707,7 @@ function dealArc(x, y, facing, arc, range, base, opts = {}) {
     const e = list[i]; if (e.dead) continue;
     if (dist2(x, y, e.x, e.y) > (range + e.r) * (range + e.r)) continue;
     const ang = angTo(x, y, e.x, e.y);
-    let diff = Math.abs(((ang - facing + Math.PI) % TAU) - Math.PI);
+    const diff = Math.abs(angDiff(ang, facing));
     if (diff <= arc / 2) {
       const { dmg, crit } = computeDamage(base);
       damageEnemy(e, dmg, Object.assign({ crit, angle: ang, fromX: x, fromY: y }, opts));
@@ -1719,7 +1723,7 @@ const FIRE = {
   cilia(w, s, p) {
     const area = p.mult.area;
     const range = s.range * area;
-    w.phase = (w.phase || 0) + Math.PI / 3;              // rotate the lash pattern
+    w.phase = ((w.phase || 0) + Math.PI / 3) % TAU;      // rotate the lash pattern (wrapped)
     for (let i = 0; i < s.count; i++) {
       const ang = w.phase + i * (TAU / s.count);
       const opts = { knockback: s.knockback, melee: true };
@@ -3755,6 +3759,19 @@ function frame(now) {
   render(now);
   if (game.state !== 'menu' && game.player) { updateHUD(); updateObjectiveHUD(); }
 }
+
+/* Surface unexpected runtime errors as a visible banner — a silent failure  *
+ * (frozen sim, dead weapon, missing layer) is undebuggable from a player's   *
+ * report, so at least say WHAT broke and WHERE.                              */
+window.addEventListener('error', (ev) => {
+  try {
+    const el = document.createElement('div');
+    el.className = 'toast big'; el.style.borderColor = '#ff5a5a'; el.style.color = '#ff8a8a';
+    el.textContent = '⚠ BUG: ' + (ev.message || 'unknown error') + (ev.lineno ? ' @ line ' + ev.lineno : '');
+    $('banner').appendChild(el);
+    setTimeout(() => el.remove(), 9000);
+  } catch (e) { /* never let the reporter itself throw */ }
+});
 
 function init() {
   loadSave();
