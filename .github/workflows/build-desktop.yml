@@ -31,7 +31,7 @@ jobs:
         # below handle the artifact upload and the tagged Release.
         run: npm run dist:win -- --publish never
 
-      - name: Upload .exe artifacts
+      - name: Upload .exe artifacts (per-run, ephemeral)
         uses: actions/upload-artifact@v4
         with:
           name: BIOEVOLUTION-windows
@@ -39,8 +39,19 @@ jobs:
             dist/*.exe
           if-no-files-found: error
 
-      - name: Attach to Release (tags only)
-        if: startsWith(github.ref, 'refs/tags/')
+      # Permanent download page: create/refresh the v1.0.0 Release and attach
+      # the .exe files. softprops creates the git tag + release server-side
+      # (uses GITHUB_TOKEN), so no local tag push is required. Re-runs just
+      # update the assets in place.
+      - name: Publish / refresh the v1.0.0 Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v1.0.0
+          name: BIOEVOLUTION — Desktop (v1.0.0)
+          body: |
+            Windows build of BIOEVOLUTION, rebuilt automatically from the latest commit.
+
+            - **BIOEVOLUTION-Setup-1.0.0.exe** — installer (Start-menu + desktop shortcut)
+            - **BIOEVOLUTION-Portable-1.0.0.exe** — single-file portable, no install
           files: dist/*.exe
+          fail_on_unmatched_files: true
