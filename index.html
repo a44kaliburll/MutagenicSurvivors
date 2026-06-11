@@ -932,6 +932,24 @@ const CHARACTERS = [
 ];
 const CHAR_BY_ID = Object.fromEntries(CHARACTERS.map(c => [c.id, c]));
 
+/* Per-cell-line visual identity (colour, body shape, surface feature) so each *
+ * character renders distinctly in drawPlayer instead of all looking the same. */
+const CHAR_VIZ = {
+  paramecium:   { glow: '#2ff6ff', body: ['rgba(190,255,255,0.95)', 'rgba(47,246,255,0.5)', 'rgba(47,246,255,0.06)'],
+                  nucleus: ['rgba(10,40,55,0.85)', 'rgba(120,230,255,0.9)'], feature: 'cilia', elong: 1.12 },
+  euglena:      { glow: '#ff5fa2', body: ['rgba(255,205,228,0.95)', 'rgba(255,95,162,0.5)', 'rgba(255,95,162,0.06)'],
+                  nucleus: ['rgba(60,12,36,0.85)', 'rgba(255,175,208,0.9)'], feature: 'flagellum', eyespot: '#ff3b3b', elong: 1.45 },
+  bdellovibrio: { glow: '#b07bff', body: ['rgba(228,212,255,0.95)', 'rgba(176,123,255,0.5)', 'rgba(176,123,255,0.06)'],
+                  nucleus: ['rgba(42,22,72,0.85)', 'rgba(214,186,255,0.9)'], feature: 'vibrio', elong: 1.6 },
+  phagocyte:    { glow: '#aac4d6', body: ['rgba(238,247,255,0.96)', 'rgba(150,180,200,0.5)', 'rgba(120,150,175,0.08)'],
+                  nucleus: ['rgba(70,92,112,0.85)', 'rgba(214,232,246,0.9)'], feature: 'pseudopods', elong: 1.0 },
+  yeast:        { glow: '#ffd166', body: ['rgba(255,242,205,0.96)', 'rgba(255,209,102,0.55)', 'rgba(225,165,40,0.08)'],
+                  nucleus: ['rgba(120,82,12,0.85)', 'rgba(255,232,165,0.9)'], feature: 'bud', elong: 1.0 },
+  volvox:       { glow: '#3dffba', body: ['rgba(205,255,238,0.92)', 'rgba(61,255,186,0.42)', 'rgba(47,200,150,0.05)'],
+                  nucleus: ['rgba(10,55,40,0.6)', 'rgba(150,255,210,0.85)'], feature: 'colony', elong: 1.0 },
+};
+function charViz() { return CHAR_VIZ[game.character] || CHAR_VIZ.paramecium; }
+
 /* A cell line is playable once its milestone is met (or already recorded). */
 function charUnlocked(c) {
   if (!c) return false;
@@ -1515,7 +1533,7 @@ function createPlayer() {
     },
     pickupRadius: 90,
     // Transient buffs
-    surge: 0, invulnTrail: 0, invertCtrl: 0, slowT: 0,
+    surge: 0, invulnTrail: 0, invertCtrl: 0, slowT: 0, powerSpeed: 0, frenzy: 0,
     // misc
     cloneTimer: 0,
   };
@@ -1603,7 +1621,7 @@ const META_DAMAGE_BONUS = 1.0;
  */
 function computeDamage(base, flat = 0, forceCrit = null) {
   const p = game.player;
-  let dmg = (base + flat) * (1 + p.mult.ribosome) * META_DAMAGE_BONUS * (p.mult.damageMul || 1);
+  let dmg = (base + flat) * (1 + p.mult.ribosome) * META_DAMAGE_BONUS * (p.mult.damageMul || 1) * (p.frenzy > 0 ? 1.5 : 1);
   dmg += rand(-0.05, 0.05) * dmg;                       // ±5% variance
   if (!isFinite(dmg)) dmg = 1;                          // never poison an enemy's hp with NaN
   const crit = forceCrit == null ? chance(p.mult.crit) : forceCrit;
@@ -1695,6 +1713,8 @@ function killEnemy(e, opts = {}) {
   if (e.elite) spawnPickup('chest', e.x, e.y, 1);
   // Heal orb sometimes from elites
   if (e.elite && chance(0.6)) spawnPickup('heal', e.x + rand(-20, 20), e.y, 25);
+  // Floor power-up: rare from normal kills, guaranteed from elites.
+  maybeDropPower(e);
 
   if (e.boss) onBossDefeated(e);
 
@@ -1782,12 +1802,52 @@ function spawnRingEnemy(typeId) {
 function camHalfDiag() { return Math.hypot(view.w, view.h) / 2; }
 
 /* ---- Pickups ----------------------------------------------------------- */
+/* ---- Floor power-ups (consumable drops: magnet, health, speed, bomb, …) --- */
+const POWERS = {
+  magnet: { icon: '🧲', color: '#2ff6ff', name: 'Vacuum',        note: 'pulls in all biomass' },
+  health: { icon: '✚', color: '#6dff8a', name: 'Med-Vesicle',    note: '+40% health' },
+  speed:  { icon: '⚡', color: '#ffd166', name: 'ATP Rush',       note: '+60% speed · 8s' },
+  frenzy: { icon: '🔥', color: '#ff7a3a', name: 'Mitotic Frenzy', note: '+50% damage & fire rate · 8s' },
+  freeze: { icon: '❄', color: '#9fe0ff', name: 'Cryo-Shock',     note: 'freezes the swarm · 3s' },
+  bomb:   { icon: '💥', color: '#ff5a5a', name: 'Lysis Burst',    note: 'detonates the whole screen' },
+};
+const POWER_BAG = ['magnet', 'magnet', 'magnet', 'health', 'health', 'health', 'speed', 'speed', 'frenzy', 'frenzy', 'freeze', 'bomb'];
+function pickPowerType() { return pick(POWER_BAG); }
+/* Rare from normal kills; guaranteed from elites (bosses drop them on death). */
+function maybeDropPower(e) {
+  if (e.boss) return;
+  if (chance(e.elite ? 1 : 0.005)) spawnPickup('power', e.x + rand(-18, 18), e.y + rand(-18, 18), pickPowerType());
+}
+function applyPower(id) {
+  const p = game.player, def = POWERS[id] || POWERS.health;
+  if (id === 'magnet') {
+    for (const pk of game.pickups) if (pk.kind === 'xp' || pk.kind === 'coin' || pk.kind === 'nutrient') pk.magnet = true;
+    spawnRing(p.x, p.y, '#2ff6ff', camHalfDiag(), 0.6);
+  } else if (id === 'health') {
+    const h = Math.min(p.maxHp - p.hp, p.maxHp * 0.4); p.hp += h; spawnFloater(p.x, p.y - p.r, '+' + Math.round(h) + ' HP', '#6dff8a');
+  } else if (id === 'speed') {
+    p.powerSpeed = 8;
+  } else if (id === 'frenzy') {
+    p.frenzy = 8;
+  } else if (id === 'freeze') {
+    for (const e of game.enemies) if (!e.dead && !e.boss) e.paralyze = Math.max(e.paralyze || 0, 3);
+    game.flash = 0.3; game.flashColor = 'rgba(159,224,255,'; spawnRing(p.x, p.y, '#9fe0ff', camHalfDiag(), 0.55);
+  } else if (id === 'bomb') {
+    const dmg = 280 * (1 + 0.005 * game.time);
+    for (const e of game.enemies.slice()) { if (e.dead || !onScreen(e.x, e.y)) continue; damageEnemy(e, e.boss ? dmg * 0.5 : dmg, { fromX: p.x, fromY: p.y }); }
+    game.flash = 0.4; game.flashColor = 'rgba(255,120,80,'; game.shake = Math.max(game.shake, 18);
+    spawnRing(p.x, p.y, '#ff5a5a', camHalfDiag() + 100, 0.6); spawnParticles(p.x, p.y, '#ff9a5a', 30, { speed: 360, life: 0.7 });
+  }
+  bigBanner(def.icon + ' ' + def.name + ' — ' + def.note, 2.4);
+  sfx(id === 'bomb' ? 'boss' : id === 'health' ? 'heal' : 'apex');
+}
+
 function spawnPickup(kind, x, y, value) {
   const pk = pickupPool.obtain();
   pk.kind = kind; pk.x = x; pk.y = y; pk.value = value;
   pk.dx = rand(-40, 40); pk.dy = rand(-60, -10); pk.magnet = false;
-  pk.r = kind === 'chest' ? 16 : (kind === 'coin' ? 9 : (kind === 'heal' ? 10 : (kind === 'nutrient' ? 8 : 7)));
-  pk.life = (kind === 'chest' || kind === 'nutrient') ? 9999 : 30; pk.born = game.time; pk.bob = rand(0, TAU);
+  pk.r = kind === 'chest' ? 16 : kind === 'power' ? 13 : kind === 'coin' ? 9 : kind === 'heal' ? 10 : kind === 'nutrient' ? 8 : 7;
+  pk.life = (kind === 'chest' || kind === 'nutrient') ? 9999 : (kind === 'power' ? 45 : 30); pk.born = game.time; pk.bob = rand(0, TAU);
   game.pickups.push(pk);
   if (kind === 'xp') game.xpOrbsAlive++;
   return pk;
@@ -1898,6 +1958,7 @@ function onBossDefeated(e) {
   for (let i = 0; i < 40; i++) spawnPickup('xp', e.x + rand(-60, 60), e.y + rand(-60, 60), 6);
   for (let i = 0; i < 6; i++) spawnPickup('coin', e.x + rand(-40, 40), e.y + rand(-40, 40), 30);
   spawnPickup('chest', e.x, e.y, 1);
+  for (let i = 0; i < 3; i++) spawnPickup('power', e.x + rand(-60, 60), e.y + rand(-40, 40), pickPowerType());
   game.boss = null;
   if (game.mode === 'timed') { game.win = true; setTimeout(() => endRun(true), 1400); }
   else { bigBanner('SENTINEL PURGED — THE SWARM RETURNS'); }
@@ -2090,6 +2151,7 @@ function updateWeapons(dt) {
                         apexId === 'swarm' ? 'swarm' : apexId === 'retro' ? 'phage' :
                         apexId === 'wake' ? 'wake' : apexId === 'fungal' ? 'spore' : w.id];
     let cd = s.cooldown * p.mult.cooldown;
+    if (p.frenzy > 0) cd *= 0.6;                          // Mitotic Frenzy power-up
     if (apexId === 'vortex') cd = 0.1;                    // buzz-saw ticks
     w.timer -= dt;
     if (w.timer <= 0) {
@@ -2560,7 +2622,7 @@ function updatePlayer(dt) {
   if (p.invertCtrl > 0) { ix = -ix; iy = -iy; p.invertCtrl -= dt; }
   const il = lenOf(ix, iy); if (il > 1) { ix /= il; iy /= il; }
 
-  let spd = p.speed * (p.surge > 0 ? 1.4 : 1) * (p.slipBoost > 0 ? 2 : 1);
+  let spd = p.speed * (p.surge > 0 ? 1.4 : 1) * (p.slipBoost > 0 ? 2 : 1) * (p.powerSpeed > 0 ? 1.6 : 1);
   p.dx = lerp(p.dx, ix * spd, 0.25); p.dy = lerp(p.dy, iy * spd, 0.25);
   p.x += p.dx * dt; p.y += p.dy * dt;
   if (il > 0.01) p.angle = Math.atan2(iy, ix);
@@ -2571,6 +2633,8 @@ function updatePlayer(dt) {
   if (p.surge > 0) p.surge -= dt;
   if (p.invulnTrail > 0) p.invulnTrail -= dt;
   if (p.slipBoost > 0) p.slipBoost -= dt;
+  if (p.powerSpeed > 0) p.powerSpeed -= dt;
+  if (p.frenzy > 0) p.frenzy -= dt;
 
   // ---- shield + health regen ----
   if (p.shieldRegenDelay > 0) p.shieldRegenDelay -= dt;
@@ -2594,7 +2658,7 @@ function updatePickups(dt) {
     pk.bob += dt * 4;
     if (pk.kind !== 'chest') pk.life -= dt;
     const d2 = dist2(pk.x, pk.y, p.x, p.y);
-    if (!pk.magnet && pk.kind !== 'chest' && d2 < pr2) pk.magnet = true;
+    if (!pk.magnet && pk.kind !== 'chest' && pk.kind !== 'power' && d2 < pr2) pk.magnet = true;
     if (pk.magnet) {
       const a = angTo(pk.x, pk.y, p.x, p.y), pull = 260 + (1 - Math.min(1, d2 / pr2)) * 360;
       pk.x += Math.cos(a) * pull * dt; pk.y += Math.sin(a) * pull * dt;
@@ -2614,6 +2678,7 @@ function collectPickup(pk) {
   else if (pk.kind === 'coin') { gainCoins(pk.value); spawnFloater(p.x, p.y - p.r - 8, '+' + pk.value + '🪙', '#ffd166'); sfx('coin'); }
   else if (pk.kind === 'heal') { const h = Math.min(p.maxHp - p.hp, pk.value); p.hp += h; spawnFloater(p.x, p.y - p.r, '+' + Math.round(h) + ' HP', '#6dff8a'); sfx('heal'); }
   else if (pk.kind === 'nutrient') { spawnFloater(p.x, p.y - p.r - 8, '🧪 spore', '#9dff5f'); spawnParticles(pk.x, pk.y, '#9dff5f', 6, { life: 0.3 }); sfx('coin'); }
+  else if (pk.kind === 'power') { applyPower(pk.value); }
   else if (pk.kind === 'chest') { sfx('chest'); openLootChest(); }
   spawnParticles(pk.x, pk.y, '#bff8ff', 4, { life: 0.3, speed: 70 });
 }
@@ -2989,34 +3054,84 @@ function drawGrid(cam) {
 }
 
 function drawPlayer(t) {
-  const p = game.player;
-  if (p.invuln > 0 && Math.floor(t * 30) % 2 === 0 && p.invulnTrail <= 0) { /* hit flicker */ }
+  const p = game.player, viz = charViz();
   ctx.save(); ctx.translate(p.x, p.y);
   const lowHp = p.hp / p.maxHp < 0.3;
   const pulse = 1 + 0.05 * Math.sin(t * (lowHp ? 14 : 5));
   const R = p.r * pulse;
-  ctx.shadowColor = p.invulnTrail > 0 ? '#ffffff' : (lowHp ? '#ff5a5a' : '#2ff6ff');
-  ctx.shadowBlur = p.surge > 0 || p.invulnTrail > 0 ? 34 : 22;
-  // wobbly membrane
+  const glow = p.invulnTrail > 0 ? '#ffffff' : (lowHp ? '#ff5a5a' : viz.glow);
+
+  // transient buff auras
+  if (p.frenzy > 0) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = 'rgba(255,122,58,0.5)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0, 0, R + 13 + 2 * Math.sin(t * 12), 0, TAU); ctx.stroke(); ctx.restore(); }
+  if (p.powerSpeed > 0) { ctx.save(); ctx.globalAlpha = 0.4; ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 2;
+    const ba = p.angle + Math.PI; for (let k = 1; k <= 3; k++) { ctx.beginPath(); ctx.arc(Math.cos(ba) * k * 6, Math.sin(ba) * k * 6, R - k * 2, p.angle - 0.6, p.angle + 0.6); ctx.stroke(); } ctx.restore(); }
+
+  // --- membrane body (oriented + elongated along the movement axis) ---
+  ctx.save();
+  ctx.rotate(p.angle);
+  ctx.scale(viz.elong, 1 / Math.sqrt(viz.elong));
+  ctx.shadowColor = glow; ctx.shadowBlur = (p.surge > 0 || p.powerSpeed > 0 || p.invulnTrail > 0) ? 34 : 22;
   ctx.beginPath();
-  const lobes = 12;
-  for (let i = 0; i <= lobes; i++) { const a = i / lobes * TAU; const rr = R * (1 + 0.07 * Math.sin(a * 3 + t * 3));
+  const lobes = 14, wobK = viz.feature === 'pseudopods' ? 0.15 : 0.07;
+  for (let i = 0; i <= lobes; i++) { const a = i / lobes * TAU; const rr = R * (1 + wobK * Math.sin(a * 3 + t * 3));
     const x = Math.cos(a) * rr, y = Math.sin(a) * rr; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
   ctx.closePath();
-  const g = ctx.createRadialGradient(0, 0, 2, 0, 0, R);
-  g.addColorStop(0, 'rgba(180,255,255,0.95)'); g.addColorStop(0.5, 'rgba(47,246,255,0.55)'); g.addColorStop(1, 'rgba(47,246,255,0.08)');
+  const g = ctx.createRadialGradient(-R * 0.18, -R * 0.18, 2, 0, 0, R);
+  g.addColorStop(0, viz.body[0]); g.addColorStop(0.5, viz.body[1]); g.addColorStop(1, viz.body[2]);
   ctx.fillStyle = g; ctx.fill();
+  ctx.restore();
   ctx.shadowBlur = 0;
-  // cilia ring (beating)
-  ctx.strokeStyle = 'rgba(190,255,255,0.7)'; ctx.lineWidth = 2;
-  for (let i = 0; i < 18; i++) { const a = i / 18 * TAU + t * 0.6; const beat = 4 + 3 * Math.sin(t * 8 + i);
-    ctx.beginPath(); ctx.moveTo(Math.cos(a) * R, Math.sin(a) * R); ctx.lineTo(Math.cos(a) * (R + beat), Math.sin(a) * (R + beat)); ctx.stroke(); }
-  // nucleus
-  ctx.fillStyle = 'rgba(10,40,55,0.85)'; ctx.beginPath(); ctx.arc(0, 0, R * 0.42, 0, TAU); ctx.fill();
-  ctx.fillStyle = 'rgba(120,230,255,0.9)'; ctx.beginPath(); ctx.arc(-R * 0.12, -R * 0.12, R * 0.18, 0, TAU); ctx.fill();
-  // shield ring
-  if (p.shieldHp > 0) { ctx.strokeStyle = `rgba(47,246,255,${0.25 + 0.4 * (p.shieldHp / p.maxShield)})`; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(0, 0, R + 9, 0, TAU); ctx.stroke(); }
+
+  // --- surface feature (the visual identity of each cell line) ---
+  if (viz.feature === 'cilia') {
+    ctx.strokeStyle = glow; ctx.globalAlpha = 0.7; ctx.lineWidth = 2;
+    for (let i = 0; i < 20; i++) { const a = i / 20 * TAU + t * 0.6; const beat = 4 + 3 * Math.sin(t * 8 + i);
+      ctx.beginPath(); ctx.moveTo(Math.cos(a) * R, Math.sin(a) * R); ctx.lineTo(Math.cos(a) * (R + beat), Math.sin(a) * (R + beat)); ctx.stroke(); }
+    ctx.globalAlpha = 1;
+  } else if (viz.feature === 'flagellum') {                 // Euglena — one long whip at the front
+    const fa = p.angle; ctx.strokeStyle = glow; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (let i = 0; i <= 24; i++) { const tt = i / 24, len = R * 0.8 + tt * R * 2.6, wob = Math.sin(tt * Math.PI * 3 - t * 10) * R * 0.45 * tt;
+      const bx = Math.cos(fa) * len + Math.cos(fa + Math.PI / 2) * wob, by = Math.sin(fa) * len + Math.sin(fa + Math.PI / 2) * wob;
+      i ? ctx.lineTo(bx, by) : ctx.moveTo(bx, by); }
+    ctx.stroke();
+  } else if (viz.feature === 'vibrio') {                    // Bdellovibrio — corkscrew flagellum at the rear
+    const ra = p.angle + Math.PI; ctx.strokeStyle = glow; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (let i = 0; i <= 20; i++) { const tt = i / 20, len = R * 0.7 + tt * R * 2.1, wob = Math.sin(tt * Math.PI * 4 - t * 14) * R * 0.32 * tt;
+      const bx = Math.cos(ra) * len + Math.cos(ra + Math.PI / 2) * wob, by = Math.sin(ra) * len + Math.sin(ra + Math.PI / 2) * wob;
+      i ? ctx.lineTo(bx, by) : ctx.moveTo(bx, by); }
+    ctx.stroke();
+  } else if (viz.feature === 'pseudopods') {                // Phagocyte — internal vacuoles (membrane already ruffled)
+    ctx.fillStyle = 'rgba(150,180,205,0.4)';
+    for (let i = 0; i < 4; i++) { const a = i / 4 * TAU + t * 0.3, x = Math.cos(a) * R * 0.45, y = Math.sin(a) * R * 0.45;
+      ctx.beginPath(); ctx.arc(x, y, R * 0.14, 0, TAU); ctx.fill(); }
+  } else if (viz.feature === 'bud') {                       // Yeast — thick wall + a budding daughter cell
+    ctx.strokeStyle = 'rgba(255,209,102,0.55)'; ctx.lineWidth = R * 0.12; ctx.beginPath(); ctx.arc(0, 0, R * 0.9, 0, TAU); ctx.stroke();
+    const ba = -0.7, bx = Math.cos(ba) * R * 1.05, by = Math.sin(ba) * R * 1.05, br = R * 0.5;
+    ctx.shadowColor = glow; ctx.shadowBlur = 14;
+    const bg = ctx.createRadialGradient(bx - br * 0.2, by - br * 0.2, 1, bx, by, br); bg.addColorStop(0, viz.body[0]); bg.addColorStop(1, viz.body[2]);
+    ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(bx, by, br, 0, TAU); ctx.fill(); ctx.shadowBlur = 0;
+  } else if (viz.feature === 'colony') {                    // Volvox — many daughter cells around the sphere
+    ctx.shadowColor = glow; ctx.shadowBlur = 6; ctx.fillStyle = 'rgba(120,255,200,0.85)';
+    for (let i = 0; i < 14; i++) { const a = i / 14 * TAU + t * 0.2, x = Math.cos(a) * R * 0.62, y = Math.sin(a) * R * 0.62;
+      ctx.beginPath(); ctx.arc(x, y, R * 0.12, 0, TAU); ctx.fill(); }
+    ctx.shadowBlur = 0;
+    for (let i = 0; i < 5; i++) { const a = i / 5 * TAU + 0.5; ctx.beginPath(); ctx.arc(Math.cos(a) * R * 0.3, Math.sin(a) * R * 0.3, R * 0.08, 0, TAU); ctx.fill(); }
+  }
+
+  // --- nucleus (skip the big central one for the colony) ---
+  if (viz.feature !== 'colony') {
+    ctx.fillStyle = viz.nucleus[0]; ctx.beginPath(); ctx.arc(0, 0, R * 0.4, 0, TAU); ctx.fill();
+    ctx.fillStyle = viz.nucleus[1]; ctx.beginPath(); ctx.arc(-R * 0.12, -R * 0.12, R * 0.17, 0, TAU); ctx.fill();
+  }
+  // --- eyespot (Euglena) ---
+  if (viz.eyespot) { ctx.fillStyle = viz.eyespot; ctx.beginPath(); ctx.arc(Math.cos(p.angle) * R * 0.45, Math.sin(p.angle) * R * 0.45, R * 0.13, 0, TAU); ctx.fill(); }
+
+  // --- shield ring (tinted to the cell's glow) ---
+  if (p.shieldHp > 0) { ctx.globalAlpha = 0.25 + 0.4 * (p.shieldHp / p.maxShield); ctx.strokeStyle = glow; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0, 0, R + 9, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; }
   ctx.restore();
 }
 
@@ -3091,8 +3206,18 @@ function drawPickups(t) {
   const arr = game.pickups;
   for (let i = 0; i < arr.length; i++) {
     const pk = arr[i]; if (!onScreen(pk.x, pk.y, 30)) continue;
-    const spr = pk.kind === 'coin' ? SPR.coin : pk.kind === 'heal' ? SPR.biomassBig : pk.kind === 'chest' ? SPR.chest : pk.kind === 'nutrient' ? SPR.nutrient : SPR.biomass;
     const bob = Math.sin(pk.bob) * 2;
+    if (pk.kind === 'power') {                              // glowing capsule with the power glyph
+      const def = POWERS[pk.value] || POWERS.health, pulse = 1 + 0.08 * Math.sin(t * 4 + pk.bob);
+      ctx.save(); ctx.translate(pk.x, pk.y + bob); ctx.scale(pulse, pulse);
+      ctx.shadowColor = def.color; ctx.shadowBlur = 18;
+      ctx.fillStyle = 'rgba(8,20,28,0.92)'; ctx.beginPath(); ctx.arc(0, 0, 14, 0, TAU); ctx.fill();
+      ctx.lineWidth = 2.5; ctx.strokeStyle = def.color; ctx.beginPath(); ctx.arc(0, 0, 14, 0, TAU); ctx.stroke();
+      ctx.shadowBlur = 0; ctx.font = '16px Segoe UI, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff'; ctx.fillText(def.icon, 0, 1);
+      ctx.restore(); continue;
+    }
+    const spr = pk.kind === 'coin' ? SPR.coin : pk.kind === 'heal' ? SPR.biomassBig : pk.kind === 'chest' ? SPR.chest : pk.kind === 'nutrient' ? SPR.nutrient : SPR.biomass;
     ctx.save(); ctx.translate(pk.x, pk.y + bob);
     if (pk.kind === 'chest') { const s = 1 + 0.08 * Math.sin(t * 5); ctx.scale(s, s); }
     ctx.drawImage(spr, -spr.width / 2, -spr.height / 2); ctx.restore();
@@ -3303,7 +3428,10 @@ function drawMinimap() {
     else { ctx.fillStyle = e.golden ? '#ffd166' : ((e.def && e.def.glow) || '#7dff9a'); ctx.fillRect(m[0] - 1, m[1] - 1, 2, 2); }
   }
   // loot chests
-  for (const pk of game.pickups) if (pk.kind === 'chest') { const m = toMap(pk.x, pk.y); ctx.fillStyle = '#ffd166'; ctx.fillRect(m[0] - 2, m[1] - 2, 4, 4); }
+  for (const pk of game.pickups) {
+    if (pk.kind === 'chest') { const m = toMap(pk.x, pk.y); ctx.fillStyle = '#ffd166'; ctx.fillRect(m[0] - 2, m[1] - 2, 4, 4); }
+    else if (pk.kind === 'power') { const m = toMap(pk.x, pk.y), c = (POWERS[pk.value] || POWERS.health).color; ctx.fillStyle = c; ctx.beginPath(); ctx.arc(m[0], m[1], 3, 0, TAU); ctx.fill(); }
+  }
   // player at centre
   ctx.fillStyle = '#2ff6ff'; ctx.shadowColor = '#2ff6ff'; ctx.shadowBlur = 8;
   ctx.beginPath(); ctx.arc(cx, cy, 3.5, 0, TAU); ctx.fill(); ctx.shadowBlur = 0;
