@@ -352,6 +352,10 @@
       <button class="btn" data-act="codex">📖 Bio-Codex</button>
       <button class="btn" data-act="dev">🔧 Asset Inspector (Dev)</button>
       <button class="btn ghost small" data-act="savedata">💾 Save · Backup &amp; Transfer</button>
+      <div class="row" style="margin-top:8px; gap:12px;">
+        <button class="btn ghost small" id="btn-sound" data-act="sound" style="min-width:0">🔊 Sound: On</button>
+        <input id="vol-slider" type="range" min="0" max="100" value="60" title="Volume" style="width:130px; accent-color:#2ff6ff;" />
+      </div>
     </div>
     <div class="hint">
       Move: <span class="kbd">W</span><span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>
@@ -1007,11 +1011,11 @@ const ENEMIES = {
   },
   bacterium: {
     id: 'bacterium', name: 'Flagellated Bacterium', icon: '🧫', color: '#5fc8ff', glow: '#2f9fff',
-    weight: 4, window: [180, 720], freq: 0.55,
-    hp: 30, damage: 8, speed: 128, radius: 14, xp: 5, coinChance: 0.03, coin: 2,
+    weight: 4, window: [210, 720], freq: 0.5,
+    hp: 26, damage: 7, speed: 116, radius: 14, xp: 5, coinChance: 0.03, coin: 2,
     behavior: 'sine',
     fact: 'Flagellated bacteria swim by spinning a corkscrew tail. They sense chemical gradients and "run and tumble" toward food — primitive navigation called chemotaxis.',
-    special: 'Within 130px it telegraphs, then dashes in a straight line for 1.2s (5s cooldown).'
+    special: 'Within 120px it telegraphs for ~0.45s, then dashes in a straight line for 1.2s (6s cooldown).'
   },
   spore: {
     id: 'spore', name: 'Toxic Fungal Spore', icon: '🟤', color: '#d8a85f', glow: '#ffb84d',
@@ -1112,6 +1116,7 @@ const DEFAULT_SAVE = () => ({
   stats: { totalKills: 0, runs: 0, bossKills: 0 },  // lifetime metrics (drive char unlocks)
   chars: { paramecium: true },                      // unlocked cell lines
   lastChar: 'paramecium',                           // last picked cell
+  sound: { on: true, vol: 0.6 },                    // audio preferences
   suspended: null           // snapshot of an in-progress run (for "Continue Run")
 });
 let SAVE = DEFAULT_SAVE();
@@ -1149,6 +1154,92 @@ function decodeSave(str) {
 }
 
 /* ======================================================================== *
+ *  SECTION 8b — PROCEDURAL AUDIO (Web Audio, bio-themed, zero sound files)   *
+ *  Everything is synthesised live: wet squelchy blips, bubble pops, low      *
+ *  membrane thuds, organic chimes — plus a near-subliminal cellular drone.   *
+ *  Heavy events (hit/kill/shoot) are throttled so a 500-strong swarm dying   *
+ *  at once can't machine-gun the speakers or clip.                          *
+ * ======================================================================== */
+const Sound = {
+  ctx: null, master: null, on: true, vol: 0.6, _last: {},
+  init() {
+    this.on = SAVE.sound ? SAVE.sound.on !== false : true;
+    this.vol = (SAVE.sound && typeof SAVE.sound.vol === 'number') ? SAVE.sound.vol : 0.6;
+    const wake = () => this.ensure();          // AudioContext may only start after a user gesture
+    document.addEventListener('pointerdown', wake);
+    document.addEventListener('keydown', wake);
+  },
+  ensure() {
+    if (!this.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      this.ctx = new AC();
+      this.master = this.ctx.createGain();
+      this.master.gain.value = this.on ? this.vol : 0;
+      this.master.connect(this.ctx.destination);
+      this._ambient();
+    }
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    return this.ctx;
+  },
+  setVol(v) { this.vol = clamp(v, 0, 1); if (this.master) this.master.gain.value = this.on ? this.vol : 0; this._save(); },
+  toggle() { this.on = !this.on; this.ensure(); if (this.master) this.master.gain.setTargetAtTime(this.on ? this.vol : 0, this.ctx.currentTime, 0.02); this._save(); return this.on; },
+  _save() { SAVE.sound = { on: this.on, vol: this.vol }; commitSave(); },
+  _ok(name, gap) { const t = this.ctx ? this.ctx.currentTime : 0; if ((this._last[name] || 0) + gap > t) return false; this._last[name] = t; return true; },
+  // --- synthesis primitives ---
+  tone(freq, dur, type, peak, slideTo, when) {
+    const c = this.ctx; if (!c) return; const t = c.currentTime + (when || 0);
+    const o = c.createOscillator(); o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(1, slideTo), t + dur);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak || 0.25, t + Math.min(0.02, dur * 0.4));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(this.master); o.start(t); o.stop(t + dur + 0.05);
+  },
+  noise(dur, freq, q, peak, when) {
+    const c = this.ctx; if (!c) return; const t = c.currentTime + (when || 0);
+    const n = Math.max(1, Math.floor(c.sampleRate * dur)), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const s = c.createBufferSource(); s.buffer = buf;
+    const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq || 1000; f.Q.value = q || 1;
+    const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak || 0.18, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f); f.connect(g); g.connect(this.master); s.start(t); s.stop(t + dur + 0.02);
+  },
+  _ambient() {                                  // very quiet detuned cellular drone
+    const c = this.ctx; if (!c) return;
+    const g = c.createGain(); g.gain.value = 0.014; g.connect(this.master);
+    [55, 82.5, 110].forEach((f, i) => {
+      const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = f;
+      const lfo = c.createOscillator(); lfo.frequency.value = 0.05 + i * 0.03;
+      const lg = c.createGain(); lg.gain.value = f * 0.012; lfo.connect(lg); lg.connect(o.frequency);
+      o.connect(g); o.start(); lfo.start();
+    });
+  },
+  // --- named bio sound effects ---
+  play(name) {
+    if (!this.on) return; const c = this.ensure(); if (!c) return;
+    switch (name) {
+      case 'shoot':  if (!this._ok('shoot', 0.045)) return; this.tone(520 + rand(-50, 50), 0.08, 'sine', 0.10, 300); break;
+      case 'hit':    if (!this._ok('hit', 0.04)) return; this.noise(0.04, 1500, 1.6, 0.05); break;
+      case 'kill':   if (!this._ok('kill', 0.028)) return; this.tone(460 + rand(-70, 70), 0.13, 'sine', 0.14, 110); this.noise(0.05, 650, 0.8, 0.04); break;
+      case 'hurt':   this.tone(190, 0.22, 'sawtooth', 0.22, 70); this.noise(0.14, 220, 0.7, 0.12); break;
+      case 'xp':     if (!this._ok('xp', 0.02)) return; this.tone(860 + rand(-40, 40), 0.03, 'triangle', 0.05); break;
+      case 'coin':   if (!this._ok('coin', 0.03)) return; this.tone(1080, 0.08, 'square', 0.07, 1550); break;
+      case 'heal':   this.tone(330, 0.18, 'sine', 0.16, 540); break;
+      case 'level':  [523, 659, 784].forEach((f, i) => this.tone(f, 0.16, 'triangle', 0.18, 0, i * 0.08)); break;
+      case 'mutation': this.tone(300, 0.5, 'sawtooth', 0.14, 900); this.tone(303, 0.5, 'sawtooth', 0.12, 905); [523, 784, 1046].forEach((f, i) => this.tone(f, 0.3, 'sine', 0.12, 0, 0.12 + i * 0.09)); break;
+      case 'apex':   this.tone(220, 0.7, 'sawtooth', 0.18, 1100); [440, 660, 880, 1320].forEach((f, i) => this.tone(f, 0.4, 'triangle', 0.13, 0, i * 0.07)); break;
+      case 'objective': [523, 659, 784, 1046].forEach((f, i) => this.tone(f, 0.22, 'sine', 0.16, 0, i * 0.07)); break;
+      case 'boost':  this.tone(440, 0.18, 'sine', 0.14, 880); this.tone(660, 0.16, 'triangle', 0.10, 0, 0.06); break;
+      case 'boss':   this.tone(140, 1.4, 'sawtooth', 0.22, 50); this.noise(1.2, 90, 0.5, 0.1); break;
+      case 'chest':  this.tone(523, 0.12, 'triangle', 0.14, 0); this.tone(784, 0.18, 'triangle', 0.14, 0, 0.07); break;
+      case 'ui':     this.tone(680, 0.03, 'sine', 0.08, 520); break;
+    }
+  }
+};
+function sfx(name) { Sound.play(name); }
+
+/* ======================================================================== *
  *  SECTION 9 — GLOW SPRITE FACTORY                                          *
  *  Expensive soft-bloom (shadowBlur + layered gradients) is rendered ONCE   *
  *  to an offscreen canvas per visual type. Per-frame we only drawImage()    *
@@ -1178,75 +1269,93 @@ const SPR = {}; // sprite atlas, populated in buildSprites()
 
 function buildSprites() {
   // --- Lysogenic Virus: spiky green capsid -------------------------------
-  SPR.virus = makeSprite(40, (g, r) => {
-    g.shadowColor = '#3dff6a'; g.shadowBlur = 14;
-    g.fillStyle = '#0a2a16'; g.beginPath(); g.arc(0, 0, r * 0.46, 0, TAU); g.fill();
-    g.shadowBlur = 8; g.fillStyle = '#7dff9a';
-    for (let i = 0; i < 9; i++) { const a = i / 9 * TAU; const x = Math.cos(a) * r * 0.55, y = Math.sin(a) * r * 0.55;
-      g.beginPath(); g.arc(x, y, r * 0.1, 0, TAU); g.fill(); }
-    g.shadowBlur = 0; blob(g, r * 0.5, 'rgba(125,255,154,0.85)', '#bfffce', 0.6);
-    g.fillStyle = '#eafff0'; g.beginPath(); g.arc(0, 0, r * 0.16, 0, TAU); g.fill();
+  // --- Lysogenic Virus: faceted icosahedral capsid with receptor spikes ---
+  SPR.virus = makeSprite(64, (g, r) => {
+    g.shadowColor = '#3dff6a'; g.shadowBlur = 22;
+    // receptor-protein spikes
+    g.strokeStyle = '#69ef88'; g.lineWidth = r * 0.05; g.fillStyle = '#8bf7a4';
+    for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; const sx = Math.cos(a) * r * 0.42, sy = Math.sin(a) * r * 0.42, x = Math.cos(a) * r * 0.62, y = Math.sin(a) * r * 0.62;
+      g.beginPath(); g.moveTo(sx, sy); g.lineTo(x, y); g.stroke(); g.beginPath(); g.arc(x, y, r * 0.07, 0, TAU); g.fill(); }
+    g.shadowBlur = 0;
+    // faceted capsid body
+    const grad = g.createRadialGradient(-r * 0.16, -r * 0.16, r * 0.04, 0, 0, r * 0.5);
+    grad.addColorStop(0, '#e2ffe9'); grad.addColorStop(0.45, '#7dff9a'); grad.addColorStop(1, '#1f7a3e');
+    g.fillStyle = grad; g.beginPath(); g.arc(0, 0, r * 0.45, 0, TAU); g.fill();
+    g.strokeStyle = 'rgba(18,84,40,0.5)'; g.lineWidth = r * 0.022;
+    for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + 0.3; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a) * r * 0.45, Math.sin(a) * r * 0.45); g.stroke(); }
+    g.fillStyle = 'rgba(8,40,20,0.85)'; g.beginPath(); g.arc(0, 0, r * 0.18, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.5)'; g.beginPath(); g.ellipse(-r * 0.16, -r * 0.18, r * 0.1, r * 0.06, -0.6, 0, TAU); g.fill();
   });
-  SPR.subvirus = makeSprite(22, (g, r) => {
-    g.shadowColor = '#9dffb6'; g.shadowBlur = 8; blob(g, r * 0.7, 'rgba(160,255,180,0.9)', '#eaffe0', 0.8);
+  SPR.subvirus = makeSprite(24, (g, r) => {
+    g.shadowColor = '#9dffb6'; g.shadowBlur = 9; blob(g, r * 0.7, 'rgba(160,255,180,0.9)', '#eaffe0', 0.8);
   });
-  // --- Flagellated Bacterium: blue rod ----------------------------------
-  SPR.bacterium = makeSprite(54, (g, r) => {
-    g.rotate(-0.5); g.shadowColor = '#2f9fff'; g.shadowBlur = 14;
-    g.fillStyle = 'rgba(95,200,255,0.92)';
-    g.beginPath(); g.ellipse(0, 0, r * 0.62, r * 0.34, 0, 0, TAU); g.fill();
-    g.shadowBlur = 0; g.strokeStyle = '#cdeeff'; g.lineWidth = 2;
-    g.beginPath(); g.ellipse(0, 0, r * 0.62, r * 0.34, 0, 0, TAU); g.stroke();
-    g.fillStyle = 'rgba(207,238,255,0.85)';
-    g.beginPath(); g.ellipse(-r * 0.2, -r * 0.06, r * 0.12, r * 0.08, 0, 0, TAU); g.fill();
-    g.beginPath(); g.ellipse(r * 0.18, r * 0.05, r * 0.1, r * 0.07, 0, 0, TAU); g.fill();
+  // --- Flagellated Bacterium: glossy rod with a corkscrew flagellum -------
+  SPR.bacterium = makeSprite(88, (g, r) => {
+    g.rotate(-0.25);
+    // flagellum (baked behind, trails the rear)
+    g.shadowColor = '#2f9fff'; g.shadowBlur = 6; g.strokeStyle = 'rgba(170,224,255,0.85)'; g.lineWidth = r * 0.045; g.lineCap = 'round';
+    g.beginPath(); for (let i = 0; i <= 22; i++) { const tt = i / 22, x = -r * 0.55 - tt * r * 0.5, y = Math.sin(tt * Math.PI * 4) * r * 0.13 * (1 - tt * 0.4); i ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke();
+    // capsule body
+    g.shadowColor = '#2f9fff'; g.shadowBlur = 18;
+    const grad = g.createLinearGradient(0, -r * 0.34, 0, r * 0.34);
+    grad.addColorStop(0, '#d4f0ff'); grad.addColorStop(0.5, '#5fc8ff'); grad.addColorStop(1, '#1c69ab');
+    g.fillStyle = grad; g.beginPath(); g.ellipse(0, 0, r * 0.6, r * 0.32, 0, 0, TAU); g.fill();
+    g.shadowBlur = 0; g.strokeStyle = 'rgba(220,245,255,0.9)'; g.lineWidth = r * 0.028; g.beginPath(); g.ellipse(0, 0, r * 0.6, r * 0.32, 0, 0, TAU); g.stroke();
+    // ribosomes / plasmids
+    g.fillStyle = 'rgba(20,80,130,0.55)';
+    for (let i = 0; i < 5; i++) { g.beginPath(); g.arc(-r * 0.32 + i * r * 0.16, Math.sin(i * 1.7) * r * 0.09, r * 0.055, 0, TAU); g.fill(); }
+    g.fillStyle = 'rgba(232,248,255,0.85)'; g.beginPath(); g.ellipse(r * 0.06, -r * 0.04, r * 0.15, r * 0.1, 0, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.5)'; g.beginPath(); g.ellipse(-r * 0.18, -r * 0.15, r * 0.2, r * 0.05, 0, 0, TAU); g.fill();
   });
-  // --- Toxic Fungal Spore: bumpy ochre sphere ---------------------------
-  SPR.spore = makeSprite(62, (g, r) => {
-    g.shadowColor = '#ffb84d'; g.shadowBlur = 16;
-    blob(g, r * 0.7, 'rgba(216,168,95,0.95)', '#ffd9a0', 0.9);
-    g.shadowBlur = 0; g.fillStyle = 'rgba(120,72,20,0.6)';
-    for (let i = 0; i < 7; i++) { const a = i / 7 * TAU + 0.3; const x = Math.cos(a) * r * 0.35, y = Math.sin(a) * r * 0.35;
-      g.beginPath(); g.arc(x, y, r * 0.1, 0, TAU); g.fill(); }
+  // --- Toxic Fungal Spore: spiky-coated, pitted ochre capsule ------------
+  SPR.spore = makeSprite(96, (g, r) => {
+    g.shadowColor = '#ffb84d'; g.shadowBlur = 22;
+    g.fillStyle = '#b78a4a'; g.beginPath();
+    const sp = 16; for (let i = 0; i <= sp; i++) { const a = i / sp * TAU, rr = r * 0.5 * (i % 2 ? 1.12 : 0.9), x = Math.cos(a) * rr, y = Math.sin(a) * rr; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.closePath(); g.fill();
+    g.shadowBlur = 0;
+    const grad = g.createRadialGradient(-r * 0.12, -r * 0.12, r * 0.05, 0, 0, r * 0.48);
+    grad.addColorStop(0, '#ffe6b0'); grad.addColorStop(0.5, '#d8a85f'); grad.addColorStop(1, '#74501e');
+    g.fillStyle = grad; g.beginPath(); g.arc(0, 0, r * 0.45, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(74,46,12,0.6)';
+    for (let i = 0; i < 8; i++) { const a = i / 8 * TAU + 0.3, x = Math.cos(a) * r * 0.27, y = Math.sin(a) * r * 0.27; g.beginPath(); g.arc(x, y, r * 0.06, 0, TAU); g.fill(); }
+    g.fillStyle = 'rgba(58,34,8,0.7)'; g.beginPath(); g.arc(0, 0, r * 0.12, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,246,212,0.45)'; g.beginPath(); g.ellipse(-r * 0.14, -r * 0.16, r * 0.1, r * 0.06, -0.5, 0, TAU); g.fill();
   });
-  // --- Amoeboid Pseudopod: irregular violet blob ------------------------
-  SPR.amoeboid = makeSprite(120, (g, r) => {
-    g.shadowColor = '#b07bff'; g.shadowBlur = 28;
-    g.fillStyle = 'rgba(201,139,255,0.9)';
-    g.beginPath();
-    const lobes = 9;
-    for (let i = 0; i <= lobes; i++) { const a = i / lobes * TAU; const rr = r * (0.62 + 0.12 * Math.sin(a * 3 + 1));
-      const x = Math.cos(a) * rr, y = Math.sin(a) * rr; i ? g.lineTo(x, y) : g.moveTo(x, y); }
-    g.closePath(); g.fill();
-    g.shadowBlur = 0; g.fillStyle = 'rgba(80,30,130,0.7)';
-    g.beginPath(); g.arc(0, 0, r * 0.26, 0, TAU); g.fill();
-    g.fillStyle = '#e9d6ff'; g.beginPath(); g.arc(-r * 0.07, -r * 0.07, r * 0.1, 0, TAU); g.fill();
+  // --- Amoeboid Pseudopod: organic violet blob with vacuoles -------------
+  SPR.amoeboid = makeSprite(180, (g, r) => {
+    g.shadowColor = '#b07bff'; g.shadowBlur = 38;
+    const grad = g.createRadialGradient(-r * 0.1, -r * 0.1, r * 0.08, 0, 0, r * 0.78);
+    grad.addColorStop(0, '#ecdcff'); grad.addColorStop(0.45, '#c98bff'); grad.addColorStop(1, '#532a93');
+    g.fillStyle = grad; g.beginPath();
+    const lobes = 11; for (let i = 0; i <= lobes; i++) { const a = i / lobes * TAU, rr = r * (0.6 + 0.16 * Math.sin(a * 3 + 1) + 0.05 * Math.sin(a * 7)), x = Math.cos(a) * rr, y = Math.sin(a) * rr; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.closePath(); g.fill();
+    g.shadowBlur = 0; g.strokeStyle = 'rgba(222,192,255,0.5)'; g.lineWidth = r * 0.025; g.stroke();
+    g.fillStyle = 'rgba(150,90,210,0.5)';
+    for (let i = 0; i < 5; i++) { const a = i / 5 * TAU + 0.5, x = Math.cos(a) * r * 0.32, y = Math.sin(a) * r * 0.32; g.beginPath(); g.arc(x, y, r * 0.1, 0, TAU); g.fill(); }
+    g.fillStyle = 'rgba(70,24,120,0.85)'; g.beginPath(); g.arc(0, 0, r * 0.23, 0, TAU); g.fill();
+    g.fillStyle = '#efe0ff'; g.beginPath(); g.arc(-r * 0.06, -r * 0.06, r * 0.09, 0, TAU); g.fill();
   });
-  // --- Macrophage Sentinel: massive red immune cell ---------------------
-  SPR.macrophage = makeSprite(240, (g, r) => {
-    g.shadowColor = '#ff3a3a'; g.shadowBlur = 40;
-    g.fillStyle = 'rgba(255,122,122,0.92)';
-    g.beginPath();
-    const lobes = 16;
-    for (let i = 0; i <= lobes; i++) { const a = i / lobes * TAU; const rr = r * (0.66 + 0.07 * Math.sin(a * 5));
-      const x = Math.cos(a) * rr, y = Math.sin(a) * rr; i ? g.lineTo(x, y) : g.moveTo(x, y); }
-    g.closePath(); g.fill();
-    g.shadowBlur = 10; g.strokeStyle = 'rgba(255,200,200,0.6)'; g.lineWidth = 4;
-    for (let i = 0; i < 14; i++) { const a = i / 14 * TAU; g.beginPath();
-      g.moveTo(Math.cos(a) * r * 0.5, Math.sin(a) * r * 0.5);
-      g.lineTo(Math.cos(a) * r * 0.74, Math.sin(a) * r * 0.74); g.stroke(); }
-    g.shadowBlur = 0; g.fillStyle = 'rgba(120,10,10,0.85)';
-    g.beginPath(); g.arc(0, 0, r * 0.3, 0, TAU); g.fill();
-    g.fillStyle = '#ffd9d9'; g.beginPath(); g.arc(-r * 0.1, -r * 0.1, r * 0.1, 0, TAU); g.fill();
+  // --- Macrophage Sentinel: menacing ruffled red immune cell -------------
+  SPR.macrophage = makeSprite(300, (g, r) => {
+    g.shadowColor = '#ff3a3a'; g.shadowBlur = 55;
+    const grad = g.createRadialGradient(-r * 0.12, -r * 0.12, r * 0.1, 0, 0, r * 0.78);
+    grad.addColorStop(0, '#ffd2d2'); grad.addColorStop(0.4, '#ff7a7a'); grad.addColorStop(1, '#8a1414');
+    g.fillStyle = grad; g.beginPath();
+    const lobes = 22; for (let i = 0; i <= lobes; i++) { const a = i / lobes * TAU, rr = r * (0.64 + 0.06 * Math.sin(a * 6) + 0.03 * Math.sin(a * 13)), x = Math.cos(a) * rr, y = Math.sin(a) * rr; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.closePath(); g.fill();
+    g.shadowBlur = 12; g.strokeStyle = 'rgba(255,180,180,0.5)'; g.lineWidth = r * 0.02;
+    for (let i = 0; i < 22; i++) { const a = i / 22 * TAU; g.beginPath(); g.moveTo(Math.cos(a) * r * 0.5, Math.sin(a) * r * 0.5); g.lineTo(Math.cos(a) * r * 0.72, Math.sin(a) * r * 0.72); g.stroke(); }
+    g.shadowBlur = 0; g.fillStyle = 'rgba(180,30,30,0.6)';
+    for (let i = 0; i < 7; i++) { const a = i / 7 * TAU + 0.4, x = Math.cos(a) * r * 0.38, y = Math.sin(a) * r * 0.38; g.beginPath(); g.arc(x, y, r * 0.07, 0, TAU); g.fill(); }
+    g.fillStyle = 'rgba(90,8,8,0.9)'; g.beginPath(); g.arc(0, 0, r * 0.27, 0, TAU); g.fill();
+    g.fillStyle = '#ffcaca'; g.beginPath(); g.arc(-r * 0.09, -r * 0.09, r * 0.09, 0, TAU); g.fill();
   });
   // --- Pickups -----------------------------------------------------------
-  SPR.biomass = makeSprite(22, (g, r) => {
-    g.shadowColor = '#2ff6ff'; g.shadowBlur = 12; g.fillStyle = '#bff8ff';
-    g.beginPath(); g.moveTo(0, -r * 0.7); g.lineTo(r * 0.55, 0); g.lineTo(0, r * 0.7); g.lineTo(-r * 0.55, 0);
-    g.closePath(); g.fill();
-    g.shadowBlur = 0; g.fillStyle = '#2ff6ff';
-    g.beginPath(); g.moveTo(0, -r * 0.4); g.lineTo(r * 0.32, 0); g.lineTo(0, r * 0.4); g.lineTo(-r * 0.32, 0);
-    g.closePath(); g.fill();
+  SPR.biomass = makeSprite(28, (g, r) => {       // XP — faceted cyan biomass crystal
+    g.shadowColor = '#2ff6ff'; g.shadowBlur = 15;
+    const grad = g.createLinearGradient(0, -r * 0.72, 0, r * 0.6);
+    grad.addColorStop(0, '#e2fdff'); grad.addColorStop(0.5, '#5ff0ff'); grad.addColorStop(1, '#159fc2');
+    g.fillStyle = grad; g.beginPath(); g.moveTo(0, -r * 0.72); g.lineTo(r * 0.5, -r * 0.1); g.lineTo(r * 0.3, r * 0.6); g.lineTo(-r * 0.3, r * 0.6); g.lineTo(-r * 0.5, -r * 0.1); g.closePath(); g.fill();
+    g.shadowBlur = 0; g.strokeStyle = 'rgba(220,255,255,0.7)'; g.lineWidth = 1; g.stroke();
+    g.fillStyle = 'rgba(255,255,255,0.55)'; g.beginPath(); g.moveTo(0, -r * 0.5); g.lineTo(r * 0.16, -r * 0.05); g.lineTo(0, r * 0.12); g.lineTo(-r * 0.16, -r * 0.05); g.closePath(); g.fill();
   });
   SPR.biomassBig = makeSprite(30, (g, r) => {
     g.shadowColor = '#6dff8a'; g.shadowBlur = 16; g.fillStyle = '#d6ffe0';
@@ -1534,7 +1643,7 @@ function damageEnemy(e, amount, opts = {}) {
   const amt = amount * (1 + (e.amplify || 0));
   e.hp -= amt;
   e.hitFlash = 0.12;
-  if (!opts.silent) spawnFloater(e.x, e.y - e.r, Math.round(amt).toString(), opts.crit ? '#ffd166' : '#ffffff', opts.crit);
+  if (!opts.silent) { spawnFloater(e.x, e.y - e.r, Math.round(amt).toString(), opts.crit ? '#ffd166' : '#ffffff', opts.crit); sfx('hit'); }
   // Knockback (juggernaut & boss are immune).
   if (opts.knockback && !e.kbImmune) {
     const a = opts.angle != null ? opts.angle : angTo(opts.fromX || game.player.x, opts.fromY || game.player.y, e.x, e.y);
@@ -1555,6 +1664,7 @@ function killEnemy(e, opts = {}) {
   const def = e.def;
   game.kills++;
   game.killsByType[e.type] = (game.killsByType[e.type] || 0) + 1;
+  sfx(e.boss ? 'apex' : 'kill');
   // Objective hooks: count purge-zone kills; reward the Golden Plasmid.
   const obj = game.objective;
   if (obj && obj.type === 'purge' && dist2(e.x, e.y, obj.x, obj.y) < obj.r * obj.r) obj.count++;
@@ -1612,6 +1722,7 @@ function damagePlayer(raw, fromX, fromY) {
     game.shake = Math.max(game.shake, Math.min(14, 5 + dmg * 0.2));
     game.flash = 0.18; game.flashColor = 'rgba(255,60,60,';
     spawnFloater(p.x, p.y - p.r, '-' + Math.round(dmg), '#ff7a7a');
+    sfx(p.hp <= 0 ? 'boss' : 'hurt');
     if (p.hp <= 0) { p.hp = 0; endRun(false); }
   }
 }
@@ -1637,10 +1748,10 @@ function spawnEnemy(typeId, x, y, opts = {}) {
   const hpScale = Math.pow(1 + 0.015 * t, 1.1);
   e.maxHp = def.hp * hpScale * (opts.hpMul || 1);
   e.hp = e.maxHp;
-  // EnemyDamage(t) = Base · (1 + 0.008t)
-  e.damage = def.damage * (1 + 0.008 * t) * (opts.dmgMul || 1);
-  // EnemySpeed(t) = min(Base·(1+0.002t), Base·1.5)
-  e.speed = Math.min(def.speed * (1 + 0.002 * t), def.speed * 1.5);
+  // EnemyDamage(t) = Base · (1 + 0.005t)   (was 0.008 — late-game hits were brutal)
+  e.damage = def.damage * (1 + 0.005 * t) * (opts.dmgMul || 1);
+  // EnemySpeed(t) = min(Base·(1+0.0014t), Base·1.35)  (gentler; nothing out-kites the player)
+  e.speed = Math.min(def.speed * (1 + 0.0014 * t), def.speed * 1.35);
   e.r = def.radius * (opts.scale || 1);
   e.boss = !!def.boss && !opts.asClone; e.elite = !!def.elite && !opts.asClone;
   e.bossClone = !!opts.asClone;
@@ -1740,7 +1851,7 @@ function updateDirector(dt) {
     const pool = activeTypes(t);
     if (pool.length) {
       // density grows with time; spawn a small burst per tick late-game
-      const burst = 1 + Math.floor(t / 240);
+      const burst = 1 + Math.floor(t / 300);
       for (let i = 0; i < burst && dir.weight < dir.cap; i++) spawnRingEnemy(weightedPickType(pool));
     }
     dir.spawnTimer = clamp(0.55 - t * 0.00035, 0.07, 0.55);
@@ -1767,9 +1878,9 @@ function triggerExtinctionEvent(endless = false) {
   const boss = spawnEnemy('macrophage', game.player.x, game.player.y - camHalfDiag() - 120, { hpMul });
   game.boss = boss; game.bossSpawned = true;
   bigBanner(endless ? `WAVE ${game.director.endlessWave} · MACROPHAGE SENTINEL` : 'EXTINCTION EVENT — MACROPHAGE SENTINEL');
-  game.shake = 24; game.flash = 0.4; game.flashColor = 'rgba(255,40,40,';
+  game.shake = 24; game.flash = 0.4; game.flashColor = 'rgba(255,40,40,'; sfx('boss');
 }
-function announceElite() { bigBanner('⚠ ELITE: AMOEBOID PSEUDOPOD'); game.shake = 12; }
+function announceElite() { bigBanner('⚠ ELITE: AMOEBOID PSEUDOPOD'); game.shake = 12; sfx('boss'); }
 
 /* Remove without drops/specials (used by the field-wipe). */
 function killEnemyQuiet(e) {
@@ -1983,6 +2094,7 @@ function updateWeapons(dt) {
     w.timer -= dt;
     if (w.timer <= 0) {
       fireFn(w, s, p);
+      if (apexId !== 'vortex') sfx('shoot');              // vortex is continuous — don't machine-gun the blip
       w.timer += Math.max(0.04, cd);
       if (w.timer < 0) w.timer = cd;                      // guard against spiral after long pauses
     }
@@ -2288,11 +2400,11 @@ function updateEnemies(dt) {
           const sway = Math.sin(e.phase) * e.speed * 0.4;     // gentler weave -> easier to hit
           // ATP dash: brief wind-up telegraph, then a slower lunge (1.6× not 2.1×)
           e.dashCd -= dt;
-          if (e.dashWind > 0) { e.dashWind -= dt; vx = Math.cos(a2p) * e.speed * 0.25; vy = Math.sin(a2p) * e.speed * 0.25;
+          if (e.dashWind > 0) { e.dashWind -= dt; vx = Math.cos(a2p) * e.speed * 0.2; vy = Math.sin(a2p) * e.speed * 0.2;
             if (e.dashWind <= 0) { e.dashT = 1.2; e.dashAng = a2p; } }
-          else if (e.dashT > 0) { e.dashT -= dt; vx = Math.cos(e.dashAng) * e.speed * 1.6; vy = Math.sin(e.dashAng) * e.speed * 1.6; }
+          else if (e.dashT > 0) { e.dashT -= dt; vx = Math.cos(e.dashAng) * e.speed * 1.45; vy = Math.sin(e.dashAng) * e.speed * 1.45; }
           else {
-            if (dToP < 130 && e.dashCd <= 0) { e.dashWind = 0.35; e.dashCd = 5.0; }
+            if (dToP < 120 && e.dashCd <= 0) { e.dashWind = 0.45; e.dashCd = 6.0; }
             vx = Math.cos(a2p) * e.speed + Math.cos(perp) * sway;
             vy = Math.sin(a2p) * e.speed + Math.sin(perp) * sway;
           }
@@ -2498,11 +2610,11 @@ function updatePickups(dt) {
 }
 function collectPickup(pk) {
   const p = game.player;
-  if (pk.kind === 'xp') { game.xpOrbsAlive--; gainXP(pk.value); }
-  else if (pk.kind === 'coin') { gainCoins(pk.value); spawnFloater(p.x, p.y - p.r - 8, '+' + pk.value + '🪙', '#ffd166'); }
-  else if (pk.kind === 'heal') { const h = Math.min(p.maxHp - p.hp, pk.value); p.hp += h; spawnFloater(p.x, p.y - p.r, '+' + Math.round(h) + ' HP', '#6dff8a'); }
-  else if (pk.kind === 'nutrient') { spawnFloater(p.x, p.y - p.r - 8, '🧪 spore', '#9dff5f'); spawnParticles(pk.x, pk.y, '#9dff5f', 6, { life: 0.3 }); }
-  else if (pk.kind === 'chest') { openLootChest(); }
+  if (pk.kind === 'xp') { game.xpOrbsAlive--; gainXP(pk.value); sfx('xp'); }
+  else if (pk.kind === 'coin') { gainCoins(pk.value); spawnFloater(p.x, p.y - p.r - 8, '+' + pk.value + '🪙', '#ffd166'); sfx('coin'); }
+  else if (pk.kind === 'heal') { const h = Math.min(p.maxHp - p.hp, pk.value); p.hp += h; spawnFloater(p.x, p.y - p.r, '+' + Math.round(h) + ' HP', '#6dff8a'); sfx('heal'); }
+  else if (pk.kind === 'nutrient') { spawnFloater(p.x, p.y - p.r - 8, '🧪 spore', '#9dff5f'); spawnParticles(pk.x, pk.y, '#9dff5f', 6, { life: 0.3 }); sfx('coin'); }
+  else if (pk.kind === 'chest') { sfx('chest'); openLootChest(); }
   spawnParticles(pk.x, pk.y, '#bff8ff', 4, { life: 0.3, speed: 70 });
 }
 
@@ -2664,8 +2776,8 @@ function applyBoost(pad) {
   game.boostLog.push({ s: stat.id, r: pad.rarityIdx });
   recomputeStats();
   const msg = rar.dot + ' ' + rar.name + ' BOOST — ' + stat.icon + ' ' + stat.fmt(v);
-  if (rar.id === 'orange') { bigBanner(msg, 3.2); game.shake = Math.max(game.shake, 10); game.flash = 0.2; game.flashColor = 'rgba(255,157,58,'; }
-  else toast(msg, 2.8);
+  if (rar.id === 'orange') { bigBanner(msg, 3.2); game.shake = Math.max(game.shake, 10); game.flash = 0.2; game.flashColor = 'rgba(255,157,58,'; sfx('apex'); }
+  else { toast(msg, 2.8); sfx('boost'); }
   spawnRing(pad.x, pad.y, rar.color, pad.r * 2.2, 0.5);
   spawnParticles(pad.x, pad.y, rar.color, 26, { speed: 240, life: 0.7 });
 }
@@ -2745,6 +2857,7 @@ function rewardObjective() {
   if (chance(0.5)) spawnPickup('chest', o.x, o.y, 1);
   bigBanner('✔ OBJECTIVE COMPLETE — +' + coins + '🪙', 3);
   game.shake = Math.max(game.shake, 8); game.flash = 0.2; game.flashColor = 'rgba(120,255,160,';
+  sfx('objective');
   clearObjectiveEntities(o); game.objective = null;
   openMutationChoice();          // the reward: pick a stackable mutation
 }
@@ -3369,7 +3482,7 @@ function getLevelUpChoices() {
 }
 function openLevelUp() {
   if (game.state === 'apex') return;                 // apex takes precedence
-  game.state = 'levelup';
+  game.state = 'levelup'; sfx('level');
   const choices = getLevelUpChoices();
   const wrap = $('levelup-cards'); wrap.innerHTML = '';
   $('levelup-title').textContent = 'EVOLUTIONARY PRESSURE';
@@ -3438,7 +3551,7 @@ function doReroll() {
 
 /* ---- Apex Mutation modal ---- */
 function openApex(apexDef) {
-  game.state = 'apex'; game.apexOffered[apexDef.base] = true;
+  game.state = 'apex'; game.apexOffered[apexDef.base] = true; sfx('apex');
   const wrap = $('apex-cards'); wrap.innerHTML = '';
   const card = document.createElement('div'); card.className = 'card apex';
   const baseDef = WEAPON_BY_ID[apexDef.base];
@@ -3469,7 +3582,7 @@ function getMutationChoices() {
 function openMutationChoice() {
   const choices = getMutationChoices();
   if (!choices.length) { gainCoins(150); bigBanner('🧬 GENOME SATURATED — +150🪙', 2.6); resumeRun(); return; }
-  game.state = 'mutation';
+  game.state = 'mutation'; sfx('mutation');
   const wrap = $('mutation-cards'); wrap.innerHTML = '';
   choices.forEach((m, i) => wrap.appendChild(buildMutationCard(m, i)));
   showOverlay('mutation-modal');
@@ -3827,7 +3940,7 @@ function devWindow(d) {
   return '—';
 }
 function devScale(d, t) {
-  return { hp: Math.round(d.hp * Math.pow(1 + 0.015 * t, 1.1)), dmg: Math.round(d.damage * (1 + 0.008 * t)), spd: Math.round(Math.min(d.speed * (1 + 0.002 * t), d.speed * 1.5)) };
+  return { hp: Math.round(d.hp * Math.pow(1 + 0.015 * t, 1.1)), dmg: Math.round(d.damage * (1 + 0.005 * t)), spd: Math.round(Math.min(d.speed * (1 + 0.0014 * t), d.speed * 1.35)) };
 }
 function buildDev() {
   const body = $('dev-body'); let h = '';
@@ -3965,13 +4078,20 @@ function setupSaveModal() {
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-act]'); if (!btn) return;
   const act = btn.getAttribute('data-act');
+  sfx('ui');
   ({
     play: openCharSelect, shop: openShop, codex: openCodex, reset: resetSave, dev: openDev,
     continue: resumeSavedRun, savedata: openSaveModal, savequit: saveAndExit,
     'back-main': backToMenu, resume: () => resumeRun(), quit: quitRun,
     retry: () => startRun(game.mode), 'to-shop': openShop, 'to-menu': backToMenu,
+    sound: toggleSound,
   })[act]?.();
 });
+/* Menu sound toggle (mute / unmute) — updates its own label. */
+function toggleSound() {
+  const on = Sound.toggle();
+  const b = $('btn-sound'); if (b) b.textContent = on ? '🔊 Sound: On' : '🔇 Sound: Off';
+}
 
 /* ======================================================================== *
  *  SECTION 21 — SPATIAL REBUILD, THE GAME LOOP & BOOTSTRAP                   *
@@ -4043,10 +4163,14 @@ window.addEventListener('error', (ev) => {
 
 function init() {
   loadSave();
+  Sound.init();
   buildSprites();
   setupCanvas();
   setupInput();
   setupSaveModal();
+  // Sound settings UI: reflect saved prefs, wire the volume slider.
+  const sb = $('btn-sound'); if (sb) sb.textContent = Sound.on ? '🔊 Sound: On' : '🔇 Sound: Off';
+  const vs = $('vol-slider'); if (vs) { vs.value = Math.round(Sound.vol * 100); vs.addEventListener('input', () => Sound.setVol(vs.value / 100)); }
   // Persist the run if the player tabs away or closes the page mid-fight.
   document.addEventListener('visibilitychange', () => { if (document.hidden) saveRunSnapshot(); });
   window.addEventListener('beforeunload', () => { saveRunSnapshot(); });

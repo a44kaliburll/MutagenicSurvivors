@@ -27,7 +27,9 @@ jobs:
         run: npm install
 
       - name: Build Windows installer + portable exe
-        run: npm run dist:win
+        # --publish never: just build the files; this workflow's own steps
+        # below handle the artifact upload and the tagged Release.
+        run: npm run dist:win -- --publish never
 
       - name: Upload .exe artifacts
         uses: actions/upload-artifact@v4
