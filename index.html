@@ -303,6 +303,8 @@
   .card.locked { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.6); }
   .card.locked:hover { transform: none; box-shadow: none; border-color: rgba(74,226,255,0.25); }
   .card.sel { border-color: var(--bio-green); box-shadow: 0 0 22px rgba(109,255,138,0.35); }
+  .card.pad-focus { border-color: var(--bio-cyan) !important;
+    box-shadow: 0 0 0 3px rgba(47,246,255,0.55), 0 14px 40px rgba(47,246,255,0.3) !important; transform: translateY(-5px); }
 
   /* ---- Dev asset inspector ---- */
   #dev-modal .panel { max-width: 1080px; width: 95vw; max-height: 92vh; overflow-y: auto; }
@@ -382,13 +384,15 @@
       <button class="btn ghost small" data-act="savedata">💾 Save · Backup &amp; Transfer</button>
       <div class="row" style="margin-top:8px; gap:12px;">
         <button class="btn ghost small" id="btn-sound" data-act="sound" style="min-width:0">🔊 Sound: On</button>
+        <button class="btn ghost small" id="btn-music" data-act="music" style="min-width:0">🎵 Music: On</button>
         <input id="vol-slider" type="range" min="0" max="100" value="60" title="Volume" style="width:130px; accent-color:#2ff6ff;" />
       </div>
     </div>
     <div class="hint">
       Move: <span class="kbd">W</span><span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>
       / <span class="kbd">Arrows</span> / Mouse-hold · Weapons fire automatically<br/>
-      Pause: <span class="kbd">Esc</span> (view your stats &amp; arsenal) · Reroll level-up: <span class="kbd">R</span> · Map: <span class="kbd">M</span>
+      Pause: <span class="kbd">Esc</span> (view your stats &amp; arsenal) · Reroll level-up: <span class="kbd">R</span> · Map: <span class="kbd">M</span><br/>
+      🎮 Controller: Left stick / D-pad move · <span class="kbd">A</span> select · <span class="kbd">B</span> back · <span class="kbd">X</span> reroll · <span class="kbd">Start</span> pause
     </div>
     <div class="credit">Educational survivors prototype · Canvas2D · single-file</div>
   </div>
@@ -958,6 +962,21 @@ const CHARACTERS = [
     desc: 'A colonial swarm-keeper: sturdier, with a damage head start. Opens with TWO orbiting Mitosis Clones.',
     fact: 'Volvox is a hollow sphere of hundreds–thousands of cells living as one — an early experiment in multicellular life.',
     unlock: { stat: 'bestTime', value: 600, hint: 'Survive 10:00 in a single run.' } },
+  { id: 'tardigrade', name: 'Tardigrade', cell: 'Hypsibius dujardini', icon: '🐻', color: '#ffb066',
+    weapon: 'cilia', mods: { maxHp: 1.55, speed: 0.84, armorFlat: 2, hazardImmune: true },
+    desc: 'The indestructible water bear: +55% HP, innate armor, and total immunity to environmental hazards — but slow. Opens with Cilia Whips.',
+    fact: 'Tardigrades survive boiling, freezing, the vacuum of space and lethal radiation by drying into a "tun" — life\'s ultimate survivor.',
+    unlock: { stat: 'bossKills', value: 2, hint: 'Defeat the Macrophage Sentinel twice (lifetime).' } },
+  { id: 'physarum', name: 'Physarum', cell: 'Physarum polycephalum', icon: '🟡', color: '#d4ff3a',
+    weapon: 'spore', mods: { speed: 1.06, area: 1.1, slimeTrail: true },
+    desc: 'A slime-mold zone controller. Lays a living trail: YOU move faster on it, enemies bog down in it. Opens with Spore Burst.',
+    fact: 'Physarum is one giant many-nucleated cell that can solve mazes and rebuild efficient transport networks with no brain at all.',
+    unlock: { stat: 'bestEndless', value: 600, hint: 'Survive 10:00 in Endless mode.' } },
+  { id: 'radiolarian', name: 'Radiolarian', cell: 'Radiolaria', icon: '🔆', color: '#cdefff',
+    weapon: 'trichocyst', mods: { maxHp: 0.92, maxShield: 2.6, reflect: true },
+    desc: 'An armored geometric drifter. A thick silica shell holds a huge regenerating barrier that reflects enemy fire back at them. Opens with Trichocyst Volley.',
+    fact: 'Radiolarians build dazzling silica skeletons of mathematical symmetry — microscopic glass sculptures that astonished Ernst Haeckel.',
+    unlock: { stat: 'totalKills', value: 8000, hint: 'Defeat 8,000 microbes (lifetime).' } },
 ];
 const CHAR_BY_ID = Object.fromEntries(CHARACTERS.map(c => [c.id, c]));
 
@@ -976,6 +995,12 @@ const CHAR_VIZ = {
                   nucleus: ['rgba(120,82,12,0.85)', 'rgba(255,232,165,0.9)'], feature: 'bud', elong: 1.0 },
   volvox:       { glow: '#3dffba', body: ['rgba(205,255,238,0.92)', 'rgba(61,255,186,0.42)', 'rgba(47,200,150,0.05)'],
                   nucleus: ['rgba(10,55,40,0.6)', 'rgba(150,255,210,0.85)'], feature: 'colony', elong: 1.0 },
+  tardigrade:   { glow: '#ffb066', body: ['rgba(255,224,180,0.96)', 'rgba(210,150,80,0.55)', 'rgba(150,95,40,0.08)'],
+                  nucleus: ['rgba(90,55,20,0.85)', 'rgba(255,224,170,0.9)'], feature: 'tardigrade', elong: 1.28 },
+  physarum:     { glow: '#d4ff3a', body: ['rgba(238,255,170,0.94)', 'rgba(190,235,40,0.5)', 'rgba(140,180,20,0.06)'],
+                  nucleus: ['rgba(70,90,10,0.7)', 'rgba(225,255,150,0.9)'], feature: 'slime', elong: 1.05 },
+  radiolarian:  { glow: '#cdefff', body: ['rgba(235,250,255,0.95)', 'rgba(150,210,240,0.45)', 'rgba(120,170,210,0.06)'],
+                  nucleus: ['rgba(40,70,90,0.75)', 'rgba(210,240,255,0.9)'], feature: 'radiolarian', elong: 1.0 },
 };
 function charViz() { return CHAR_VIZ[game.character] || CHAR_VIZ.paramecium; }
 
@@ -986,6 +1011,7 @@ function charUnlocked(c) {
   const u = c.unlock || {};
   if (u.always) return true;
   if (u.stat === 'bestTime')   return (SAVE.best.time || 0) >= u.value;
+  if (u.stat === 'bestEndless') return (SAVE.best.endless || 0) >= u.value;
   if (u.stat === 'bestLevel')  return (SAVE.best.level || 0) >= u.value;
   if (u.stat === 'totalKills') return (SAVE.stats.totalKills || 0) >= u.value;
   if (u.stat === 'bossKills')  return (SAVE.stats.bossKills || 0) >= u.value;
@@ -1163,7 +1189,7 @@ const DEFAULT_SAVE = () => ({
   stats: { totalKills: 0, runs: 0, bossKills: 0 },  // lifetime metrics (drive char unlocks)
   chars: { paramecium: true },                      // unlocked cell lines
   lastChar: 'paramecium',                           // last picked cell
-  sound: { on: true, vol: 0.6 },                    // audio preferences
+  sound: { on: true, vol: 0.6, music: true },       // audio preferences
   suspended: null           // snapshot of an in-progress run (for "Continue Run")
 });
 let SAVE = DEFAULT_SAVE();
@@ -1285,6 +1311,102 @@ const Sound = {
   }
 };
 function sfx(name) { Sound.play(name); }
+
+/* ======================================================================== *
+ *  SECTION 8c — CHIPTUNE MUSIC SEQUENCER                                     *
+ *  A live 8-bit jam: square-wave bass, bubbly triangle arpeggios, a pulse    *
+ *  lead melody and noise drums, scheduled on the Web Audio clock with a      *
+ *  lookahead timer. Loops a 4-bar Am-F-C-G progression; boss fights bump the *
+ *  intensity (double-time hats, octave-doubled lead). Shares Sound.master so  *
+ *  the one volume slider rules everything; runs through a gentle lowpass so   *
+ *  the square waves never get harsh. Zero audio files — all synthesised.     *
+ * ======================================================================== */
+function mtof(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+const Music = {
+  on: true, vol: 0.5, gain: null, lp: null, timer: null, playing: false,
+  step: 0, nextTime: 0, bpm: 134, schedAhead: 0.18, intensity: 0, _leadAt: null,
+  roots: [45, 41, 48, 43],                                   // Am F C G bass roots (oct 2-3)
+  triads: [[57, 60, 64], [53, 57, 60], [60, 64, 67], [55, 59, 62]],   // chord tones (oct 4)
+  lead: [                                                     // [stepInLoop, midi, dur16ths] — A-minor pentatonic riff
+    [0, 69, 2], [2, 72, 1], [3, 71, 1], [4, 69, 2], [8, 67, 2], [11, 69, 1], [12, 72, 2], [14, 74, 2],
+    [16, 65, 2], [19, 69, 1], [20, 72, 2], [24, 71, 2], [27, 69, 1], [28, 65, 2],
+    [32, 72, 2], [35, 76, 1], [36, 79, 2], [40, 76, 2], [43, 72, 1], [44, 74, 2],
+    [48, 67, 2], [50, 71, 1], [51, 74, 1], [52, 79, 3], [56, 74, 2], [59, 71, 1], [60, 69, 4],
+  ],
+  init() { if (SAVE.sound && typeof SAVE.sound.music === 'boolean') this.on = SAVE.sound.music; },
+  _save() { SAVE.sound = Object.assign({ on: Sound.on, vol: Sound.vol }, SAVE.sound, { music: this.on }); commitSave(); },
+  _bus() {
+    const c = Sound.ctx; if (!c || this.gain) return;
+    this.lp = c.createBiquadFilter(); this.lp.type = 'lowpass'; this.lp.frequency.value = 3600; this.lp.Q.value = 0.4;
+    this.gain = c.createGain(); this.gain.gain.value = this.vol;
+    this.gain.connect(this.lp); this.lp.connect(Sound.master);
+    this._leadAt = {}; for (const e of this.lead) this._leadAt[e[0]] = [e[1], e[2]];
+  },
+  voice(midi, dur, type, peak, time, detune) {
+    const c = Sound.ctx; if (!c) return;
+    const o = c.createOscillator(); o.type = type; o.frequency.value = mtof(midi); if (detune) o.detune.value = detune;
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, time); g.gain.exponentialRampToValueAtTime(peak, time + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    o.connect(g); g.connect(this.gain); o.start(time); o.stop(time + dur + 0.03);
+  },
+  drum(kind, time) {
+    const c = Sound.ctx; if (!c) return;
+    if (kind === 'kick') {
+      const o = c.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(150, time); o.frequency.exponentialRampToValueAtTime(48, time + 0.11);
+      const g = c.createGain(); g.gain.setValueAtTime(0.0001, time); g.gain.exponentialRampToValueAtTime(0.6, time + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, time + 0.16);
+      o.connect(g); g.connect(this.gain); o.start(time); o.stop(time + 0.18);
+    } else {
+      const isS = kind === 'snare', len = isS ? 0.14 : 0.035;
+      const n = Math.max(1, Math.floor(c.sampleRate * len)), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+      const s = c.createBufferSource(); s.buffer = buf;
+      const f = c.createBiquadFilter(); f.type = isS ? 'bandpass' : 'highpass'; f.frequency.value = isS ? 1900 : 7000; f.Q.value = isS ? 1.2 : 0.7;
+      const g = c.createGain(); g.gain.setValueAtTime(0.0001, time); g.gain.exponentialRampToValueAtTime(isS ? 0.2 : 0.06, time + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, time + len);
+      s.connect(f); f.connect(g); g.connect(this.gain); s.start(time); s.stop(time + len + 0.02);
+    }
+  },
+  _tick(s, time) {
+    const bar = (s / 16) | 0, b = s % 16, six = (60 / this.bpm) / 4;
+    const root = this.roots[bar], triad = this.triads[bar];
+    // bass — syncopated root/fifth
+    if (b === 0 || b === 6) this.voice(root, six * 2.2, 'square', 0.16, time, 4);
+    else if (b === 8) this.voice(root + 7, six * 1.6, 'square', 0.14, time);
+    else if (b === 10 || b === 14) this.voice(root + (b === 14 ? 12 : 0), six * 1.4, 'triangle', 0.12, time);
+    // arp — bubbly triangle every 16th
+    this.voice(triad[b % 3] + (b % 6 < 3 ? 0 : 12), six * 0.9, 'triangle', 0.05, time);
+    // drums
+    if (b === 0 || b === 8) this.drum('kick', time);
+    if (b === 4 || b === 12) this.drum('snare', time);
+    if (b % 2 === 0) this.drum('hat', time);
+    if (this.intensity > 0) { if (b % 2 === 1) this.drum('hat', time); if (b === 4 || b === 12) this.drum('kick', time); }
+    // lead melody
+    const ld = this._leadAt[s];
+    if (ld) { this.voice(ld[0], six * ld[1] * 0.95, 'square', this.intensity > 0 ? 0.15 : 0.1, time, 6);
+      if (this.intensity > 0) this.voice(ld[0] + 12, six * ld[1] * 0.9, 'square', 0.05, time, -6); }
+  },
+  _scheduler() {
+    const c = Sound.ctx; if (!c || !this.playing) return;
+    while (this.nextTime < c.currentTime + this.schedAhead) {
+      this._tick(this.step % 64, this.nextTime);
+      this.nextTime += (60 / this.bpm) / 4;
+      this.step++;
+    }
+  },
+  start() {
+    if (!this.on) return; const c = Sound.ensure(); if (!c) return;
+    this._bus(); if (this.playing) return;
+    this.playing = true; this.step = 0; this.nextTime = c.currentTime + 0.12;
+    this.timer = setInterval(() => this._scheduler(), 30);
+  },
+  stop() { this.playing = false; if (this.timer) { clearInterval(this.timer); this.timer = null; } },
+  setIntensity(n) { this.intensity = n; },
+  toggle() {
+    this.on = !this.on; this._save();
+    if (!this.on) this.stop();
+    else if (game.state !== 'menu' && game.player) this.start();
+    return this.on;
+  }
+};
 
 /* ======================================================================== *
  *  SECTION 9 — GLOW SPRITE FACTORY                                          *
@@ -1547,8 +1669,9 @@ function createPlayer() {
     baseSpeed, speed: baseSpeed,
     // Health component (incl. regenerating cell-wall shield)
     baseMaxHp, maxHp: baseMaxHp, hp: baseMaxHp,
-    shieldHp: 30, maxShield: 30, shieldRegenDelay: 0, shieldRegenRate: 7, regen: 0.5,
-    armor: armTier, invuln: 0, hitFlash: 0,
+    shieldHp: Math.round(30 * (cm.maxShield || 1)), maxShield: Math.round(30 * (cm.maxShield || 1)),
+    shieldRegenDelay: 0, shieldRegenRate: cm.maxShield ? 14 : 7, regen: 0.5,
+    armor: armTier, invuln: 0, hitFlash: 0, onSlime: false, slimeT: 0,
     // Progression
     level: 1, xp: 0, xpNext: xpForLevel(1),
     // Registries
@@ -1596,7 +1719,7 @@ function recomputeStats() {
   p.mult.pickup = 1 + (tier('phyto') ? PASSIVE_BY_ID.phyto.values[tier('phyto') - 1] : 0);
   // Cytoskeleton -> flat damage reduction + max HP bonus (+ meta armor).
   const cytoT = tier('cyto');
-  p.mult.flatReduce = (cytoT ? PASSIVE_BY_ID.cyto.values[cytoT - 1] : 0) + p.armor;
+  p.mult.flatReduce = (cytoT ? PASSIVE_BY_ID.cyto.values[cytoT - 1] : 0) + p.armor + ((p.cmods && p.cmods.armorFlat) || 0);
   const hpBonus = cytoT ? PASSIVE_BY_ID.cyto.hpBonus[cytoT - 1] : 0;
   const newMax = Math.round(p.baseMaxHp * (1 + hpBonus) * bo.hpMul * (1 + adapt('vitality') * 0.08));
   if (newMax !== p.maxHp) { const ratio = p.hp / p.maxHp; p.maxHp = newMax; p.hp = Math.min(p.maxHp, Math.round(p.maxHp * ratio)); }
@@ -1687,10 +1810,17 @@ function damageEnemy(e, amount, opts = {}) {
   if (e.dead) return;
   if (e.invulnShield) { if (!opts.silent) spawnFloater(e.x, e.y - e.r, 'IMMUNE', '#7fa8b8'); return; }
   // Acidic "armor strip" amplifies all damage taken while debuffed.
-  const amt = amount * (1 + (e.amplify || 0));
+  let amt = amount * (1 + (e.amplify || 0));
+  // SYNERGY · Cytolysis: a crit on a meaningfully-slowed cell shatters its wall.
+  const shatter = !!opts.crit && !opts.silent && (e.slow || 0) >= 0.15;
+  if (shatter) amt *= 1.6;
   e.hp -= amt;
   e.hitFlash = 0.12;
-  if (!opts.silent) { spawnFloater(e.x, e.y - e.r, Math.round(amt).toString(), opts.crit ? '#ffd166' : '#ffffff', opts.crit); sfx('hit'); }
+  if (!opts.silent) {
+    spawnFloater(e.x, e.y - e.r, Math.round(amt).toString(), shatter ? '#9fe0ff' : (opts.crit ? '#ffd166' : '#ffffff'), opts.crit || shatter);
+    if (shatter) { spawnFloater(e.x, e.y - e.r - 16, 'SHATTER', '#9fe0ff', true); spawnRing(e.x, e.y, '#9fe0ff', e.r * 2.4, 0.3); }
+    sfx('hit');
+  }
   // Knockback (juggernaut & boss are immune).
   if (opts.knockback && !e.kbImmune) {
     const a = opts.angle != null ? opts.angle : angTo(opts.fromX || game.player.x, opts.fromY || game.player.y, e.x, e.y);
@@ -1701,7 +1831,28 @@ function damageEnemy(e, amount, opts = {}) {
   if (opts.bleedPct && opts.bleedDur) { e.bleed = opts.bleedPct; e.bleedDmgBase = opts.bleedBase || amount; e.bleedT = opts.bleedDur; e.bleedTick = 0; }
   if (opts.paralyze) { e.paralyze = opts.paralyze; }
   if (opts.slow) { e.slow = Math.max(e.slow || 0, opts.slow); e.slowT = 0.4; }
+  checkSynergy(e);
   if (e.hp <= 0) killEnemy(e, opts);
+}
+
+/* Status synergies — layering debuffs from DIFFERENT weapons pays off, à la
+ * elemental reactions. (Shatter is handled inline above as it modifies a hit.) */
+function checkSynergy(e) {
+  if (e.dead || (e.synCd || 0) > 0) return;
+  // NECROSIS: corroded (Acidic Vacuoles) + paralysed (Phage Darts) -> the cell
+  // ruptures, blasting neighbours and spreading the corrosion outward.
+  if ((e.amplify || 0) > 0 && (e.paralyze || 0) > 0) {
+    e.synCd = 0.6; e.paralyze = 0;
+    spawnFloater(e.x, e.y - e.r - 6, 'NECROSIS', '#9dff5f', true);
+    spawnRing(e.x, e.y, '#9dff5f', 95, 0.4); spawnParticles(e.x, e.y, '#9dff5f', 14, { speed: 210 });
+    sfx('mutation');
+    const dmg = e.maxHp * 0.18 + 35, list = enemiesInRadius(e.x, e.y, 95);
+    for (let i = 0; i < list.length; i++) {
+      const o = list[i]; if (o.dead || dist2(e.x, e.y, o.x, o.y) > 95 * 95) continue;
+      if (o !== e) { o.amplify = Math.max(o.amplify || 0, 0.3); o.amplifyT = 2.2; }
+      damageEnemy(o, dmg, { silent: true });
+    }
+  }
 }
 
 /* ---- Kill an enemy: drops, specials, particles, recycle ---------------- */
@@ -1722,6 +1873,13 @@ function killEnemy(e, opts = {}) {
     if (obj && obj.type === 'hunt' && obj.target === e) obj.targetDown = true;
   }
   spawnParticles(e.x, e.y, def.glow, e.boss ? 60 : (e.elite ? 28 : 8), { speed: e.boss ? 320 : 160, size: e.boss ? 6 : 3, life: 0.6 });
+  // SYNERGY · Hemorrhage: a bleeding cell bursts on death, spreading bleed to neighbours.
+  if (e.bleed > 0) {
+    spawnParticles(e.x, e.y, '#ff5a5a', 10, { speed: 160 });
+    const bl = enemiesInRadius(e.x, e.y, 85);
+    for (let i = 0; i < bl.length; i++) { const o = bl[i]; if (o.dead || o === e || o.bleedT > 0) continue;
+      if (dist2(e.x, e.y, o.x, o.y) <= 85 * 85) { o.bleed = e.bleed * 0.7; o.bleedDmgBase = e.bleedDmgBase || 10; o.bleedT = 1.6; o.bleedTick = 0; } }
+  }
   spawnRing(e.x, e.y, def.glow, e.r * 2.2, 0.4);
 
   // Special: Lysogenic Virus 8% burst into 3 fast sub-viruses
@@ -1811,7 +1969,7 @@ function spawnEnemy(typeId, x, y, opts = {}) {
   e.mass = e.boss ? 14 : (e.elite ? 6 : (def.weight * 0.35 + 0.7));
   e.hitFlash = 0; e.amplify = 0; e.amplifyT = 0; e.bleed = 0; e.bleedT = 0; e.bleedTick = 0;
   e.paralyze = 0; e.slow = 0; e.slowT = 0; e.contactCd = 0;
-  e.infected = 0; e.infectT = 0; e.charmed = 0;
+  e.infected = 0; e.infectT = 0; e.charmed = 0; e.synCd = 0;
   e.phase = rand(0, TAU); e.dashCd = rand(2, 4); e.dashT = 0;
   e.mortarT = rand(1.2, 2.8); e.anchored = false; e.leechCd = 1.5; e.tendrilT = 0;
   if (opts.sub) { e.speed *= 2; e.angle = opts.dashAngle != null ? opts.dashAngle : rand(0, TAU); e.subLife = 2.2; e.maxHp = e.hp = def.hp; }
@@ -1965,7 +2123,7 @@ function triggerExtinctionEvent(endless = false) {
   game.director.weight = 0;
   const hpMul = endless ? (1 + game.director.endlessWave * 0.6) : 1;
   const boss = spawnEnemy('macrophage', game.player.x, game.player.y - camHalfDiag() - 120, { hpMul });
-  game.boss = boss; game.bossSpawned = true;
+  game.boss = boss; game.bossSpawned = true; Music.setIntensity(1);
   bigBanner(endless ? `WAVE ${game.director.endlessWave} · MACROPHAGE SENTINEL` : 'EXTINCTION EVENT — MACROPHAGE SENTINEL');
   game.shake = 24; game.flash = 0.4; game.flashColor = 'rgba(255,40,40,'; sfx('boss');
 }
@@ -1988,7 +2146,7 @@ function onBossDefeated(e) {
   for (let i = 0; i < 6; i++) spawnPickup('coin', e.x + rand(-40, 40), e.y + rand(-40, 40), 30);
   spawnPickup('chest', e.x, e.y, 1);
   for (let i = 0; i < 3; i++) spawnPickup('power', e.x + rand(-60, 60), e.y + rand(-40, 40), pickPowerType());
-  game.boss = null;
+  game.boss = null; Music.setIntensity(0);
   if (game.mode === 'timed') { game.win = true; setTimeout(() => endRun(true), 1400); }
   else { bigBanner('SENTINEL PURGED — THE SWARM RETURNS'); }
 }
@@ -2200,7 +2358,7 @@ function fireProjectile(o) {
   Object.assign(b, { kind: 'dart', x: 0, y: 0, dx: 0, dy: 0, r: 6, life: 1.5, spr: null, color: '#fff',
     damage: 0, pierce: 0, homing: 0, speed: 0, drag: 0, paralyze: 0, bounce: 0, charm: 0,
     hostile: false, onHit: null, onExpire: null, hitSet: null, spin: 0, rot: 0,
-    canSplit: false, splitHitN: 0, splitEndN: 0, isFragment: false }, o);
+    canSplit: false, splitHitN: 0, splitEndN: 0, isFragment: false, _reflected: false }, o);
   game.projectiles.push(b);
   return b;
 }
@@ -2255,6 +2413,14 @@ function updateProjectiles(dt) {
     if (b.hostile) {
       // enemy bullet vs player
       if (dist2(b.x, b.y, p.x, p.y) < (b.r + p.r) * (b.r + p.r)) {
+        // Radiolarian: while shielded, reflect enemy fire back at double damage.
+        if (p.cmods && p.cmods.reflect && p.shieldHp > 0 && !b._reflected) {
+          const a = angTo(p.x, p.y, b.x, b.y), sp = lenOf(b.dx, b.dy) || 320;
+          b.hostile = false; b._reflected = true; b.damage = (b.damage || 10) * 2;
+          b.dx = Math.cos(a) * sp; b.dy = Math.sin(a) * sp; b.pierce = 2; b.color = '#cdefff'; b.hitSet = new Set();
+          p.shieldRegenDelay = 1.5; spawnParticles(p.x, p.y, '#cdefff', 6, { life: 0.3 }); spawnRing(p.x, p.y, '#cdefff', p.r + 12, 0.25);
+          continue;
+        }
         damagePlayer(b.damage, b.x, b.y); arr[i] = arr[arr.length - 1]; arr.pop(); projPool.release(b); continue;
       }
     } else if (!b.inert) {
@@ -2312,9 +2478,11 @@ function makeAcidPool(x, y, s, p) {
 
 function updateHazards(dt) {
   const arr = game.hazards, p = game.player;
+  p.onSlime = false;                                  // Physarum slime-trail contact (recomputed each frame)
   for (let i = arr.length - 1; i >= 0; i--) {
     const h = arr[i];
     h.life -= dt;
+    if (h.kind === 'slime' && dist2(h.x, h.y, p.x, p.y) < h.r * h.r) p.onSlime = true;
 
     if (h.kind === 'spore') {
       if (!h.armed) { h.arm -= dt; if (h.arm <= 0) h.armed = true; }
@@ -2451,6 +2619,7 @@ function updateEnemies(dt) {
     if (e.slowT > 0) { e.slowT -= dt; if (e.slowT <= 0) e.slow = 0; }
     if (e.amplifyT > 0) { e.amplifyT -= dt; if (e.amplifyT <= 0) e.amplify = 0; }
     if (e.contactCd > 0) e.contactCd -= dt;
+    if (e.synCd > 0) e.synCd -= dt;
     if (e.bleedT > 0) {
       e.bleedT -= dt; e.bleedTick -= dt;
       if (e.bleedTick <= 0) { e.bleedTick = 0.5; const { dmg } = computeDamage(e.bleedDmgBase * e.bleed); damageEnemy(e, dmg, { silent: true }); if (e.dead) continue; }
@@ -2635,7 +2804,73 @@ function updateBoss(e, p, dt) {
 /* ======================================================================== *
  *  SECTION 17 — PLAYER UPDATE, PICKUPS, LEVELING & QUESTS                    *
  * ======================================================================== */
-const input = { up: false, down: false, left: false, right: false, mx: 0, my: 0, mouseDown: false, stick: null };
+const input = { up: false, down: false, left: false, right: false, mx: 0, my: 0, mouseDown: false, stick: null, _fromPad: false };
+
+/* ======================================================================== *
+ *  SECTION 19b — GAMEPAD / CONTROLLER SUPPORT                                *
+ *  Left stick or D-pad moves (reusing the analog touch-stick path). Face     *
+ *  buttons drive the UI: A = confirm / pick the highlighted card, B = back / *
+ *  skip, X = reroll, Start = pause. In any card modal the D-pad / bumpers /  *
+ *  stick move a highlight cursor so the whole game is playable pad-only.      *
+ * ======================================================================== */
+const gpad = { connected: false, prev: {} };
+let padFocus = 0;
+function gpBtn(gp, i) { const b = gp.buttons[i]; return b ? (b.pressed || b.value > 0.5) : false; }
+function gpEdge(name, now, fn) { if (now && !gpad.prev[name]) fn(); gpad.prev[name] = now; }
+function activeCards() {
+  if (game.state === 'levelup') return document.querySelectorAll('#levelup-cards .card');
+  if (game.state === 'mutation') return document.querySelectorAll('#mutation-cards .card');
+  if (game.state === 'apex') return document.querySelectorAll('#apex-cards .card');
+  if ($('char-modal').classList.contains('show')) return document.querySelectorAll('#char-cards .card:not(.locked)');
+  if ($('mode-modal').classList.contains('show')) return document.querySelectorAll('#mode-cards .card');
+  return null;
+}
+function renderPadFocus(cards) {
+  cards = cards || activeCards(); if (!cards || !cards.length) return;
+  if (padFocus >= cards.length) padFocus = 0;
+  cards.forEach((c, i) => c.classList.toggle('pad-focus', i === padFocus));
+}
+function padMoveFocus(d) { const cards = activeCards(); if (!cards || !cards.length) return; padFocus = (padFocus + d + cards.length) % cards.length; renderPadFocus(cards); sfx('ui'); }
+function padConfirm() {
+  if (game.state === 'paused') { resumeRun(); return; }
+  const cards = activeCards();
+  if (cards && cards.length) { cards[Math.min(padFocus, cards.length - 1)].click(); padFocus = 0; return; }
+  const menu = $('menu-main');
+  if (game.state === 'menu' && menu.classList.contains('show')) { const b = menu.querySelector('[data-act="play"]'); if (b) b.click(); }
+}
+function padBack() {
+  if (game.state === 'apex') { const s = $('apex-skip'); if (s) s.click(); return; }
+  if (game.state === 'paused') { resumeRun(); return; }
+  const back = document.querySelector('.overlay.show [data-act="back-main"]'); if (back) back.click();
+}
+function pollGamepad() {
+  if (!navigator.getGamepads) return;
+  const gps = navigator.getGamepads(); let gp = null;
+  for (const g of gps) if (g) { gp = g; break; }
+  if (!gp) { if (gpad.connected) { gpad.connected = false; if (input._fromPad) { input.stick = null; input._fromPad = false; } } return; }
+  if (!gpad.connected) { gpad.connected = true; toast('🎮 Controller connected', 2); }
+
+  const cards = activeCards();
+  const dL = gpBtn(gp, 14), dR = gpBtn(gp, 15), dU = gpBtn(gp, 12), dD = gpBtn(gp, 13);
+  const LB = gpBtn(gp, 4), RB = gpBtn(gp, 5), sx = gp.axes[0] || 0, sy = gp.axes[1] || 0;
+
+  if (cards && cards.length) {                         // a card modal is open -> navigate, don't move
+    gpEdge('navL', dL || LB || sx < -0.55, () => padMoveFocus(-1));
+    gpEdge('navR', dR || RB || sx > 0.55, () => padMoveFocus(1));
+    renderPadFocus(cards);
+    if (input._fromPad) { input.stick = null; input._fromPad = false; }
+  } else {                                             // free movement
+    let ax = sx, ay = sy;
+    if (dU || dD || dL || dR) { ax = (dR ? 1 : 0) - (dL ? 1 : 0); ay = (dD ? 1 : 0) - (dU ? 1 : 0); }
+    if (Math.hypot(ax, ay) > 0.24) { input.stick = { x: ax, y: ay }; input._fromPad = true; }
+    else if (input._fromPad) { input.stick = null; input._fromPad = false; }
+  }
+  gpEdge('A', gpBtn(gp, 0), padConfirm);
+  gpEdge('B', gpBtn(gp, 1), padBack);
+  gpEdge('X', gpBtn(gp, 2), () => { if (game.state === 'levelup') doReroll(); });
+  gpEdge('START', gpBtn(gp, 9) || gpBtn(gp, 8), () => { if (game.state === 'running' || game.state === 'paused') togglePause(); });
+}
+window.addEventListener('gamepadconnected', () => { gpad.connected = true; toast('🎮 Controller connected', 2.4); });
 
 function updatePlayer(dt) {
   const p = game.player;
@@ -2651,7 +2886,15 @@ function updatePlayer(dt) {
   if (p.invertCtrl > 0) { ix = -ix; iy = -iy; p.invertCtrl -= dt; }
   const il = lenOf(ix, iy); if (il > 1) { ix /= il; iy /= il; }
 
-  let spd = p.speed * (p.surge > 0 ? 1.4 : 1) * (p.slipBoost > 0 ? 2 : 1) * (p.powerSpeed > 0 ? 1.6 : 1);
+  let spd = p.speed * (p.surge > 0 ? 1.4 : 1) * (p.slipBoost > 0 ? 2 : 1) * (p.powerSpeed > 0 ? 1.6 : 1) * (p.onSlime ? 1.4 : 1);
+  // Physarum lays a living slime trail behind it (faster for you, sticky for enemies).
+  if (p.cmods && p.cmods.slimeTrail) {
+    p.slimeT -= dt;
+    if (p.slimeT <= 0 && lenOf(p.dx, p.dy) > 12) {
+      p.slimeT = 0.16;
+      makeHazard({ kind: 'slime', x: p.x, y: p.y, r: 38, life: 2.4, slow: 0.4, color: 'rgba(190,235,40,0.13)' });
+    }
+  }
   p.dx = lerp(p.dx, ix * spd, 0.25); p.dy = lerp(p.dy, iy * spd, 0.25);
   p.x += p.dx * dt; p.y += p.dy * dt;
   if (il > 0.01) p.angle = Math.atan2(iy, ix);
@@ -2825,7 +3068,7 @@ function updateEnvironment(dt) {
   game.director.envT -= dt;
   if (game.env.length < target && game.director.envT <= 0) { spawnEnvHazard(); game.director.envT = 0.6; }
 
-  const inv = p.invuln > 0 || p.invulnTrail > 0;
+  const inv = p.invuln > 0 || p.invulnTrail > 0 || (p.cmods && p.cmods.hazardImmune);   // Tardigrade shrugs off terrain
   for (const h of game.env) {
     const d = dist(h.x, h.y, p.x, p.y);
     if (h.kind === 'pool') {
@@ -3148,6 +3391,30 @@ function drawPlayer(t) {
       ctx.beginPath(); ctx.arc(x, y, R * 0.12, 0, TAU); ctx.fill(); }
     ctx.shadowBlur = 0;
     for (let i = 0; i < 5; i++) { const a = i / 5 * TAU + 0.5; ctx.beginPath(); ctx.arc(Math.cos(a) * R * 0.3, Math.sin(a) * R * 0.3, R * 0.08, 0, TAU); ctx.fill(); }
+  } else if (viz.feature === 'tardigrade') {                // Water bear — stubby legs + body segments
+    ctx.save(); ctx.rotate(p.angle);
+    ctx.strokeStyle = glow; ctx.lineWidth = Math.max(2.5, R * 0.16); ctx.lineCap = 'round'; ctx.globalAlpha = 0.85;
+    for (let i = 0; i < 4; i++) { const lx = -R * 0.55 + i * (R * 0.37);
+      for (const sgn of [-1, 1]) { const wob = Math.sin(t * 9 + i + (sgn > 0 ? 0 : 1.6)) * R * 0.14;
+        ctx.beginPath(); ctx.moveTo(lx, sgn * R * 0.5); ctx.lineTo(lx + wob, sgn * R * 0.92); ctx.stroke(); } }
+    ctx.globalAlpha = 1; ctx.strokeStyle = 'rgba(150,95,40,0.45)'; ctx.lineWidth = 2;
+    for (let i = 1; i < 4; i++) { const sx = -R * 0.45 + i * (R * 0.3); ctx.beginPath(); ctx.moveTo(sx, -R * 0.5); ctx.lineTo(sx, R * 0.5); ctx.stroke(); }
+    ctx.restore();
+  } else if (viz.feature === 'slime') {                     // Slime mold — branching internal vein network
+    ctx.strokeStyle = 'rgba(190,235,40,0.6)'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+    for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + t * 0.15;
+      ctx.beginPath(); ctx.moveTo(0, 0);
+      for (let j = 1; j <= 4; j++) { const rr = R * 0.22 * j, aa = a + Math.sin(t * 2 + i + j) * 0.32; ctx.lineTo(Math.cos(aa) * rr, Math.sin(aa) * rr); }
+      ctx.stroke(); }
+    ctx.fillStyle = 'rgba(225,255,150,0.7)';
+    for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + t * 0.15; ctx.beginPath(); ctx.arc(Math.cos(a) * R * 0.85, Math.sin(a) * R * 0.85, R * 0.1 + R * 0.03 * Math.sin(t * 4 + i), 0, TAU); ctx.fill(); }
+  } else if (viz.feature === 'radiolarian') {               // Silica shell — radial spikes + hex lattice
+    ctx.strokeStyle = glow; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.85;
+    for (let i = 0; i < 12; i++) { const a = i / 12 * TAU + t * 0.1; ctx.beginPath(); ctx.moveTo(Math.cos(a) * R * 0.7, Math.sin(a) * R * 0.7); ctx.lineTo(Math.cos(a) * (R + 9), Math.sin(a) * (R + 9)); ctx.stroke(); }
+    for (const [rad, off] of [[0.7, 0], [0.42, 0.5]]) {
+      ctx.beginPath(); for (let i = 0; i <= 6; i++) { const a = i / 6 * TAU + off + t * 0.1, x = Math.cos(a) * R * rad, y = Math.sin(a) * R * rad; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.closePath(); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
   }
 
   // --- nucleus (skip the big central one for the colony) ---
@@ -3835,6 +4102,7 @@ function startRun(mode) {
   hideAllOverlays(); $('banner').innerHTML = ''; setHud(true);
   bigBanner(mode === 'timed' ? 'INCUBATION BEGINS — SURVIVE 20:00' : 'ENDLESS INCUBATION — HOW LONG CAN YOU LAST?', 2.6);
   toast(ch.icon + ' ' + ch.name + ' · opens with ' + WEAPON_BY_ID[ch.weapon].name, 2.6);
+  Music.setIntensity(0); Music.start();
 }
 function resumeRun() { if (game.player && game.player.hp > 0) { game.state = 'running'; hideOverlay('pause-modal'); } }
 const PAUSE_TABS = [{ id: 'stats', label: '📊 Stats' }, { id: 'arsenal', label: '🧬 Arsenal' }];
@@ -3934,7 +4202,7 @@ function finalizeRun() {
 }
 function endRun(win) {
   if (game.state === 'over') return;
-  game.state = 'over'; game.win = win; finalizeRun();
+  game.state = 'over'; game.win = win; finalizeRun(); Music.stop();
   const p = game.player, mm = Math.floor(game.time / 60), ss = Math.floor(game.time % 60);
   $('go-title').textContent = win ? '🏆 EXTINCTION SURVIVED' : 'CELL LYSED';
   $('go-sub').textContent = win ? 'You outlasted the Macrophage Sentinel and escaped the slide.' : 'Your membrane ruptured. The swarm consumes all.';
@@ -4051,6 +4319,7 @@ function resumeSavedRun() {
   _autosaveT = 0;
   bigBanner('RUN RESUMED — ' + fmtTime(game.time) + ' · LEVEL ' + p.level, 2.4);
   if (snap.boss) toast('Macrophage Sentinel re-engaged', 2.2);
+  Music.setIntensity(snap.boss ? 1 : 0); Music.start();
   if (game.pendingLevelUps > 0) setTimeout(openLevelUp, 220);
 }
 
@@ -4064,7 +4333,7 @@ function saveAndExit() {
 
 /* ---- Menu navigation ---- */
 function backToMenu() {
-  hideAllOverlays(); setHud(false); game.state = 'menu';
+  hideAllOverlays(); setHud(false); game.state = 'menu'; Music.stop();
   const cont = $('btn-continue');
   if (cont) {
     const s = SAVE.suspended;
@@ -4270,7 +4539,13 @@ function buildDev() {
       <div class="dev-sect"><h3>Secondary passives — "Adaptations" (level-up pool)</h3>
       <table class="dev-table"><tr><th>Adaptation</th><th>Max tier</th><th>Per tier</th></tr>`;
     for (const a of ADAPTATIONS) h += `<tr><td>${a.icon} <b>${a.name}</b></td><td class="num">T${a.max}</td><td class="dev-note">${a.tierText(1)}</td></tr>`;
-    h += `</table></div>`;
+    h += `</table></div>
+      <div class="dev-sect"><h3>Status synergies — combine debuffs from different weapons</h3>
+      <table class="dev-table"><tr><th>Reaction</th><th>Recipe</th><th>Effect</th></tr>
+      <tr><td>🧪 <b>Necrosis</b></td><td class="dev-note">Corroded (Acidic Vacuoles) + Paralysed (Phage Darts)</td><td class="dev-note">Ruptures: ~18% max-HP AoE blast + spreads corrosion to neighbours.</td></tr>
+      <tr><td>❄️ <b>Cytolysis (Shatter)</b></td><td class="dev-note">Slowed (acid pools / slime / freeze) + a Critical hit</td><td class="dev-note">+60% damage on that hit; the cell wall shatters.</td></tr>
+      <tr><td>🩸 <b>Hemorrhage</b></td><td class="dev-note">Bleeding (Cilia Whips Lv8) cell dies</td><td class="dev-note">Bursts and spreads the bleed to nearby cells — chains through packs.</td></tr>
+      </table></div>`;
   } else {
     h += `<div class="dev-sect"><h3>Core formulas</h3><table class="dev-table"><tr><th>System</th><th>Formula</th></tr>
       <tr><td>XP to next level</td><td class="num">round(10·N^1.6 + 25)</td></tr>
@@ -4345,13 +4620,17 @@ document.addEventListener('click', (e) => {
     continue: resumeSavedRun, savedata: openSaveModal, savequit: saveAndExit,
     'back-main': backToMenu, resume: () => resumeRun(), quit: quitRun,
     retry: () => startRun(game.mode), 'to-shop': openShop, 'to-menu': backToMenu,
-    sound: toggleSound,
+    sound: toggleSound, music: toggleMusic,
   })[act]?.();
 });
 /* Menu sound toggle (mute / unmute) — updates its own label. */
 function toggleSound() {
   const on = Sound.toggle();
   const b = $('btn-sound'); if (b) b.textContent = on ? '🔊 Sound: On' : '🔇 Sound: Off';
+}
+function toggleMusic() {
+  const on = Music.toggle();
+  const b = $('btn-music'); if (b) b.textContent = on ? '🎵 Music: On' : '🎵 Music: Off';
 }
 
 /* ======================================================================== *
@@ -4400,6 +4679,7 @@ function frame(now) {
   // Schedule the next frame FIRST: an exception below then costs one frame's
   // work, not the entire game (a dead rAF chain looks like a total freeze).
   requestAnimationFrame(frame);
+  pollGamepad();
   if (!lastTime) lastTime = now;
   let dt = (now - lastTime) / 1000; lastTime = now;
   if (dt > 0.05) dt = 0.05;                            // clamp big tab-switch gaps
@@ -4425,12 +4705,14 @@ window.addEventListener('error', (ev) => {
 function init() {
   loadSave();
   Sound.init();
+  Music.init();
   buildSprites();
   setupCanvas();
   setupInput();
   setupSaveModal();
   // Sound settings UI: reflect saved prefs, wire the volume slider.
   const sb = $('btn-sound'); if (sb) sb.textContent = Sound.on ? '🔊 Sound: On' : '🔇 Sound: Off';
+  const mb = $('btn-music'); if (mb) mb.textContent = Music.on ? '🎵 Music: On' : '🎵 Music: Off';
   const vs = $('vol-slider'); if (vs) { vs.value = Math.round(Sound.vol * 100); vs.addEventListener('input', () => Sound.setVol(vs.value / 100)); }
   // Persist the run if the player tabs away or closes the page mid-fight.
   document.addEventListener('visibilitychange', () => { if (document.hidden) saveRunSnapshot(); });
