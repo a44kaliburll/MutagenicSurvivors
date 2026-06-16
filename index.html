@@ -324,6 +324,34 @@
   .card.pad-focus { border-color: var(--bio-cyan) !important;
     box-shadow: 0 0 0 3px rgba(47,246,255,0.55), 0 14px 40px rgba(47,246,255,0.3) !important; transform: translateY(-5px); }
 
+  /* ---- Loot chest cinematic ---- */
+  #chest-modal .panel { max-width: 720px; }
+  .chest-box { position: relative; width: 128px; height: 104px; margin: 6px auto 10px; }
+  .chest-base { position: absolute; bottom: 0; left: 12px; width: 104px; height: 60px; border-radius: 9px;
+    background: linear-gradient(#9a7420, #5c4410); border: 2px solid #ffd166; box-shadow: inset 0 0 14px rgba(0,0,0,0.55); }
+  .chest-lid { position: absolute; top: 6px; left: 10px; width: 108px; height: 42px; border-radius: 12px 12px 5px 5px;
+    background: linear-gradient(#ffe19a, #c08f1f); border: 2px solid #fff3cf; transform-origin: bottom center; }
+  .chest-keyhole { position: absolute; top: 52px; left: 50%; width: 12px; height: 16px; margin-left: -6px; border-radius: 3px;
+    background: #3a2c08; box-shadow: 0 0 6px rgba(0,0,0,0.6); }
+  .chest-glow { position: absolute; inset: -26px; border-radius: 50%; opacity: 0;
+    background: radial-gradient(circle, rgba(255,238,180,0.9), rgba(255,209,102,0) 70%); }
+  .chest-box.open { animation: chestShake 0.45s ease; }
+  .chest-box.open .chest-lid { animation: chestLid 0.55s cubic-bezier(.3,1.4,.5,1) forwards; }
+  .chest-box.open .chest-glow { animation: chestGlow 1s ease 0.4s; }
+  @keyframes chestShake { 0%,100%{transform:translateX(0)} 20%{transform:translate(-5px,1px) rotate(-3deg)} 40%{transform:translate(5px,-1px) rotate(3deg)} 60%{transform:translateX(-4px)} 80%{transform:translateX(3px)} }
+  @keyframes chestLid { to { transform: translateY(-26px) rotate(-16deg); } }
+  @keyframes chestGlow { 0%{opacity:0; transform:scale(0.4)} 45%{opacity:1} 100%{opacity:0; transform:scale(1.7)} }
+  .chest-cards { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 6px 0 16px; min-height: 138px; }
+  .chest-card { width: 130px; padding: 12px 8px; border: 2px solid #888; border-radius: 13px;
+    background: linear-gradient(180deg, rgba(12,28,38,0.96), rgba(6,16,23,0.96)); text-align: center;
+    opacity: 0; transform: scale(0.5) translateY(26px); animation: ccPop 0.42s cubic-bezier(.2,1.35,.4,1) forwards;
+    box-shadow: 0 10px 26px rgba(0,0,0,0.5); }
+  @keyframes ccPop { to { opacity: 1; transform: scale(1) translateY(0); } }
+  .chest-card .cc-rar { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .chest-card .cc-ic { font-size: 42px; margin: 4px 0; filter: drop-shadow(0 0 10px currentColor); }
+  .chest-card .cc-nm { font-size: 14px; font-weight: 800; color: var(--ink); }
+  .chest-card .cc-val { font-size: 11px; color: var(--ink-dim); margin-top: 4px; line-height: 1.3; }
+
   /* ---- Dev asset inspector ---- */
   #dev-modal .panel { max-width: 1080px; width: 95vw; max-height: 92vh; overflow-y: auto; }
   #dev-body { margin-top: 14px; }
@@ -459,6 +487,21 @@
         <p>Objective complete — splice a permanent mutation into your genome. They stack toward the ultimate bioevolution.</p>
       </div>
       <div class="cards" id="mutation-cards"></div>
+    </div>
+  </div>
+
+  <!-- ===== Loot chest cinematic ===== -->
+  <div class="overlay" id="chest-modal">
+    <div class="panel col">
+      <div class="chest-box" id="chest-box">
+        <div class="chest-glow"></div>
+        <div class="chest-lid"></div>
+        <div class="chest-base"></div>
+        <div class="chest-keyhole"></div>
+      </div>
+      <div class="modal-head"><h2 id="chest-head">CHEST</h2><p id="chest-sub"></p></div>
+      <div class="chest-cards" id="chest-cards"></div>
+      <button class="btn primary" id="chest-collect">Collect ▸ <span style="opacity:.6">(Space / A)</span></button>
     </div>
   </div>
 
@@ -814,6 +857,33 @@ const WEAPONS = [
       if (L >= 6) { s.damage += 4; }
       if (L >= 7) { s.cooldown -= 0.1; s.pierce = 2; }
       if (L >= 8) { s.count += 1; s.damage += 6; }
+      return s;
+    }
+  },
+  {
+    id: 'field', name: 'Cytoplasmic Field', icon: '🌐', color: '#5fc8ff', type: 'weapon',
+    maxLevel: 8, evoPassive: null,            // sustained aura — no Apex
+    desc: 'Projects a charged membrane field: enemies inside are slowed and take constant low damage.',
+    fact: 'Living cells hold a voltage across their membrane (~ −70 mV); some, like electric eels\' cells, stack it into a stunning electric field.',
+    levelText: [
+      '95px field · slows 20% · ~13 dmg/s',
+      '+30px radius',
+      'slow 30%',
+      '+damage',
+      '+30px radius',
+      'slow 40%',
+      '+damage',
+      'big radius · slow 50% · pulses knockback'
+    ],
+    getStats(L) {
+      const s = { radius: 95, slow: 0.20, damage: 4, cooldown: 0.3, knockback: 0 };
+      if (L >= 2) { s.radius += 30; }
+      if (L >= 3) { s.slow = 0.30; }
+      if (L >= 4) { s.damage += 3; }
+      if (L >= 5) { s.radius += 30; }
+      if (L >= 6) { s.slow = 0.40; }
+      if (L >= 7) { s.damage += 4; }
+      if (L >= 8) { s.radius += 40; s.slow = 0.50; s.knockback = 90; }
       return s;
     }
   }
@@ -1566,6 +1636,14 @@ function buildSprites() {
     g.shadowBlur = 0; g.strokeStyle = 'rgba(220,255,255,0.7)'; g.lineWidth = 1; g.stroke();
     g.fillStyle = 'rgba(255,255,255,0.55)'; g.beginPath(); g.moveTo(0, -r * 0.5); g.lineTo(r * 0.16, -r * 0.05); g.lineTo(0, r * 0.12); g.lineTo(-r * 0.16, -r * 0.05); g.closePath(); g.fill();
   });
+  SPR.biomass2 = makeSprite(34, (g, r) => {      // DOUBLE XP — larger violet biomass crystal
+    g.shadowColor = '#b07bff'; g.shadowBlur = 18;
+    const grad = g.createLinearGradient(0, -r * 0.72, 0, r * 0.6);
+    grad.addColorStop(0, '#f3e6ff'); grad.addColorStop(0.5, '#c79bff'); grad.addColorStop(1, '#7a3ec8');
+    g.fillStyle = grad; g.beginPath(); g.moveTo(0, -r * 0.74); g.lineTo(r * 0.54, -r * 0.1); g.lineTo(r * 0.32, r * 0.62); g.lineTo(-r * 0.32, r * 0.62); g.lineTo(-r * 0.54, -r * 0.1); g.closePath(); g.fill();
+    g.shadowBlur = 0; g.strokeStyle = 'rgba(238,224,255,0.8)'; g.lineWidth = 1.5; g.stroke();
+    g.fillStyle = 'rgba(255,255,255,0.6)'; g.beginPath(); g.moveTo(0, -r * 0.5); g.lineTo(r * 0.18, -r * 0.05); g.lineTo(0, r * 0.14); g.lineTo(-r * 0.18, -r * 0.05); g.closePath(); g.fill();
+  });
   SPR.biomassBig = makeSprite(30, (g, r) => {
     g.shadowColor = '#6dff8a'; g.shadowBlur = 16; g.fillStyle = '#d6ffe0';
     g.beginPath(); g.arc(0, 0, r * 0.5, 0, TAU); g.fill();
@@ -1937,7 +2015,11 @@ function killEnemy(e, opts = {}) {
   // XP biomass drop (scaled by enemy + eco). Big enemies drop several orbs.
   const orbs = e.boss ? 24 : (e.elite ? 8 : 1);
   const per = Math.max(1, Math.round(def.xp * (e.boss || e.elite ? 0.5 : 1)));
-  for (let i = 0; i < orbs; i++) spawnPickup('xp', e.x + rand(-e.r, e.r), e.y + rand(-e.r, e.r), per);
+  for (let i = 0; i < orbs; i++) {
+    const orb = spawnPickup('xp', e.x + rand(-e.r, e.r), e.y + rand(-e.r, e.r), per);
+    // chance (rising with Luck) for a DOUBLE-value orb — rendered purple, not cyan
+    if (orb && chance(0.12 + curLuck() * 0.28)) { orb.value *= 2; orb.double = true; orb.r += 2; }
+  }
   // Genetic coin drop
   if (chance(def.coinChance)) spawnPickup('coin', e.x, e.y, def.coin);
   // Elite drops a loot chest (opens Apex evolution if eligible).
@@ -2077,7 +2159,7 @@ function applyPower(id) {
 
 function spawnPickup(kind, x, y, value) {
   const pk = pickupPool.obtain();
-  pk.kind = kind; pk.x = x; pk.y = y; pk.value = value;
+  pk.kind = kind; pk.x = x; pk.y = y; pk.value = value; pk.double = false;
   pk.dx = rand(-40, 40); pk.dy = rand(-60, -10); pk.magnet = false;
   pk.r = kind === 'chest' ? 16 : kind === 'power' ? 13 : kind === 'coin' ? 9 : kind === 'heal' ? 10 : kind === 'nutrient' ? 8 : 7;
   pk.life = (kind === 'chest' || kind === 'nutrient') ? 9999 : (kind === 'power' ? 45 : ((kind === 'xp' || kind === 'coin') ? 60 : 30)); pk.born = game.time; pk.bob = rand(0, TAU);
@@ -2102,22 +2184,27 @@ function createDirector() {
 
 /* Which non-elite enemy types may spawn at run-time t. In timed mode the GDD *
  * spawn windows close; in endless they stay open once unlocked.             */
-function activeTypes(t) {
-  const out = [];
-  for (const id in ENEMIES) {
-    const d = ENEMIES[id];
-    if (d.elite || d.boss) continue;
-    const open = t >= d.window[0] && (game.mode === 'endless' ? true : t <= d.window[1]);
-    if (open) out.push(d);
-  }
-  return out;
-}
-function weightedPickType(pool) {
-  if (!pool.length) return null;                 // spawn windows can all be closed late-game
-  let total = 0; for (const d of pool) total += d.freq;
-  let r = rand(0, total);
-  for (const d of pool) { r -= d.freq; if (r <= 0) return d.id; }
-  return pool[pool.length - 1].id;
+/* ---- Wave table: the swarm's composition shifts every 2 minutes. ---------- *
+ * Each entry is the {enemyType: weight} mix spawned during that 2-min block;   *
+ * the last wave repeats if the run somehow runs long (endless caps here too).  */
+const WAVES = [
+  { name: 'Lysogenic Bloom',    mix: { virus: 1.0 } },                              // 0–2:00
+  { name: 'Flagellate Surge',   mix: { virus: 0.7, bacterium: 0.5 } },              // 2–4
+  { name: 'Chemotactic Swarm',  mix: { bacterium: 0.8, virus: 0.4 } },              // 4–6
+  { name: 'Spore Drift',        mix: { virus: 0.5, bacterium: 0.5, spore: 0.4 } },  // 6–8
+  { name: 'Toxic Tide',         mix: { bacterium: 0.6, spore: 0.7, virus: 0.3 } },  // 8–10
+  { name: 'Viral Resurgence',   mix: { virus: 1.1, spore: 0.4 } },                  // 10–12
+  { name: 'Mixed Culture',      mix: { virus: 0.5, bacterium: 0.6, spore: 0.5 } },  // 12–14
+  { name: 'Fungal Mass',        mix: { spore: 1.0, bacterium: 0.5 } },              // 14–16
+  { name: 'Final Bloom',        mix: { virus: 0.9, bacterium: 0.7, spore: 0.6 } },  // 16–18
+];
+function currentWave(t) { return WAVES[Math.min(Math.floor(t / 120), WAVES.length - 1)]; }
+/* Pick an enemy id from the active wave's weighted mix (or null if empty). */
+function weightedPickType(t) {
+  const mix = currentWave(t).mix; let total = 0; for (const k in mix) total += mix[k];
+  if (total <= 0) return null; let r = rand(0, total);
+  for (const k in mix) { r -= mix[k]; if (r <= 0) return k; }
+  return null;
 }
 
 function updateDirector(dt) {
@@ -2126,7 +2213,7 @@ function updateDirector(dt) {
   // --- Recurring mini-boss (Amoeboid Pseudopod): first at 2:30, then ~every  *
   //     2.5 min (faster late), each dropping a loot chest. ---
   dir.eliteT -= dt;
-  if (dir.eliteT <= 0 && t > 60) {
+  if (dir.eliteT <= 0 && t > 60 && (game.mode === 'endless' || t < 1110)) {
     announceElite();
     const n = game.mode === 'endless' ? 1 + Math.floor(t / 360) : 1;
     for (let i = 0; i < n; i++) spawnRingEnemy('amoeboid');
@@ -2140,17 +2227,21 @@ function updateDirector(dt) {
     if (dir.endlessBossT <= 0) { dir.endlessWave++; triggerExtinctionEvent(true); dir.endlessBossT = 300; }
   }
 
-  // --- Regular weighted swarm spawns under a TIME-RAMPED weight cap ---
-  // The cap climbs from a gentle early density to the 500 ceiling, so the
-  // screen ramps up smoothly instead of slamming to a wall in two minutes.
+  // --- Wave announcements: the swarm shifts composition every 2 minutes ---
+  const wIdx = Math.min(Math.floor(t / 120), WAVES.length - 1);
+  if (dir.wave !== wIdx && (game.mode === 'endless' || t < 1110)) {
+    dir.wave = wIdx;
+    if (t > 1) { bigBanner('🌊 WAVE ' + (wIdx + 1) + ' — ' + WAVES[wIdx].name, 2.6); game.shake = Math.max(game.shake, 6); }
+  }
+
+  // --- Regular swarm spawns under a TIME-RAMPED weight cap. In timed mode the
+  //     swarm STOPS at 18:30, clearing the field for the 20:00 boss. ---
+  const spawnsOpen = game.mode === 'endless' || t < 1110;     // 18:30 cutoff
   dir.cap = Math.min(500, 130 + t * 0.32);
   dir.spawnTimer -= dt;
-  if (dir.spawnTimer <= 0 && dir.weight < dir.cap) {
-    const pool = activeTypes(t);
-    if (pool.length) {
-      const burst = 1 + Math.floor(t / 420);          // density grows more gradually
-      for (let i = 0; i < burst && dir.weight < dir.cap; i++) spawnRingEnemy(weightedPickType(pool));
-    }
+  if (spawnsOpen && dir.spawnTimer <= 0 && dir.weight < dir.cap) {
+    const burst = 1 + Math.floor(t / 420);          // density grows more gradually
+    for (let i = 0; i < burst && dir.weight < dir.cap; i++) { const ty = weightedPickType(t); if (ty) spawnRingEnemy(ty); }
     dir.spawnTimer = clamp(0.6 - t * 0.00026, 0.12, 0.6);
   }
 
@@ -2373,6 +2464,11 @@ const FIRE = {
         canSplit: true, splitHitN, splitEndN
       });
     }
+  },
+  field(w, s, p) {                                          // sustained slow + AoE aura
+    const radius = s.radius * p.mult.area;
+    p._fieldR = radius; p._fieldSlow = s.slow;              // stash for the renderer
+    dealRadius(p.x, p.y, radius, s.damage, { slow: s.slow, knockback: s.knockback, silent: true });
   }
 };
 
@@ -2886,6 +2982,7 @@ function renderPadFocus(cards) {
 }
 function padMoveFocus(d) { const cards = activeCards(); if (!cards || !cards.length) return; padFocus = (padFocus + d + cards.length) % cards.length; renderPadFocus(cards); sfx('ui'); }
 function padConfirm() {
+  if (game.state === 'chest') { closeChest(); return; }
   if (game.state === 'paused') { resumeRun(); return; }
   const cards = activeCards();
   if (cards && cards.length) { cards[Math.min(padFocus, cards.length - 1)].click(); padFocus = 0; return; }
@@ -2984,32 +3081,27 @@ function updatePickups(dt) {
   for (let i = arr.length - 1; i >= 0; i--) {
     const pk = arr[i];
     pk.bob += dt * 4;
-    if (pk.kind !== 'chest') pk.life -= dt;
+    const decays = (pk.kind === 'heal' || pk.kind === 'power');   // only temporary pickups expire; XP/coins persist forever
+    if (decays) pk.life -= dt;
     const d2 = dist2(pk.x, pk.y, p.x, p.y);
     if (!pk.magnet && pk.kind !== 'chest' && pk.kind !== 'power' && d2 < pr2) pk.magnet = true;
     if (pk.magnet) {
       const a = angTo(pk.x, pk.y, p.x, p.y), pull = 320 + (1 - Math.min(1, d2 / pr2)) * 440;
       pk.x += Math.cos(a) * pull * dt; pk.y += Math.sin(a) * pull * dt;
-    } else if (pk.kind === 'xp' || pk.kind === 'coin') {
-      // Earned XP is never stranded: a fresh orb drifts gently (grab it by moving
-      // over it), but after ~3.5s it becomes a homing magnet and chases you down —
-      // so ranged builds that kill at a distance still collect everything.
-      if (game.time - pk.born > 3.5) { pk.magnet = true; }
-      else { pk.x += pk.dx * dt; pk.y += pk.dy * dt; pk.dx -= pk.dx * 3 * dt; pk.dy -= pk.dy * 3 * dt;
-        const a = angTo(pk.x, pk.y, p.x, p.y); pk.x += Math.cos(a) * 80 * dt; pk.y += Math.sin(a) * 80 * dt; }
     } else if (pk.kind !== 'chest') {
+      // brief outward scatter on spawn, then it rests in place — no drift toward the player
       pk.x += pk.dx * dt; pk.y += pk.dy * dt; pk.dx -= pk.dx * 3 * dt; pk.dy -= pk.dy * 3 * dt;
     }
     const rr = p.r + pk.r + 4;
     if (d2 < rr * rr || (pk.kind !== 'chest' && pk.magnet && d2 < 18 * 18)) {
       collectPickup(pk); arr[i] = arr[arr.length - 1]; arr.pop(); pickupPool.release(pk); continue;
     }
-    if (pk.kind !== 'chest' && pk.life <= 0) { if (pk.kind === 'xp') game.xpOrbsAlive--; arr[i] = arr[arr.length - 1]; arr.pop(); pickupPool.release(pk); }
+    if (decays && pk.life <= 0) { arr[i] = arr[arr.length - 1]; arr.pop(); pickupPool.release(pk); }
   }
 }
 function collectPickup(pk) {
   const p = game.player;
-  if (pk.kind === 'xp') { game.xpOrbsAlive--; gainXP(pk.value); sfx('xp'); }
+  if (pk.kind === 'xp') { game.xpOrbsAlive--; gainXP(pk.value); sfx('xp'); if (pk.double) spawnFloater(p.x, p.y - p.r - 10, '+' + pk.value + ' XP', '#c79bff'); }
   else if (pk.kind === 'coin') { gainCoins(pk.value); spawnFloater(p.x, p.y - p.r - 8, '+' + pk.value + '🪙', '#ffd166'); sfx('coin'); }
   else if (pk.kind === 'heal') { const h = Math.min(p.maxHp - p.hp, pk.value); p.hp += h; spawnFloater(p.x, p.y - p.r, '+' + Math.round(h) + ' HP', '#6dff8a'); sfx('heal'); }
   else if (pk.kind === 'nutrient') { spawnFloater(p.x, p.y - p.r - 8, '🧪 spore', '#9dff5f'); spawnParticles(pk.x, pk.y, '#9dff5f', 6, { life: 0.3 }); sfx('coin'); }
@@ -3038,16 +3130,18 @@ function openLootChest() {
   if (apex) { openApex(apex); return; }   // a maxed weapon takes priority: offer its evolution
   openRewardChest();
 }
-/* Grant one random permanent boost (rarity luck-weighted); return a label. */
+/* Grant one random permanent boost (rarity luck-weighted); return its details. */
 function grantChestBoost() {
-  const stat = pick(BOOST_STATS), rIdx = rollBoostRarity();
+  const stat = pick(BOOST_STATS), rIdx = rollBoostRarity(), v = stat.values[rIdx];
   if (!game.boosts) game.boosts = defaultBoosts();
-  stat.apply(game.boosts, stat.values[rIdx]);
+  stat.apply(game.boosts, v);
   game.boostLog.push({ s: stat.id, r: rIdx });
-  return BOOST_RARITIES[rIdx].dot + ' ' + stat.icon + ' ' + stat.name;
+  return { stat, rIdx, rar: BOOST_RARITIES[rIdx], text: stat.fmt(v) };
 }
 /* A loot chest rolls a tier 1-5 (Common→Legendary, luck-weighted) and grants  *
- * that many permanent boosts, plus coins and a heal. No pause — instant loot.  */
+ * that many permanent boosts + coins + a heal, then plays the opening          *
+ * cinematic so you see exactly which reward cards burst out (Vampire-Survivors *
+ * style). Boosts are applied immediately; the modal is the reveal.            */
 function openRewardChest() {
   const tier = rollChestTier(), ct = CHEST_TIERS[tier - 1], p = game.player;
   const rewards = [];
@@ -3055,12 +3149,36 @@ function openRewardChest() {
   recomputeStats(); refreshTray();
   const coins = 20 + tier * 15; gainCoins(coins);
   p.hp = Math.min(p.maxHp, p.hp + 25);
-  bigBanner(ct.icon + ' ' + ct.name.toUpperCase() + ' CHEST — ' + tier + ' reward' + (tier > 1 ? 's' : '') + '!', 3.4);
-  toast(rewards.join('  ·  ') + '  ·  +' + coins + '🪙', 3.6);
-  spawnRing(p.x, p.y, ct.color, 80 + tier * 18, 0.6);
-  spawnParticles(p.x, p.y, ct.color, 18 + tier * 8, { speed: 220, life: 0.7 });
-  game.shake = Math.max(game.shake, 8); game.flash = 0.25; game.flashColor = 'rgba(' + ct.rgb + ',';
-  sfx(tier >= 4 ? 'apex' : 'boost');
+  spawnRing(p.x, p.y, ct.color, 90, 0.5);
+  game.shake = Math.max(game.shake, 7); game.flash = 0.2; game.flashColor = 'rgba(' + ct.rgb + ',';
+  showChestCinematic(ct, tier, rewards, coins);
+}
+let _chestTimer = null;
+function showChestCinematic(ct, tier, rewards, coins) {
+  game.state = 'chest';
+  sfx('chest');
+  const head = $('chest-head'); head.textContent = ct.icon + ' ' + ct.name.toUpperCase() + ' CHEST'; head.style.color = ct.color;
+  $('chest-sub').textContent = tier + ' reward' + (tier > 1 ? 's' : '') + '  ·  +' + coins + ' 🪙  ·  +25 HP';
+  const wrap = $('chest-cards'); wrap.innerHTML = '';
+  rewards.forEach((rw, i) => {
+    const c = document.createElement('div'); c.className = 'chest-card';
+    c.style.borderColor = rw.rar.color; c.style.animationDelay = (0.55 + i * 0.16) + 's';
+    c.innerHTML = `<div class="cc-rar" style="color:${rw.rar.color}">${rw.rar.dot} ${rw.rar.name}</div>
+      <div class="cc-ic" style="color:${rw.rar.color}">${rw.stat.icon}</div>
+      <div class="cc-nm">${rw.stat.name}</div><div class="cc-val">${rw.text}</div>`;
+    wrap.appendChild(c);
+  });
+  const box = $('chest-box'); box.classList.remove('open'); void box.offsetWidth; box.classList.add('open');
+  // chime as the lid pops
+  setTimeout(() => { if (game.state === 'chest') sfx(tier >= 4 ? 'apex' : 'boost'); }, 450);
+  showOverlay('chest-modal');
+  clearTimeout(_chestTimer); _chestTimer = setTimeout(closeChest, 7000);   // auto-collect safety
+}
+function closeChest() {
+  if (game.state !== 'chest') return;
+  clearTimeout(_chestTimer);
+  hideOverlay('chest-modal');
+  if (game.player && game.player.hp > 0) game.state = 'running';
 }
 /* An apex is available when a weapon is maxed (Lvl8), its paired passive is   *
  * >= Lvl1, and that base weapon hasn't already been evolved/offered.         */
@@ -3308,7 +3426,7 @@ function updateObjective(dt) {
   } else if (o.type === 'purge') {
     if (o.count >= o.need) { rewardObjective(); return; }
     if (chance(dt * 2) && enemiesInRadius(o.x, o.y, o.r).length < 18) {
-      const ty = weightedPickType(activeTypes(game.time));
+      const ty = weightedPickType(game.time);
       if (ty) { const a = rand(0, TAU), d = rand(0, o.r); spawnEnemy(ty, o.x + Math.cos(a) * d, o.y + Math.sin(a) * d, {}); }
     }
   } else if (o.type === 'collect') {
@@ -3325,7 +3443,7 @@ function updateObjective(dt) {
     }
   } else if (o.type === 'survive') {
     if (left <= 0) { rewardObjective(); return; }
-    if (chance(dt * 3)) { const ty = weightedPickType(activeTypes(game.time)) || 'virus'; spawnRingEnemy(ty); }
+    if (chance(dt * 3)) { const ty = weightedPickType(game.time) || 'virus'; spawnRingEnemy(ty); }
   }
   if (o.type !== 'survive' && left <= 0) failObjective();
 }
@@ -3412,6 +3530,17 @@ function drawGrid(cam) {
 
 function drawPlayer(t) {
   const p = game.player, viz = charViz();
+  // Cytoplasmic Field aura (drawn under the cell so it reads as an enveloping field)
+  if (p._fieldR && p.weapons.some(w => w.id === 'field')) {
+    const fr = p._fieldR * (1 + 0.02 * Math.sin(t * 3));
+    ctx.save(); ctx.translate(p.x, p.y);
+    const fg = ctx.createRadialGradient(0, 0, fr * 0.4, 0, 0, fr);
+    fg.addColorStop(0, 'rgba(95,200,255,0.03)'); fg.addColorStop(0.8, 'rgba(95,200,255,0.10)'); fg.addColorStop(1, 'rgba(120,210,255,0.22)');
+    ctx.fillStyle = fg; ctx.beginPath(); ctx.arc(0, 0, fr, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 0.5; ctx.strokeStyle = 'rgba(150,225,255,0.6)'; ctx.lineWidth = 2;
+    ctx.setLineDash([10, 8]); ctx.lineDashOffset = -t * 24; ctx.beginPath(); ctx.arc(0, 0, fr, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+    ctx.restore();
+  }
   ctx.save(); ctx.translate(p.x, p.y);
   const lowHp = p.hp / p.maxHp < 0.3;
   const pulse = 1 + 0.05 * Math.sin(t * (lowHp ? 14 : 5));
@@ -3598,7 +3727,7 @@ function drawPickups(t) {
       ctx.fillStyle = '#fff'; ctx.fillText(def.icon, 0, 1);
       ctx.restore(); continue;
     }
-    const spr = pk.kind === 'coin' ? SPR.coin : pk.kind === 'heal' ? SPR.biomassBig : pk.kind === 'chest' ? SPR.chest : pk.kind === 'nutrient' ? SPR.nutrient : SPR.biomass;
+    const spr = pk.kind === 'coin' ? SPR.coin : pk.kind === 'heal' ? SPR.biomassBig : pk.kind === 'chest' ? SPR.chest : pk.kind === 'nutrient' ? SPR.nutrient : (pk.double ? SPR.biomass2 : SPR.biomass);
     ctx.save(); ctx.translate(pk.x, pk.y + bob);
     if (pk.kind === 'chest') { const s = 1 + 0.08 * Math.sin(t * 5); ctx.scale(s, s); }
     ctx.drawImage(spr, -spr.width / 2, -spr.height / 2); ctx.restore();
@@ -3832,6 +3961,7 @@ function setupInput() {
   addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase();
     if (keymap[k]) { input[keymap[k]] = true; e.preventDefault(); }
+    if (game.state === 'chest' && (k === ' ' || k === 'enter' || k === 'escape' || k === 'spacebar')) { e.preventDefault(); closeChest(); return; }
     if (k === 'escape') togglePause();
     if (k === 'm') game.showMinimap = !game.showMinimap;
     if (k === 'tab') { e.preventDefault(); toggleStatsOverlay(); }
@@ -4122,7 +4252,7 @@ function chooseUpgrade(c) {
   else if (c.kind === 'passive-up') { p.passives[c.id] = c.target; recomputeStats(); markCodex(c.id); }
   else if (c.kind === 'passive-new') { p.passives[c.id] = 1; recomputeStats(); markCodex(c.id); }
   else if (c.kind === 'adapt-up' || c.kind === 'adapt-new') { p.adaptations[c.id] = c.target; recomputeStats(); }
-  else if (c.kind === 'lucky-boost') { const label = grantChestBoost(); recomputeStats(); toast('🍀 ' + label, 2.6); }
+  else if (c.kind === 'lucky-boost') { const rw = grantChestBoost(); recomputeStats(); toast('🍀 ' + rw.rar.dot + ' ' + rw.stat.icon + ' ' + rw.stat.name + ' ' + rw.text, 2.8); }
   else if (c.kind === 'heal') { p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.4); }
   else if (c.kind === 'coins') { game.coinsThisRun += 60; }
   refreshTray();
@@ -4845,6 +4975,7 @@ function init() {
   setupCanvas();
   setupInput();
   setupSaveModal();
+  $('chest-collect').onclick = closeChest;
   // Sound settings UI: reflect saved prefs, wire the volume slider.
   const sb = $('btn-sound'); if (sb) sb.textContent = Sound.on ? '🔊 Sound: On' : '🔇 Sound: Off';
   const mb = $('btn-music'); if (mb) mb.textContent = Music.on ? '🎵 Music: On' : '🎵 Music: Off';
