@@ -271,6 +271,24 @@
   #objective .obj-fill { height: 100%; width: 0%; border-radius: 4px;
     background: linear-gradient(90deg, var(--bio-amber), var(--bio-green)); box-shadow: 0 0 8px var(--bio-amber); transition: width 0.15s linear; }
 
+  /* ---- Quick stats overlay (toggle mid-fight: Tab / left bumper) ---- */
+  #stats-overlay { position: absolute; top: 76px; right: 12px; width: 184px; z-index: 30; display: none;
+    pointer-events: none; background: rgba(6, 18, 26, 0.85); border: 1px solid rgba(74, 226, 255, 0.38);
+    border-radius: 11px; padding: 8px 11px; backdrop-filter: blur(4px); box-shadow: 0 8px 26px rgba(0,0,0,0.5);
+    font-variant-numeric: tabular-nums; animation: toastin 0.16s ease; }
+  #stats-overlay .so-head { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800;
+    letter-spacing: 0.4px; color: var(--bio-cyan); padding-bottom: 6px; margin-bottom: 5px; border-bottom: 1px solid rgba(74,226,255,0.18); }
+  #stats-overlay .so-head .so-key { margin-left: auto; font-size: 8.5px; color: var(--ink-dim);
+    border: 1px solid rgba(74,226,255,0.25); border-radius: 5px; padding: 0 5px; font-weight: 700; }
+  .so-row { display: flex; align-items: center; gap: 7px; font-size: 11.5px; line-height: 1.7; }
+  .so-row .so-ic { width: 15px; text-align: center; }
+  .so-row .so-lbl { color: var(--ink-dim); flex: 1; white-space: nowrap; }
+  .so-row .so-val { font-weight: 800; color: var(--ink); }
+  .so-row .so-val.up { color: var(--bio-green); text-shadow: 0 0 8px rgba(109,255,138,0.4); }
+  .so-row .so-val.down { color: var(--bio-pink); }
+  #stats-overlay .so-buffs { margin-top: 6px; padding-top: 5px; border-top: 1px solid rgba(74,226,255,0.14);
+    font-size: 10.5px; color: var(--bio-amber); display: none; }
+
   /* ---- Paused: large stat sheet + arsenal (Spell-Brigade style) ---- */
   #pause-modal .panel { max-width: 920px; width: 94vw; max-height: 92vh; overflow-y: auto; }
   #pause-sub { color: var(--bio-cyan); font-size: 13px; margin-top: 4px; letter-spacing: 0.5px; }
@@ -370,6 +388,8 @@
   </div>
 
   <div id="stick"><div class="nub"></div></div>
+  <!-- quick stats overlay (toggle: Tab / LB) — direct child so it paints above modals -->
+  <div id="stats-overlay"></div>
 
   <!-- ===== Main menu ===== -->
   <div class="overlay show" id="menu-main">
@@ -391,8 +411,8 @@
     <div class="hint">
       Move: <span class="kbd">W</span><span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>
       / <span class="kbd">Arrows</span> / Mouse-hold · Weapons fire automatically<br/>
-      Pause: <span class="kbd">Esc</span> (view your stats &amp; arsenal) · Reroll level-up: <span class="kbd">R</span> · Map: <span class="kbd">M</span><br/>
-      🎮 Controller: Left stick / D-pad move · <span class="kbd">A</span> select · <span class="kbd">B</span> back · <span class="kbd">X</span> reroll · <span class="kbd">Start</span> pause
+      Pause: <span class="kbd">Esc</span> (full stats &amp; arsenal) · Quick stats peek: <span class="kbd">Tab</span> · Reroll: <span class="kbd">R</span> · Map: <span class="kbd">M</span><br/>
+      🎮 Controller: Left stick / D-pad move · <span class="kbd">A</span> select · <span class="kbd">B</span> back · <span class="kbd">X</span> reroll · <span class="kbd">LB</span> stats · <span class="kbd">Start</span> pause
     </div>
     <div class="credit">Educational survivors prototype · Canvas2D · single-file</div>
   </div>
@@ -2855,8 +2875,8 @@ function pollGamepad() {
   const LB = gpBtn(gp, 4), RB = gpBtn(gp, 5), sx = gp.axes[0] || 0, sy = gp.axes[1] || 0;
 
   if (cards && cards.length) {                         // a card modal is open -> navigate, don't move
-    gpEdge('navL', dL || LB || sx < -0.55, () => padMoveFocus(-1));
-    gpEdge('navR', dR || RB || sx > 0.55, () => padMoveFocus(1));
+    gpEdge('navL', dL || sx < -0.55, () => padMoveFocus(-1));   // D-pad / stick only — bumpers freed for the stats peek
+    gpEdge('navR', dR || sx > 0.55, () => padMoveFocus(1));
     renderPadFocus(cards);
     if (input._fromPad) { input.stick = null; input._fromPad = false; }
   } else {                                             // free movement
@@ -2868,6 +2888,8 @@ function pollGamepad() {
   gpEdge('A', gpBtn(gp, 0), padConfirm);
   gpEdge('B', gpBtn(gp, 1), padBack);
   gpEdge('X', gpBtn(gp, 2), () => { if (game.state === 'levelup') doReroll(); });
+  gpEdge('LB', LB, toggleStatsOverlay);                // left bumper -> quick stats peek (any state)
+  gpEdge('RB', RB, toggleStatsOverlay);                // right bumper mirrors it
   gpEdge('START', gpBtn(gp, 9) || gpBtn(gp, 8), () => { if (game.state === 'running' || game.state === 'paused') togglePause(); });
 }
 window.addEventListener('gamepadconnected', () => { gpad.connected = true; toast('🎮 Controller connected', 2.4); });
@@ -3749,6 +3771,7 @@ function setupInput() {
     if (keymap[k]) { input[keymap[k]] = true; e.preventDefault(); }
     if (k === 'escape') togglePause();
     if (k === 'm') game.showMinimap = !game.showMinimap;
+    if (k === 'tab') { e.preventDefault(); toggleStatsOverlay(); }
     if (k === 'r' && game.state === 'levelup') doReroll();
     if (game.state === 'levelup' && k >= '1' && k <= '4') { const idx = +k - 1; const cards = document.querySelectorAll('#levelup-cards .card'); if (cards[idx]) cards[idx].click(); }
     if (game.state === 'mutation' && k >= '1' && k <= '3') { const idx = +k - 1; const cards = document.querySelectorAll('#mutation-cards .card'); if (cards[idx]) cards[idx].click(); }
@@ -3853,6 +3876,44 @@ const STAT_ROWS = [
   { k: 'pck',  ic: '🧲', lbl: 'Pickup Radius',   get: p => String(Math.round(p.pickupRadius)),                     rat: p => p.mult.pickup },
   { k: 'eco',  ic: '🪙', lbl: 'XP & Coins',      get: p => statPct(p.mult.ecoGain),                                rat: p => p.mult.ecoGain },
 ];
+/* ---- Quick stats overlay: a Spell-Brigade-style stat peek you can flick on  *
+ * mid-fight (Tab / left bumper) WITHOUT pausing — the swarm keeps coming. The *
+ * full pause screen still gives the calm, detailed breakdown. Reuses the same *
+ * STAT_ROWS so the two views can never drift apart.                           */
+let statsOverlayOn = false;
+function toggleStatsOverlay() {
+  if (!game.player || game.state === 'menu' || game.state === 'over') return;
+  statsOverlayOn = !statsOverlayOn; sfx('ui');
+}
+function buildStatsOverlay() {
+  const el = $('stats-overlay'); if (!el) return;
+  let h = `<div class="so-head"><span>📊</span><span id="so-name">Stats</span><span class="so-key">TAB / LB</span></div>`;
+  for (const r of STAT_ROWS) h += `<div class="so-row"><span class="so-ic">${r.ic}</span><span class="so-lbl">${r.lbl}</span><span class="so-val" id="so-${r.k}">–</span></div>`;
+  h += `<div class="so-buffs" id="so-buffs"></div>`;
+  el.innerHTML = h; el.dataset.built = '1';
+}
+function updateStatsOverlay() {
+  const el = $('stats-overlay'); if (!el) return;
+  const p = game.player;
+  const show = statsOverlayOn && p && (game.state === 'running' || game.state === 'levelup' || game.state === 'mutation' || game.state === 'apex');
+  if (!show) { el.style.display = 'none'; return; }
+  if (el.dataset.built !== '1') buildStatsOverlay();
+  el.style.display = 'block';
+  const ch = CHAR_BY_ID[game.character]; const nm = $('so-name'); if (nm) nm.textContent = ch ? ch.name : 'Stats';
+  for (const r of STAT_ROWS) {
+    const v = $('so-' + r.k); if (!v) continue;
+    v.textContent = r.get(p);
+    const rr = r.rat ? r.rat(p) : 1;
+    v.className = 'so-val' + (rr > 1.005 ? ' up' : (rr < 0.995 ? ' down' : ''));
+  }
+  const buffs = [];
+  if (p.frenzy > 0) buffs.push('⚡ Frenzy ' + Math.ceil(p.frenzy) + 's');
+  if (p.powerSpeed > 0) buffs.push('🏃 Sprint ' + Math.ceil(p.powerSpeed) + 's');
+  if (p.surge > 0) buffs.push('🌀 Surge');
+  if (p.invulnTrail > 0) buffs.push('✨ Invuln');
+  const bf = $('so-buffs'); if (bf) { if (buffs.length) { bf.style.display = 'block'; bf.textContent = buffs.join(' · '); } else bf.style.display = 'none'; }
+}
+
 /* Compact "what is this weapon doing right now" readout, built from getStats. */
 const STAT_LABEL = {
   count: '×', damage: 'dmg', cooldown: 'cd', pierce: 'pierce', blast: 'blast', range: 'range',
@@ -4686,7 +4747,7 @@ function frame(now) {
   game.dt = dt;
   if (game.state === 'running') stepGame(dt);
   render(now);
-  if (game.state !== 'menu' && game.player) { updateHUD(); updateObjectiveHUD(); }
+  if (game.state !== 'menu' && game.player) { updateHUD(); updateObjectiveHUD(); updateStatsOverlay(); }
 }
 
 /* Surface unexpected runtime errors as a visible banner — a silent failure  *
