@@ -1125,7 +1125,7 @@ const ENEMIES = {
   bacterium: {
     id: 'bacterium', name: 'Flagellated Bacterium', icon: '🧫', color: '#5fc8ff', glow: '#2f9fff',
     weight: 4, window: [210, 720], freq: 0.5,
-    hp: 26, damage: 7, speed: 116, radius: 14, xp: 5, coinChance: 0.03, coin: 2,
+    hp: 26, damage: 5, speed: 116, radius: 14, xp: 5, coinChance: 0.03, coin: 2,
     behavior: 'sine',
     fact: 'Flagellated bacteria swim by spinning a corkscrew tail. They sense chemical gradients and "run and tumble" toward food — primitive navigation called chemotaxis.',
     special: 'Within 120px it telegraphs for ~0.45s, then dashes in a straight line for 1.2s (6s cooldown).'
@@ -1141,10 +1141,10 @@ const ENEMIES = {
   amoeboid: {
     id: 'amoeboid', name: 'Amoeboid Pseudopod', icon: '🟣', color: '#c98bff', glow: '#b07bff',
     weight: 40, window: [-1, -1], freq: 0, spawnAt: [600, 900], elite: true,
-    hp: 950, damage: 25, speed: 75, radius: 45, xp: 60, coinChance: 1, coin: 35,
+    hp: 650, damage: 12, speed: 75, radius: 45, xp: 60, coinChance: 1, coin: 35,
     behavior: 'juggernaut',
     fact: 'An amoeba crawls by extending pseudopods — "false feet" of flowing cytoplasm — and engulfs prey whole through phagocytosis, digesting it in a food vacuole.',
-    special: 'Immune to knockback. Plasma tendrils leech 15 HP from you to heal itself 200. Drops an Elite Loot Chest.'
+    special: 'Immune to knockback. Short-range plasma tendrils (110px) leech 7 HP to heal 40 — out-range it. Drops a loot chest.'
   },
   macrophage: {
     id: 'macrophage', name: 'Macrophage Sentinel', icon: '🔴', color: '#ff7a7a', glow: '#ff3a3a',
@@ -1723,7 +1723,7 @@ function createPlayer() {
       ribosome: 0, cooldown: 1, area: 1, projSpeed: 1, projDur: 1,
       pickup: 1, flatReduce: 0, ecoGain: 1, crit: 0.05, critMult: 2.0, damageMul: 1, luck: 0
     },
-    pickupRadius: 90,
+    pickupRadius: 120,
     // Transient buffs
     surge: 0, invulnTrail: 0, invertCtrl: 0, slowT: 0, powerSpeed: 0, frenzy: 0,
     // misc
@@ -1761,7 +1761,10 @@ function recomputeStats() {
   const cytoT = tier('cyto');
   p.mult.flatReduce = (cytoT ? PASSIVE_BY_ID.cyto.values[cytoT - 1] : 0) + p.armor + ((p.cmods && p.cmods.armorFlat) || 0);
   const hpBonus = cytoT ? PASSIVE_BY_ID.cyto.hpBonus[cytoT - 1] : 0;
-  const newMax = Math.round(p.baseMaxHp * (1 + hpBonus) * bo.hpMul * (1 + adapt('vitality') * 0.08));
+  // +4 max HP per level so durability scales with progression (a leveled cell
+  // isn't stuck at its starting ~130 HP while late enemies hit for 4×).
+  const levelHp = (p.level - 1) * 4;
+  const newMax = Math.round((p.baseMaxHp + levelHp) * (1 + hpBonus) * bo.hpMul * (1 + adapt('vitality') * 0.08));
   if (newMax !== p.maxHp) { const ratio = p.hp / p.maxHp; p.maxHp = newMax; p.hp = Math.min(p.maxHp, Math.round(p.maxHp * ratio)); }
   // Eco -> coin & XP gain (meta only).
   p.mult.ecoGain = 1 + metaTier('UPG_ECO') * 0.08;
@@ -1795,7 +1798,7 @@ function recomputeStats() {
   p.mult.cooldown  *= Math.pow(0.88, mut('haste'));
   p.mult.area      *= (1 + 0.20 * mut('giant'));
   // Pickup radius in world units.
-  p.pickupRadius = 90 * p.mult.pickup;
+  p.pickupRadius = 120 * p.mult.pickup;
 }
 
 /* ======================================================================== *
@@ -1992,12 +1995,14 @@ function spawnEnemy(typeId, x, y, opts = {}) {
   const e = enemyPool.obtain();
   e.type = typeId; e.def = def; e.dead = false; e.isSub = !!opts.sub;
   e.x = x; e.y = y; e.dx = 0; e.dy = 0; e.kx = 0; e.ky = 0; e.angle = rand(0, TAU);
-  // EnemyMaxHealth(t) = Base · (1 + 0.015t)^1.1
-  const hpScale = Math.pow(1 + 0.015 * t, 1.1);
+  // EnemyMaxHealth(t) = Base · (1 + 0.015t)^1.1. Elites/bosses scale on a gentler
+  // curve so an early recurring mini-boss isn't an unkillable HP sponge.
+  const hpScale = (def.elite || def.boss) ? Math.pow(1 + 0.010 * t, 0.85) : Math.pow(1 + 0.015 * t, 1.1);
   e.maxHp = def.hp * hpScale * (opts.hpMul || 1);
   e.hp = e.maxHp;
-  // EnemyDamage(t) = Base · (1 + 0.005t)   (was 0.008 — late-game hits were brutal)
-  e.damage = def.damage * (1 + 0.005 * t) * (opts.dmgMul || 1);
+  // EnemyDamage(t) = Base · min(1 + 0.005t, 4). Capped at 4× (reached ~10:00) so
+  // late-game stays a test of positioning/density, not unavoidable one-shots.
+  e.damage = def.damage * Math.min(1 + 0.005 * t, 4) * (opts.dmgMul || 1);
   // EnemySpeed(t) = min(Base·(1+0.0014t), Base·1.35)  (gentler; nothing out-kites the player)
   e.speed = Math.min(def.speed * (1 + 0.0014 * t), def.speed * 1.35);
   e.r = def.radius * (opts.scale || 1);
@@ -2075,7 +2080,7 @@ function spawnPickup(kind, x, y, value) {
   pk.kind = kind; pk.x = x; pk.y = y; pk.value = value;
   pk.dx = rand(-40, 40); pk.dy = rand(-60, -10); pk.magnet = false;
   pk.r = kind === 'chest' ? 16 : kind === 'power' ? 13 : kind === 'coin' ? 9 : kind === 'heal' ? 10 : kind === 'nutrient' ? 8 : 7;
-  pk.life = (kind === 'chest' || kind === 'nutrient') ? 9999 : (kind === 'power' ? 45 : 30); pk.born = game.time; pk.bob = rand(0, TAU);
+  pk.life = (kind === 'chest' || kind === 'nutrient') ? 9999 : (kind === 'power' ? 45 : ((kind === 'xp' || kind === 'coin') ? 60 : 30)); pk.born = game.time; pk.bob = rand(0, TAU);
   game.pickups.push(pk);
   if (kind === 'xp') game.xpOrbsAlive++;
   return pk;
@@ -2135,16 +2140,18 @@ function updateDirector(dt) {
     if (dir.endlessBossT <= 0) { dir.endlessWave++; triggerExtinctionEvent(true); dir.endlessBossT = 300; }
   }
 
-  // --- Regular weighted swarm spawns under the weight cap ---
+  // --- Regular weighted swarm spawns under a TIME-RAMPED weight cap ---
+  // The cap climbs from a gentle early density to the 500 ceiling, so the
+  // screen ramps up smoothly instead of slamming to a wall in two minutes.
+  dir.cap = Math.min(500, 130 + t * 0.32);
   dir.spawnTimer -= dt;
   if (dir.spawnTimer <= 0 && dir.weight < dir.cap) {
     const pool = activeTypes(t);
     if (pool.length) {
-      // density grows with time; spawn a small burst per tick late-game
-      const burst = 1 + Math.floor(t / 300);
+      const burst = 1 + Math.floor(t / 420);          // density grows more gradually
       for (let i = 0; i < burst && dir.weight < dir.cap; i++) spawnRingEnemy(weightedPickType(pool));
     }
-    dir.spawnTimer = clamp(0.55 - t * 0.00035, 0.07, 0.55);
+    dir.spawnTimer = clamp(0.6 - t * 0.00026, 0.12, 0.6);
   }
 
   // --- challenge objectives (Spell-Brigade style) — never during a boss ---
@@ -2705,7 +2712,8 @@ function updateEnemies(dt) {
           e.dashCd -= dt;
           if (e.dashWind > 0) { e.dashWind -= dt; vx = Math.cos(a2p) * e.speed * 0.2; vy = Math.sin(a2p) * e.speed * 0.2;
             if (e.dashWind <= 0) { e.dashT = 1.2; e.dashAng = a2p; } }
-          else if (e.dashT > 0) { e.dashT -= dt; vx = Math.cos(e.dashAng) * e.speed * 1.45; vy = Math.sin(e.dashAng) * e.speed * 1.45; }
+          else if (e.dashT > 0) { e.dashT -= dt; const ds = Math.min(e.speed * 1.45, (game.player.speed || 210) * 1.02);  // never meaningfully out-runs the player
+            vx = Math.cos(e.dashAng) * ds; vy = Math.sin(e.dashAng) * ds; }
           else {
             if (dToP < 120 && e.dashCd <= 0) { e.dashWind = 0.45; e.dashCd = 6.0; }
             vx = Math.cos(a2p) * e.speed + Math.cos(perp) * sway;
@@ -2778,12 +2786,15 @@ function lobToxicGlob(e, p) {
 function updateAmoeboidTendril(e, p, dt) {
   e.leechCd -= dt;
   const d = dist(e.x, e.y, p.x, p.y);
-  e.tendrilActive = d < 230;
+  // Short reach (110px) so you can out-range it by simply not hugging it; the
+  // small self-heal means steady fire still whittles it down rather than
+  // healing it back to full (the old 230px / 15dmg / +200-heal was a death trap).
+  e.tendrilActive = d < 110;
   if (e.tendrilActive && e.leechCd <= 0) {
     if (!(p.invuln > 0 || p.invulnTrail > 0)) {
-      damagePlayer(15, e.x, e.y);
-      e.hp = Math.min(e.maxHp, e.hp + 200);
-      spawnFloater(e.x, e.y - e.r, '+200', '#c98bff');
+      damagePlayer(7, e.x, e.y);
+      e.hp = Math.min(e.maxHp, e.hp + 40);
+      spawnFloater(e.x, e.y - e.r, '+40', '#c98bff');
     }
     e.leechCd = 1.2;
   }
@@ -2977,8 +2988,15 @@ function updatePickups(dt) {
     const d2 = dist2(pk.x, pk.y, p.x, p.y);
     if (!pk.magnet && pk.kind !== 'chest' && pk.kind !== 'power' && d2 < pr2) pk.magnet = true;
     if (pk.magnet) {
-      const a = angTo(pk.x, pk.y, p.x, p.y), pull = 260 + (1 - Math.min(1, d2 / pr2)) * 360;
+      const a = angTo(pk.x, pk.y, p.x, p.y), pull = 320 + (1 - Math.min(1, d2 / pr2)) * 440;
       pk.x += Math.cos(a) * pull * dt; pk.y += Math.sin(a) * pull * dt;
+    } else if (pk.kind === 'xp' || pk.kind === 'coin') {
+      // Earned XP is never stranded: a fresh orb drifts gently (grab it by moving
+      // over it), but after ~3.5s it becomes a homing magnet and chases you down —
+      // so ranged builds that kill at a distance still collect everything.
+      if (game.time - pk.born > 3.5) { pk.magnet = true; }
+      else { pk.x += pk.dx * dt; pk.y += pk.dy * dt; pk.dx -= pk.dx * 3 * dt; pk.dy -= pk.dy * 3 * dt;
+        const a = angTo(pk.x, pk.y, p.x, p.y); pk.x += Math.cos(a) * 80 * dt; pk.y += Math.sin(a) * 80 * dt; }
     } else if (pk.kind !== 'chest') {
       pk.x += pk.dx * dt; pk.y += pk.dy * dt; pk.dx -= pk.dx * 3 * dt; pk.dy -= pk.dy * 3 * dt;
     }
@@ -3006,6 +3024,7 @@ function gainXP(amount) {
   p.xp += amount * p.mult.ecoGain;
   let leveled = false;
   while (p.xp >= p.xpNext) { p.xp -= p.xpNext; p.level++; p.xpNext = xpForLevel(p.level); game.pendingLevelUps++; leveled = true; }
+  if (leveled) { recomputeStats(); p.hp = Math.min(p.maxHp, p.hp + 6); }   // grow max HP w/ level + a small heal
   if (leveled && game.state === 'running') openLevelUp();
 }
 function gainCoins(amount) {
@@ -4583,7 +4602,8 @@ function devWindow(d) {
   return '—';
 }
 function devScale(d, t) {
-  return { hp: Math.round(d.hp * Math.pow(1 + 0.015 * t, 1.1)), dmg: Math.round(d.damage * (1 + 0.005 * t)), spd: Math.round(Math.min(d.speed * (1 + 0.0014 * t), d.speed * 1.35)) };
+  const hs = (d.elite || d.boss) ? Math.pow(1 + 0.010 * t, 0.85) : Math.pow(1 + 0.015 * t, 1.1);
+  return { hp: Math.round(d.hp * hs), dmg: Math.round(d.damage * Math.min(1 + 0.005 * t, 4)), spd: Math.round(Math.min(d.speed * (1 + 0.0014 * t), d.speed * 1.35)) };
 }
 function buildDev() {
   const body = $('dev-body'); let h = '';
@@ -4663,9 +4683,11 @@ function buildDev() {
     h += `<div class="dev-sect"><h3>Core formulas</h3><table class="dev-table"><tr><th>System</th><th>Formula</th></tr>
       <tr><td>XP to next level</td><td class="num">round(10·N^1.6 + 25)</td></tr>
       <tr><td>Damage pipeline</td><td class="num">((Base+Flat)·(1+Ribosome)·CharDmg) ±5%, ×CritMult on crit</td></tr>
-      <tr><td>Enemy HP @ t</td><td class="num">Base·(1 + 0.015·t)^1.1</td></tr>
-      <tr><td>Enemy DMG @ t</td><td class="num">Base·(1 + 0.008·t)</td></tr>
-      <tr><td>Enemy Speed @ t</td><td class="num">min(Base·(1+0.002·t), Base·1.5)</td></tr></table></div>
+      <tr><td>Enemy HP @ t</td><td class="num">Base·(1+0.015t)^1.1  ·  elites/bosses: Base·(1+0.010t)^0.85</td></tr>
+      <tr><td>Enemy DMG @ t</td><td class="num">Base·min(1 + 0.005·t, 4)  (capped — no late one-shots)</td></tr>
+      <tr><td>Enemy Speed @ t</td><td class="num">min(Base·(1+0.0014·t), Base·1.35)</td></tr>
+      <tr><td>Player Max HP</td><td class="num">(Base + 4·(Lv−1)) · organelle/boost mults</td></tr>
+      <tr><td>Director cap</td><td class="num">min(500, 130 + 0.32·t) — density ramps in</td></tr></table></div>
       <div class="dev-sect"><h3>Meta-upgrade costs</h3><table class="dev-table"><tr><th>Upgrade</th><th>Cost / tier</th><th>Max</th></tr>`;
     for (const u of META_UPGRADES) h += `<tr><td>${u.icon} ${u.name}</td><td class="num">${u.id === 'UPG_HP' ? '250·t²' : u.id === 'UPG_ARM' ? '500·t^2.5' : u.id === 'UPG_SPD' ? '150·t^1.8' : u.id === 'UPG_ECO' ? '300·t²' : '2000·t³'}</td><td class="num">${u.max}</td></tr>`;
     h += `</table></div>`;
