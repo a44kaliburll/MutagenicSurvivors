@@ -1168,6 +1168,42 @@ function luckyIndex(weights, luck) {
 function curLuck() { return (game.player && game.player.mult && game.player.mult.luck) || 0; }
 function rollBoostRarity() { return luckyIndex(BOOST_RARITIES.map(r => r.weight), curLuck()); }
 
+/* ---- Biomatter (XP) rarity tiers ---------------------------------------- *
+ * Dropped XP is a blob of biomatter whose COLOUR encodes its richness:       *
+ * green ×1.0 (common) · blue ×1.5 (uncommon) · purple ×2.0 (rare) ·          *
+ * orange ×3.0 (legendary). Drops near each other COMBINE into one bigger,    *
+ * higher-tier chunk to cut screen clutter. Rarer tiers get likelier with Luck.*/
+const XP_TIERS = [
+  { mult: 1.0, name: 'common',    color: '#9dffb0', glow: '#2fae50', wt: 66 },  // green
+  { mult: 1.5, name: 'uncommon',  color: '#9fd6ff', glow: '#2f7fd0', wt: 23 },  // blue
+  { mult: 2.0, name: 'rare',      color: '#c79bff', glow: '#7a3ec8', wt: 9 },   // purple
+  { mult: 3.0, name: 'legendary', color: '#ffce8a', glow: '#d07a1f', wt: 2 },   // orange
+];
+function rollXpTier() { return luckyIndex(XP_TIERS.map(t => t.wt), curLuck()); }
+/* Promote an orb's display tier to match its accumulated value (so a merged   *
+ * pile of greens reads as a richer blue/purple/orange chunk).                */
+function xpTierForValue(v, baseTier) {
+  let t = baseTier;
+  if (v >= 24) t = 3; else if (v >= 12) t = Math.max(t, 2); else if (v >= 6) t = Math.max(t, 1);
+  return Math.min(3, t);
+}
+/* Drop XP as biomatter — rolls a rarity tier, then MERGES into a nearby orb   *
+ * (reducing clutter) or spawns a fresh blob.                                 */
+function dropXP(x, y, baseValue) {
+  const tier = rollXpTier();
+  const value = Math.max(1, Math.round(baseValue * XP_TIERS[tier].mult));
+  const arr = game.pickups;
+  for (let i = 0; i < arr.length; i++) {
+    const o = arr[i];
+    if (o.kind === 'xp' && !o.magnet && dist2(o.x, o.y, x, y) < 32 * 32) {
+      o.value += value; o.tier = xpTierForValue(o.value, Math.max(o.tier, tier)); return o;
+    }
+  }
+  const orb = spawnPickup('xp', x, y, value);
+  orb.tier = xpTierForValue(value, tier);
+  return orb;
+}
+
 /* Loot-chest rarity: tier 1 (Common, 1 reward) → tier 5 (Legendary, 5 rewards). */
 const CHEST_TIERS = [
   { name: 'Common',    icon: '📦', color: '#c9d6df', rgb: '201,214,223' },
@@ -1628,22 +1664,28 @@ function buildSprites() {
     g.fillStyle = '#ffcaca'; g.beginPath(); g.arc(-r * 0.09, -r * 0.09, r * 0.09, 0, TAU); g.fill();
   });
   // --- Pickups -----------------------------------------------------------
-  SPR.biomass = makeSprite(28, (g, r) => {       // XP — faceted cyan biomass crystal
-    g.shadowColor = '#2ff6ff'; g.shadowBlur = 15;
-    const grad = g.createLinearGradient(0, -r * 0.72, 0, r * 0.6);
-    grad.addColorStop(0, '#e2fdff'); grad.addColorStop(0.5, '#5ff0ff'); grad.addColorStop(1, '#159fc2');
-    g.fillStyle = grad; g.beginPath(); g.moveTo(0, -r * 0.72); g.lineTo(r * 0.5, -r * 0.1); g.lineTo(r * 0.3, r * 0.6); g.lineTo(-r * 0.3, r * 0.6); g.lineTo(-r * 0.5, -r * 0.1); g.closePath(); g.fill();
-    g.shadowBlur = 0; g.strokeStyle = 'rgba(220,255,255,0.7)'; g.lineWidth = 1; g.stroke();
-    g.fillStyle = 'rgba(255,255,255,0.55)'; g.beginPath(); g.moveTo(0, -r * 0.5); g.lineTo(r * 0.16, -r * 0.05); g.lineTo(0, r * 0.12); g.lineTo(-r * 0.16, -r * 0.05); g.closePath(); g.fill();
+  // XP biomatter: an organic, blobby cell of cytoplasm with floating organelle
+  // specks. Colour = rarity tier (green/blue/purple/orange). Built per tier.
+  const xpBlob = (size, col, glow) => makeSprite(size, (g, r) => {
+    g.shadowColor = glow; g.shadowBlur = 11;
+    const grad = g.createRadialGradient(-r * 0.18, -r * 0.18, 1, 0, 0, r * 0.72);
+    grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.32, col); grad.addColorStop(1, glow);
+    g.fillStyle = grad; g.beginPath();
+    const lobes = 8;
+    for (let i = 0; i <= lobes; i++) { const a = i / lobes * TAU, rr = r * 0.6 * (1 + 0.14 * Math.sin(a * 3 + 0.6)); const x = Math.cos(a) * rr, y = Math.sin(a) * rr; i ? g.lineTo(x, y) : g.moveTo(x, y); }
+    g.closePath(); g.fill();
+    g.shadowBlur = 0;
+    g.fillStyle = 'rgba(255,255,255,0.75)'; g.beginPath(); g.arc(-r * 0.14, -r * 0.14, r * 0.13, 0, TAU); g.fill();
+    g.globalAlpha = 0.55; g.fillStyle = glow;
+    g.beginPath(); g.arc(r * 0.2, r * 0.08, r * 0.1, 0, TAU); g.fill();
+    g.beginPath(); g.arc(r * 0.02, r * 0.24, r * 0.07, 0, TAU); g.fill();
+    g.globalAlpha = 1;
   });
-  SPR.biomass2 = makeSprite(34, (g, r) => {      // DOUBLE XP — larger violet biomass crystal
-    g.shadowColor = '#b07bff'; g.shadowBlur = 18;
-    const grad = g.createLinearGradient(0, -r * 0.72, 0, r * 0.6);
-    grad.addColorStop(0, '#f3e6ff'); grad.addColorStop(0.5, '#c79bff'); grad.addColorStop(1, '#7a3ec8');
-    g.fillStyle = grad; g.beginPath(); g.moveTo(0, -r * 0.74); g.lineTo(r * 0.54, -r * 0.1); g.lineTo(r * 0.32, r * 0.62); g.lineTo(-r * 0.32, r * 0.62); g.lineTo(-r * 0.54, -r * 0.1); g.closePath(); g.fill();
-    g.shadowBlur = 0; g.strokeStyle = 'rgba(238,224,255,0.8)'; g.lineWidth = 1.5; g.stroke();
-    g.fillStyle = 'rgba(255,255,255,0.6)'; g.beginPath(); g.moveTo(0, -r * 0.5); g.lineTo(r * 0.18, -r * 0.05); g.lineTo(0, r * 0.14); g.lineTo(-r * 0.18, -r * 0.05); g.closePath(); g.fill();
-  });
+  SPR.xp0 = xpBlob(22, '#9dffb0', '#2fae50');    // green  · ×1.0 common
+  SPR.xp1 = xpBlob(25, '#9fd6ff', '#2f7fd0');    // blue   · ×1.5 uncommon
+  SPR.xp2 = xpBlob(28, '#c79bff', '#7a3ec8');    // purple · ×2.0 rare
+  SPR.xp3 = xpBlob(32, '#ffce8a', '#d07a1f');    // orange · ×3.0 legendary
+  SPR.biomass = SPR.xp0;                           // fallback alias
   SPR.biomassBig = makeSprite(30, (g, r) => {
     g.shadowColor = '#6dff8a'; g.shadowBlur = 16; g.fillStyle = '#d6ffe0';
     g.beginPath(); g.arc(0, 0, r * 0.5, 0, TAU); g.fill();
@@ -2015,11 +2057,7 @@ function killEnemy(e, opts = {}) {
   // XP biomass drop (scaled by enemy + eco). Big enemies drop several orbs.
   const orbs = e.boss ? 24 : (e.elite ? 8 : 1);
   const per = Math.max(1, Math.round(def.xp * (e.boss || e.elite ? 0.5 : 1)));
-  for (let i = 0; i < orbs; i++) {
-    const orb = spawnPickup('xp', e.x + rand(-e.r, e.r), e.y + rand(-e.r, e.r), per);
-    // chance (rising with Luck) for a DOUBLE-value orb — rendered purple, not cyan
-    if (orb && chance(0.12 + curLuck() * 0.28)) { orb.value *= 2; orb.double = true; orb.r += 2; }
-  }
+  for (let i = 0; i < orbs; i++) dropXP(e.x + rand(-e.r, e.r), e.y + rand(-e.r, e.r), per);
   // Genetic coin drop
   if (chance(def.coinChance)) spawnPickup('coin', e.x, e.y, def.coin);
   // Elite drops a loot chest (opens Apex evolution if eligible).
@@ -2159,7 +2197,7 @@ function applyPower(id) {
 
 function spawnPickup(kind, x, y, value) {
   const pk = pickupPool.obtain();
-  pk.kind = kind; pk.x = x; pk.y = y; pk.value = value; pk.double = false;
+  pk.kind = kind; pk.x = x; pk.y = y; pk.value = value; pk.tier = 0;
   pk.dx = rand(-40, 40); pk.dy = rand(-60, -10); pk.magnet = false;
   pk.r = kind === 'chest' ? 16 : kind === 'power' ? 13 : kind === 'coin' ? 9 : kind === 'heal' ? 10 : kind === 'nutrient' ? 8 : 7;
   pk.life = (kind === 'chest' || kind === 'nutrient') ? 9999 : (kind === 'power' ? 45 : ((kind === 'xp' || kind === 'coin') ? 60 : 30)); pk.born = game.time; pk.bob = rand(0, TAU);
@@ -2283,7 +2321,7 @@ function onBossDefeated(e) {
   spawnRing(e.x, e.y, '#ff6a6a', 360, 0.8);
   game.shake = 30; game.flash = 0.5; game.flashColor = 'rgba(255,255,255,';
   // generous reward drops
-  for (let i = 0; i < 40; i++) spawnPickup('xp', e.x + rand(-60, 60), e.y + rand(-60, 60), 6);
+  for (let i = 0; i < 40; i++) dropXP(e.x + rand(-60, 60), e.y + rand(-60, 60), 6);
   for (let i = 0; i < 6; i++) spawnPickup('coin', e.x + rand(-40, 40), e.y + rand(-40, 40), 30);
   spawnPickup('chest', e.x, e.y, 1);
   for (let i = 0; i < 3; i++) spawnPickup('power', e.x + rand(-60, 60), e.y + rand(-40, 40), pickPowerType());
@@ -3101,7 +3139,7 @@ function updatePickups(dt) {
 }
 function collectPickup(pk) {
   const p = game.player;
-  if (pk.kind === 'xp') { game.xpOrbsAlive--; gainXP(pk.value); sfx('xp'); if (pk.double) spawnFloater(p.x, p.y - p.r - 10, '+' + pk.value + ' XP', '#c79bff'); }
+  if (pk.kind === 'xp') { game.xpOrbsAlive--; gainXP(pk.value); sfx('xp'); if ((pk.tier || 0) >= 2 || pk.value >= 12) spawnFloater(p.x, p.y - p.r - 10, '+' + pk.value + ' XP', XP_TIERS[pk.tier || 0].color); }
   else if (pk.kind === 'coin') { gainCoins(pk.value); spawnFloater(p.x, p.y - p.r - 8, '+' + pk.value + '🪙', '#ffd166'); sfx('coin'); }
   else if (pk.kind === 'heal') { const h = Math.min(p.maxHp - p.hp, pk.value); p.hp += h; spawnFloater(p.x, p.y - p.r, '+' + Math.round(h) + ' HP', '#6dff8a'); sfx('heal'); }
   else if (pk.kind === 'nutrient') { spawnFloater(p.x, p.y - p.r - 8, '🧪 spore', '#9dff5f'); spawnParticles(pk.x, pk.y, '#9dff5f', 6, { life: 0.3 }); sfx('coin'); }
@@ -3392,7 +3430,7 @@ function rewardObjective() {
   const o = game.objective; if (!o) return;
   const coins = 120 + (game.director ? game.director.objCount : 0) * 20;
   gainCoins(coins);
-  for (let i = 0; i < 10; i++) spawnPickup('xp', o.x + rand(-40, 40), o.y + rand(-40, 40), 8);
+  for (let i = 0; i < 10; i++) dropXP(o.x + rand(-40, 40), o.y + rand(-40, 40), 8);
   spawnPickup('heal', o.x, o.y, 30);
   if (chance(0.5)) spawnPickup('chest', o.x, o.y, 1);
   bigBanner('✔ OBJECTIVE COMPLETE — +' + coins + '🪙', 3);
@@ -3727,9 +3765,10 @@ function drawPickups(t) {
       ctx.fillStyle = '#fff'; ctx.fillText(def.icon, 0, 1);
       ctx.restore(); continue;
     }
-    const spr = pk.kind === 'coin' ? SPR.coin : pk.kind === 'heal' ? SPR.biomassBig : pk.kind === 'chest' ? SPR.chest : pk.kind === 'nutrient' ? SPR.nutrient : (pk.double ? SPR.biomass2 : SPR.biomass);
+    const spr = pk.kind === 'coin' ? SPR.coin : pk.kind === 'heal' ? SPR.biomassBig : pk.kind === 'chest' ? SPR.chest : pk.kind === 'nutrient' ? SPR.nutrient : SPR['xp' + (pk.tier || 0)];
     ctx.save(); ctx.translate(pk.x, pk.y + bob);
     if (pk.kind === 'chest') { const s = 1 + 0.08 * Math.sin(t * 5); ctx.scale(s, s); }
+    else if (pk.kind === 'xp') { const s = clamp(0.85 + Math.log2(1 + pk.value) * 0.1, 0.85, 1.7); ctx.scale(s, s); }   // merged chunks grow
     ctx.drawImage(spr, -spr.width / 2, -spr.height / 2); ctx.restore();
   }
 }
