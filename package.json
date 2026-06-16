@@ -1,0 +1,61 @@
+{
+  "name": "bioevolution",
+  "productName": "BIOEVOLUTION",
+  "version": "1.0.0",
+  "description": "BIOEVOLUTION — an educational microbial survivors roguelite",
+  "main": "main.js",
+  "author": "PlutonianSurvivors",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux",
+    "dist:mac": "electron-builder --mac"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.plutoniansurvivors.bioevolution",
+    "productName": "BIOEVOLUTION",
+    "directories": { "output": "dist" },
+    "files": [
+      "index.html",
+      "main.js",
+      "build/icon.*"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "BIOEVOLUTION"
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.exe"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "icon": "build/icon.png",
+      "category": "Game"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "icon": "build/icon.png",
+      "category": "public.app-category.games"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+# dependencies & build output (never commit these — CI / local build regenerates them)
+node_modules/
+dist/
+package-lock.json
+npm-debug.log*
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.log

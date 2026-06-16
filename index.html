@@ -135,6 +135,10 @@
   .slot.empty { opacity: 0.28; }
   .slot.apex { border-color: var(--bio-amber);
     box-shadow: 0 0 16px rgba(255, 209, 102, 0.5), inset 0 0 12px rgba(255,209,102,0.15); }
+  .slot.mini { width: 30px; height: 30px; font-size: 15px; border-style: dashed; opacity: 0.92; }
+  .slot.mini .lvl { font-size: 8px; bottom: -4px; }
+  .slot.mini.mut { border-color: var(--bio-green); border-style: solid;
+    box-shadow: 0 0 10px rgba(109,255,138,0.4), inset 0 0 8px rgba(109,255,138,0.12); }
   .slot .lvl { position: absolute; right: -3px; bottom: -5px; font-size: 10px;
     font-weight: 800; background: #04121a; border: 1px solid var(--panel-edge);
     border-radius: 6px; padding: 0px 4px; color: var(--bio-cyan); }
@@ -242,6 +246,82 @@
   .credit { position: absolute; bottom: 10px; right: 14px; color: var(--ink-dim); font-size: 11px; opacity: 0.6; }
   .coinline { color: var(--bio-amber); font-weight: 800; font-size: 18px; }
 
+  /* ---- Save / backup modal ---- */
+  #save-modal .panel { max-width: 720px; width: 92vw; max-height: 92vh; overflow-y: auto; }
+  .save-box { margin: 14px auto 0; text-align: left; width: min(640px, 86vw); }
+  .save-box label { display: block; font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--ink-dim); margin-bottom: 6px; }
+  .save-box textarea {
+    width: 100%; height: 64px; resize: vertical; padding: 10px; line-height: 1.45;
+    background: rgba(3, 12, 18, 0.85); border: 1px solid var(--panel-edge); border-radius: 10px;
+    color: var(--bio-cyan); font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 11px;
+    word-break: break-all;
+  }
+  .save-box textarea:focus { outline: none; border-color: var(--bio-cyan); box-shadow: 0 0 0 2px rgba(47,246,255,0.15); }
+  #save-msg { min-height: 18px; margin-top: 8px; font-weight: 600; }
+
+  /* ---- Objective tracker (in-run, top-left) ---- */
+  #objective { position: absolute; top: 72px; left: 14px; width: 248px; display: none;
+    background: rgba(6, 18, 26, 0.78); border: 1px solid rgba(255, 209, 102, 0.4);
+    border-radius: 11px; padding: 9px 12px; backdrop-filter: blur(4px);
+    box-shadow: 0 6px 22px rgba(0,0,0,0.4); animation: toastin 0.3s ease; }
+  #objective .obj-head { font-size: 13px; font-weight: 800; letter-spacing: 0.5px; color: var(--bio-amber); }
+  #objective .obj-sub { font-size: 11px; color: var(--ink-dim); margin: 3px 0 6px; }
+  #objective .obj-bar { height: 6px; border-radius: 4px; background: rgba(0,0,0,0.45); overflow: hidden; }
+  #objective .obj-fill { height: 100%; width: 0%; border-radius: 4px;
+    background: linear-gradient(90deg, var(--bio-amber), var(--bio-green)); box-shadow: 0 0 8px var(--bio-amber); transition: width 0.15s linear; }
+
+  /* ---- Paused: large stat sheet + arsenal (Spell-Brigade style) ---- */
+  #pause-modal .panel { max-width: 920px; width: 94vw; max-height: 92vh; overflow-y: auto; }
+  #pause-sub { color: var(--bio-cyan); font-size: 13px; margin-top: 4px; letter-spacing: 0.5px; }
+  #pause-body { width: 100%; margin-top: 14px; }
+  .ps-section { margin-bottom: 18px; }
+  .ps-section h3 { font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--bio-green);
+    margin-bottom: 10px; opacity: 0.9; }
+  .ps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 9px; }
+  .ps-cell { display: flex; align-items: center; gap: 10px; padding: 9px 13px;
+    background: rgba(8, 20, 28, 0.7); border: 1px solid rgba(74,226,255,0.14); border-radius: 10px; }
+  .ps-cell .ps-ic { font-size: 19px; width: 22px; text-align: center; }
+  .ps-cell .ps-lbl { color: var(--ink-dim); font-size: 13px; flex: 1; }
+  .ps-cell .ps-val { font-size: 19px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .ps-cell .ps-val.up { color: var(--bio-green); text-shadow: 0 0 10px rgba(109,255,138,0.45); }
+  .ps-cell .ps-val.down { color: var(--bio-pink); }
+  .ps-arsenal { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 11px; }
+  .ps-item { background: rgba(8, 20, 28, 0.7); border: 1px solid rgba(74,226,255,0.16); border-radius: 11px; padding: 11px 13px; }
+  .ps-item.apex { border-color: var(--bio-amber); box-shadow: 0 0 16px rgba(255,209,102,0.18); }
+  .ps-item-h { display: flex; align-items: center; gap: 9px; }
+  .ps-item-ic { font-size: 22px; filter: drop-shadow(0 0 8px currentColor); }
+  .ps-item-nm { font-size: 15px; font-weight: 800; flex: 1; }
+  .ps-item-lv { font-size: 11px; font-weight: 800; color: var(--bio-amber); }
+  .ps-item-d { font-size: 12px; color: var(--ink-dim); line-height: 1.5; margin-top: 6px; }
+  .ps-item-s { font-size: 11px; color: var(--bio-cyan); margin-top: 5px; font-variant-numeric: tabular-nums;
+    font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .ps-buffs { font-size: 13px; color: var(--bio-amber); padding: 8px 12px; background: rgba(40,30,8,0.4);
+    border: 1px solid rgba(255,209,102,0.3); border-radius: 10px; }
+
+  /* ---- Locked / selected character cards ---- */
+  .card.locked { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.6); }
+  .card.locked:hover { transform: none; box-shadow: none; border-color: rgba(74,226,255,0.25); }
+  .card.sel { border-color: var(--bio-green); box-shadow: 0 0 22px rgba(109,255,138,0.35); }
+  .card.pad-focus { border-color: var(--bio-cyan) !important;
+    box-shadow: 0 0 0 3px rgba(47,246,255,0.55), 0 14px 40px rgba(47,246,255,0.3) !important; transform: translateY(-5px); }
+
+  /* ---- Dev asset inspector ---- */
+  #dev-modal .panel { max-width: 1080px; width: 95vw; max-height: 92vh; overflow-y: auto; }
+  #dev-body { margin-top: 14px; }
+  .dev-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .dev-table th, .dev-table td { text-align: left; padding: 6px 9px; border-bottom: 1px solid rgba(74,226,255,0.12); vertical-align: top; }
+  .dev-table th { color: var(--bio-cyan); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; position: sticky; top: 0;
+    background: rgba(8,20,28,0.96); }
+  .dev-table tr:hover td { background: rgba(47,246,255,0.05); }
+  .dev-table .num { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--ink); }
+  .dev-sect { margin: 6px 0 14px; }
+  .dev-sect h3 { font-size: 15px; color: var(--bio-green); margin-bottom: 8px; letter-spacing: 0.5px; }
+  .dev-note { font-size: 12px; color: var(--ink-dim); line-height: 1.6; }
+  .dev-note code { color: var(--bio-amber); font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .dev-pill { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 8px; margin: 1px 3px 1px 0;
+    border: 1px solid rgba(74,226,255,0.25); color: var(--ink-dim); }
+
   /* mobile joystick */
   #stick { position: absolute; z-index: 11; display: none; width: 120px; height: 120px;
     border-radius: 50%; border: 2px solid rgba(74,226,255,0.3); background: rgba(6,18,26,0.3); }
@@ -268,6 +348,7 @@
       <div class="hud-chip" id="kills-chip"><span class="ic">☠</span><span id="kills-val">0</span></div>
       <div class="hud-chip" id="coin-chip"><span class="ic">🪙</span><span id="coin-val">0</span></div>
     </div>
+    <div id="objective"></div>
     <div id="banner"></div>
     <div id="tray">
       <div class="tray-group">
@@ -295,15 +376,23 @@
     <div class="title">BIOEVOLUTION</div>
     <div class="subtitle">Survive the Microbial Apocalypse · Evolve · Mutate</div>
     <div class="menu-actions">
-      <button class="btn primary" data-act="play">▶ BEGIN INCUBATION</button>
+      <button class="btn primary" id="btn-continue" data-act="continue" style="display:none">▶ CONTINUE RUN</button>
+      <button class="btn" data-act="play">▶ BEGIN INCUBATION</button>
       <button class="btn" data-act="shop">🧪 Genome Lab (Meta-Upgrades)</button>
       <button class="btn" data-act="codex">📖 Bio-Codex</button>
-      <button class="btn ghost small" data-act="reset">Reset Save Data</button>
+      <button class="btn" data-act="dev">🔧 Asset Inspector (Dev)</button>
+      <button class="btn ghost small" data-act="savedata">💾 Save · Backup &amp; Transfer</button>
+      <div class="row" style="margin-top:8px; gap:12px;">
+        <button class="btn ghost small" id="btn-sound" data-act="sound" style="min-width:0">🔊 Sound: On</button>
+        <button class="btn ghost small" id="btn-music" data-act="music" style="min-width:0">🎵 Music: On</button>
+        <input id="vol-slider" type="range" min="0" max="100" value="60" title="Volume" style="width:130px; accent-color:#2ff6ff;" />
+      </div>
     </div>
     <div class="hint">
       Move: <span class="kbd">W</span><span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>
       / <span class="kbd">Arrows</span> / Mouse-hold · Weapons fire automatically<br/>
-      Pause: <span class="kbd">Esc</span> · Reroll level-up: <span class="kbd">R</span>
+      Pause: <span class="kbd">Esc</span> (view your stats &amp; arsenal) · Reroll level-up: <span class="kbd">R</span> · Map: <span class="kbd">M</span><br/>
+      🎮 Controller: Left stick / D-pad move · <span class="kbd">A</span> select · <span class="kbd">B</span> back · <span class="kbd">X</span> reroll · <span class="kbd">Start</span> pause
     </div>
     <div class="credit">Educational survivors prototype · Canvas2D · single-file</div>
   </div>
@@ -342,14 +431,27 @@
     </div>
   </div>
 
+  <!-- ===== Mutation reward (objective completion) ===== -->
+  <div class="overlay" id="mutation-modal">
+    <div class="panel">
+      <div class="modal-head">
+        <h2 style="background:linear-gradient(90deg,var(--bio-green),var(--bio-cyan));-webkit-background-clip:text;background-clip:text;color:transparent;">🧬 MUTATION TRIGGERED</h2>
+        <p>Objective complete — splice a permanent mutation into your genome. They stack toward the ultimate bioevolution.</p>
+      </div>
+      <div class="cards" id="mutation-cards"></div>
+    </div>
+  </div>
+
   <!-- ===== Pause ===== -->
   <div class="overlay" id="pause-modal">
-    <div class="panel col">
-      <div class="modal-head"><h2>SIMULATION PAUSED</h2></div>
-      <div id="pause-stats" class="stat-grid"></div>
+    <div class="panel">
+      <div class="modal-head"><h2>SIMULATION PAUSED</h2><p id="pause-sub"></p></div>
+      <div class="codex-tabs" id="pause-tabs"></div>
+      <div id="pause-body"></div>
       <div class="menu-actions">
         <button class="btn primary" data-act="resume">▶ Resume</button>
-        <button class="btn" data-act="quit">⬛ Abandon Run</button>
+        <button class="btn" data-act="savequit">💾 Save &amp; Quit to Menu</button>
+        <button class="btn ghost" data-act="quit">⬛ Abandon Run</button>
       </div>
     </div>
   </div>
@@ -387,6 +489,53 @@
         <p>Every entity in BIOEVOLUTION is rooted in real cell &amp; microbiology. Learn the science behind the swarm.</p></div>
       <div class="codex-tabs" id="codex-tabs"></div>
       <div class="codex-list" id="codex-list"></div>
+      <div class="row" style="margin-top:18px;"><button class="btn" data-act="back-main">← Back to Menu</button></div>
+    </div>
+  </div>
+
+  <!-- ===== Save / Backup / Transfer ===== -->
+  <div class="overlay" id="save-modal">
+    <div class="panel">
+      <div class="modal-head"><h2>💾 SAVE · BACKUP · TRANSFER</h2>
+        <p>Progress is stored in <b>this browser</b>. Copy your save code to back it up, or paste one in to move your DNA to another device or browser.</p></div>
+      <div id="save-stats" class="stat-grid"></div>
+      <div class="save-box">
+        <label>Your save code — copy &amp; keep it safe</label>
+        <textarea id="save-export" readonly spellcheck="false"></textarea>
+        <div class="row" style="justify-content:flex-start; gap:8px; margin-top:8px;">
+          <button class="btn small primary" id="save-copy">📋 Copy code</button>
+        </div>
+      </div>
+      <div class="save-box">
+        <label>Import a save code — paste &amp; load</label>
+        <textarea id="save-import" spellcheck="false" placeholder="Paste a BIOEVO… code here to restore progress"></textarea>
+        <div class="row" style="justify-content:flex-start; gap:8px; margin-top:8px;">
+          <button class="btn small" id="save-load">⤵ Load code</button>
+          <button class="btn small ghost" id="save-reset" style="color:var(--bio-red); border-color:rgba(255,90,90,0.4)">🗑 Erase all data</button>
+        </div>
+      </div>
+      <div id="save-msg" class="hint"></div>
+      <div class="row" style="margin-top:14px;"><button class="btn" data-act="back-main">← Back to Menu</button></div>
+    </div>
+  </div>
+
+  <!-- ===== Character (cell line) select ===== -->
+  <div class="overlay" id="char-modal">
+    <div class="panel">
+      <div class="modal-head"><h2>SELECT YOUR CELL LINE</h2>
+        <p>Each organism opens with a different weapon and stat identity. Unlock more by hitting play milestones.</p></div>
+      <div class="cards" id="char-cards"></div>
+      <div class="row" style="margin-top:18px;"><button class="btn ghost small" data-act="back-main">← Back</button></div>
+    </div>
+  </div>
+
+  <!-- ===== Dev asset inspector ===== -->
+  <div class="overlay" id="dev-modal">
+    <div class="panel">
+      <div class="modal-head"><h2>🔧 ASSET INSPECTOR</h2>
+        <p>Live data straight from the game's definition tables — enemies, spawn windows, boss stats, weapon scaling, characters and core formulas.</p></div>
+      <div class="codex-tabs" id="dev-tabs"></div>
+      <div id="dev-body"></div>
       <div class="row" style="margin-top:18px;"><button class="btn" data-act="back-main">← Back to Menu</button></div>
     </div>
   </div>
@@ -445,6 +594,10 @@ function shuffle(arr) {
 /* Angle helpers */
 const angTo = (ax, ay, bx, by) => Math.atan2(by - ay, bx - ax);
 function angLerp(a, b, t) { let d = ((b - a + Math.PI) % TAU) - Math.PI; if (d < -Math.PI) d += TAU; return a + d * t; }
+/* Signed smallest difference between two angles, normalized to (-π, π].     *
+ * Robust for ANY input magnitude (JS `%` keeps the dividend's sign, so the   *
+ * naive one-liner breaks once an accumulating angle passes ±2π).             */
+function angDiff(a, b) { return a - b - TAU * Math.round((a - b) / TAU); }
 
 /* ======================================================================== *
  *  SECTION 2 — MODULAR ARSENAL DATA DICTIONARY (WEAPONS)                     *
@@ -515,7 +668,7 @@ const WEAPONS = [
     desc: 'Splits off orbiting sub-clones that body-block, inherit weapon damage, and shield the core.',
     fact: 'Mitosis is how one cell divides into two genetically identical daughter cells — DNA is copied, condensed into chromosomes, and split.',
     levelText: [
-      '1 clone · 120px orbit · 30% inherited dmg · melts after 3 hits · 15s cd',
+      '1 clone · 120px orbit · 30% inherited dmg · melts after 3 hits · 7s cd',
       'clone limit → 2',
       'inherited damage → 40%',
       'durability → melts after 5 hits',
@@ -525,7 +678,7 @@ const WEAPONS = [
       'on melt: cellular explosion, 250 dmg in 150px'
     ],
     getStats(L) {
-      const s = { count: 1, orbit: 120, scalar: 0.30, hits: 3, cooldown: 15, knockback: 0, explode: 0, explodeRadius: 0, spin: 1.4 };
+      const s = { count: 1, orbit: 120, scalar: 0.30, hits: 3, cooldown: 7, knockback: 0, explode: 0, explodeRadius: 0, spin: 2.2 };
       if (L >= 2) { s.count = 2; }
       if (L >= 3) { s.scalar = 0.40; }
       if (L >= 4) { s.hits = 5; }
@@ -542,7 +695,7 @@ const WEAPONS = [
     desc: 'Drops volatile spore mines behind your path that detonate on contact.',
     fact: 'Spores are dormant survival capsules. Some bacterial endospores can lie inert for thousands of years, then revive when conditions improve.',
     levelText: [
-      '1 spore / 1.8s · 18 dmg · 60px blast',
+      '1 spore / 1.5s · 18 dmg · 60px blast',
       '2 spores per drop (cluster)',
       '+8 damage · +25% blast radius',
       'leaves toxic cloud: 2.0s, 5 dmg/s',
@@ -552,7 +705,7 @@ const WEAPONS = [
       'spores gain magnetic tracking (100px)'
     ],
     getStats(L) {
-      const s = { count: 1, cooldown: 1.8, damage: 18, blast: 60, cloudDur: 0, cloudDps: 0, magnetic: false, arm: 0.35, trigger: 64 };
+      const s = { count: 1, cooldown: 1.5, damage: 18, blast: 60, cloudDur: 0, cloudDps: 0, magnetic: false, arm: 0.3, trigger: 90 };
       if (L >= 2) { s.count = 2; }
       if (L >= 3) { s.damage += 8; s.blast *= 1.25; }
       if (L >= 4) { s.cloudDur = 2.0; s.cloudDps = 5; }
@@ -616,6 +769,33 @@ const WEAPONS = [
       if (L >= 8) { s.surge = 0.40; s.surgeDur = 0.8; }
       return s;
     }
+  },
+  {
+    id: 'trichocyst', name: 'Trichocyst Volley', icon: '🎯', color: '#9fe0ff', type: 'weapon',
+    maxLevel: 8, evoPassive: null,            // beginner weapon — reliable, no Apex evolution
+    desc: 'Auto-fires barbed defensive threads at the nearest microbes — no aiming required.',
+    fact: 'Paramecia carry trichocysts just under the membrane; touched or threatened, they explosively fire needle-like threads for defense.',
+    levelText: [
+      '2 needles · 9 dmg · 0.7s cd · auto-aims nearest',
+      '+1 needle',
+      '+3 damage · gains slight homing',
+      '−0.1s cooldown',
+      '+1 needle · pierces 1 enemy',
+      '+4 damage',
+      '−0.1s cooldown · pierces 2',
+      '+1 needle · +6 damage'
+    ],
+    getStats(L) {
+      const s = { count: 2, damage: 9, cooldown: 0.7, pierce: 0, homing: 0, speed: 560 };
+      if (L >= 2) { s.count += 1; }
+      if (L >= 3) { s.damage += 3; s.homing = 0.05; }
+      if (L >= 4) { s.cooldown -= 0.1; }
+      if (L >= 5) { s.count += 1; s.pierce = 1; }
+      if (L >= 6) { s.damage += 4; }
+      if (L >= 7) { s.cooldown -= 0.1; s.pierce = 2; }
+      if (L >= 8) { s.count += 1; s.damage += 6; }
+      return s;
+    }
   }
 ];
 const WEAPON_BY_ID = Object.fromEntries(WEAPONS.map(w => [w.id, w]));
@@ -658,6 +838,67 @@ const PASSIVES = [
 const PASSIVE_BY_ID = Object.fromEntries(PASSIVES.map(p => [p.id, p]));
 
 /* ======================================================================== *
+ *  SECTION 3b — SECONDARY PASSIVES ("ADAPTATIONS")                           *
+ *  Minor, freely-stacking traits that appear in the level-up pool alongside  *
+ *  the six organelles. They do NOT consume an organelle slot or feed an Apex  *
+ *  pairing — they're the survivors-style "passive items" that round a build   *
+ *  out (regen, more HP, faster attacks, raw damage, speed, crit).            *
+ * ======================================================================== */
+const ADAPTATIONS = [
+  { id: 'regen', name: 'Contractile Vacuole', icon: '♻️', color: '#6dff8a', max: 5, type: 'adapt',
+    desc: 'Continuously regenerate health.', tierText: t => '+' + (t * 0.6).toFixed(1) + ' HP / second',
+    fact: 'A contractile vacuole bails excess water out of a freshwater cell that would otherwise swell and burst.' },
+  { id: 'vitality', name: 'Reinforced Wall', icon: '🧱', color: '#ff5fa2', max: 5, type: 'adapt',
+    desc: 'Increase maximum health.', tierText: t => '+' + (t * 8) + '% max HP',
+    fact: 'A rigid cell wall of peptidoglycan or cellulose resists the internal turgor pressure pushing the membrane outward.' },
+  { id: 'reflex', name: 'Hyperkinesis', icon: '⚡', color: '#ffd166', max: 5, type: 'adapt',
+    desc: 'Fire all weapons faster.', tierText: t => '−' + (t * 6) + '% weapon cooldown',
+    fact: 'Enzymes can speed a reaction a billion-fold — catalysis is biochemistry\'s overclock button.' },
+  { id: 'motility', name: 'Myosin Drive', icon: '🏃', color: '#5fc8ff', max: 5, type: 'adapt',
+    desc: 'Move faster.', tierText: t => '+' + (t * 6) + '% movement speed',
+    fact: 'Myosin motor proteins "walk" hand-over-hand along actin filaments to haul cargo and contract muscle.' },
+  { id: 'potency', name: 'Toxin Concentrate', icon: '☣️', color: '#9dff5f', max: 5, type: 'adapt',
+    desc: 'Deal more damage.', tierText: t => '+' + (t * 7) + '% damage',
+    fact: 'Botulinum, the most acutely toxic substance known, blocks the nerve signals that tell muscles to contract.' },
+  { id: 'lethality', name: 'Nucleases', icon: '🎯', color: '#b07bff', max: 5, type: 'adapt',
+    desc: 'Raise critical chance and critical damage.', tierText: t => '+' + (t * 3) + '% crit · +' + (t * 15) + '% crit dmg',
+    fact: 'Nucleases are molecular scissors that cut nucleic acids — CRISPR\'s Cas9 is a programmable one used to edit genes.' },
+];
+const ADAPT_BY_ID = Object.fromEntries(ADAPTATIONS.map(a => [a.id, a]));
+
+/* ======================================================================== *
+ *  SECTION 3c — RUN MUTATIONS (objective rewards, stackable, build-defining) *
+ *  Completing an in-run objective grants a choice of MUTATION. They stack    *
+ *  toward an over-the-top "ultimate" build: extra projectiles, counter-       *
+ *  rotating melee zones, projectiles that split on hit or at end of flight.   *
+ * ======================================================================== */
+const MUTATIONS = [
+  { id: 'multishot', name: 'Polymerase Burst', icon: '➕', color: '#b07bff', max: 6,
+    desc: '+1 projectile for Phage Darts, Acidic Vacuoles and Spore Burst.',
+    fact: 'DNA polymerase copies all ~3 billion bases of your genome with roughly one error per billion — relentless mass production.' },
+  { id: 'mirror', name: 'Bilateral Symmetry', icon: '🔄', color: '#6dff8a', max: 4,
+    desc: 'Cilia & Flagellar strikes spawn a second, counter-rotating damage zone cast at the same instant.',
+    fact: 'Mirror-image (bilateral) body plans gave animals a definite front and back — and a direction to swim toward prey.' },
+  { id: 'splitHit', name: 'Schizogony', icon: '💥', color: '#ffd166', max: 4,
+    desc: 'Projectiles burst into shrapnel fragments when they strike an enemy.',
+    fact: 'In schizogony the malaria parasite copies itself many times inside one blood cell, then ruptures it all at once.' },
+  { id: 'splitEnd', name: 'Terminal Fission', icon: '✳️', color: '#5fc8ff', max: 4,
+    desc: 'Projectiles split into fragments when they reach the end of their flight.',
+    fact: 'Binary fission: one bacterium splits cleanly into two identical daughters, sometimes every twenty minutes.' },
+  { id: 'power', name: 'Hypermutation', icon: '☢️', color: '#ff5a5a', max: 6,
+    desc: '+20% to all damage dealt.',
+    fact: 'Immune B-cells deliberately hypermutate their antibody genes, evolving a tighter grip on a pathogen within days.' },
+  { id: 'haste', name: 'Metabolic Overdrive', icon: '⏩', color: '#ffd166', max: 6,
+    desc: '−12% weapon cooldown (multiplicative).',
+    fact: 'A shrew\'s heart can beat ~1000 times a minute; its furnace metabolism forces it to eat nearly every hour to survive.' },
+  { id: 'giant', name: 'Macromolecular Bloom', icon: '🔬', color: '#2ff6ff', max: 5,
+    desc: '+20% weapon area, range and projectile size.',
+    fact: 'The biggest cell you can see unaided is an ostrich-egg yolk — a single cell several centimetres across.' },
+];
+const MUT_BY_ID = Object.fromEntries(MUTATIONS.map(m => [m.id, m]));
+function mut(id) { return (game.mutations && game.mutations[id]) || 0; }
+
+/* ======================================================================== *
  *  SECTION 4 — APEX MUTATION MATRIX (EVOLUTION SYNERGIES)                    *
  *  Unlocks when base weapon hits Lvl 8 AND its paired passive is >= Lvl 1.   *
  * ======================================================================== */
@@ -684,6 +925,150 @@ const APEX = [
 const APEX_BY_BASE = Object.fromEntries(APEX.map(a => [a.base, a]));
 
 /* ======================================================================== *
+ *  SECTION 4b — PLAYABLE CELL LINES (UNLOCKABLE CHARACTERS)                  *
+ *  The first cell (Paramecium) is always available and always opens with     *
+ *  Cilia Whips. Every other line unlocks from a play milestone and brings a   *
+ *  different starting weapon + stat identity — Vampire-Survivors style.       *
+ *  `mods` are multipliers folded into createPlayer()/recomputeStats().        *
+ * ======================================================================== */
+const CHARACTERS = [
+  { id: 'paramecium', name: 'Paramecium', cell: 'Paramecium caudatum', icon: '🧫', color: '#6dff8a',
+    weapon: 'trichocyst', mods: {},
+    desc: 'The beginner-friendly all-rounder. Opens with the auto-aiming Trichocyst Volley — point and survive.',
+    fact: 'Paramecia fire trichocysts — explosive needle-threads — for defense, and beat thousands of cilia to swim.',
+    unlock: { always: true, hint: 'Available from the start.' } },
+  { id: 'euglena', name: 'Euglena', cell: 'Euglena viridis', icon: '🌀', color: '#ff5fa2',
+    weapon: 'flagella', mods: { speed: 1.15 }, passiveStart: { id: 'phyto', tier: 1 },
+    desc: 'A darting swimmer: +15% move speed and a head start on pickup magnetism. Opens with the Flagellar Tail Strike.',
+    fact: 'Euglena swim with a single whip-like flagellum and steer toward light using a red eyespot for photosynthesis.',
+    unlock: { stat: 'bestTime', value: 300, hint: 'Survive 5:00 in a single run.' } },
+  { id: 'bdellovibrio', name: 'Bdellovibrio', cell: 'B. bacteriovorus', icon: '🦠', color: '#b07bff',
+    weapon: 'phage', mods: { damage: 1.12, maxHp: 0.85, speed: 1.08 },
+    desc: 'A glass-cannon predator: +12% damage and faster, but a fragile membrane (−15% HP). Opens with Phage Darts.',
+    fact: 'Bdellovibrio is a bacterium that hunts other bacteria — it bores inside its prey and devours it from within.',
+    unlock: { stat: 'totalKills', value: 2000, hint: 'Defeat 2,000 microbes (lifetime).' } },
+  { id: 'phagocyte', name: 'Phagocyte', cell: 'Macrophage (allied)', icon: '⚪', color: '#7fa8b8',
+    weapon: 'vacuole', mods: { maxHp: 1.30, speed: 0.92 }, passiveStart: { id: 'cyto', tier: 1 },
+    desc: 'A living tank: +30% HP and innate armor, but a touch slower. Opens with Acidic Vacuoles.',
+    fact: 'Phagocytes are immune cells that engulf invaders and dissolve them in acidic vacuoles — exactly what this weapon mimics.',
+    unlock: { stat: 'bestLevel', value: 15, hint: 'Reach Level 15 in a single run.' } },
+  { id: 'yeast', name: 'Budding Yeast', cell: 'S. cerevisiae', icon: '🍄', color: '#ffd166',
+    weapon: 'spore', mods: { area: 1.12, pickup: 1.15 },
+    desc: 'A spreader: +12% area and a wider pickup vacuum. Opens with Spore Burst mines.',
+    fact: 'Yeasts reproduce by budding — a daughter pinches off the parent. They leaven bread and ferment every beer and wine.',
+    unlock: { stat: 'bossKills', value: 1, hint: 'Defeat the Macrophage Sentinel boss.' } },
+  { id: 'volvox', name: 'Volvox Colony', cell: 'Volvox aureus', icon: '⚭', color: '#2ff6ff',
+    weapon: 'mitosis', weaponLevel: 2, mods: { maxHp: 1.10, area: 1.08 }, passiveStart: { id: 'ribo', tier: 1 },
+    desc: 'A colonial swarm-keeper: sturdier, with a damage head start. Opens with TWO orbiting Mitosis Clones.',
+    fact: 'Volvox is a hollow sphere of hundreds–thousands of cells living as one — an early experiment in multicellular life.',
+    unlock: { stat: 'bestTime', value: 600, hint: 'Survive 10:00 in a single run.' } },
+  { id: 'tardigrade', name: 'Tardigrade', cell: 'Hypsibius dujardini', icon: '🐻', color: '#ffb066',
+    weapon: 'cilia', mods: { maxHp: 1.55, speed: 0.84, armorFlat: 2, hazardImmune: true },
+    desc: 'The indestructible water bear: +55% HP, innate armor, and total immunity to environmental hazards — but slow. Opens with Cilia Whips.',
+    fact: 'Tardigrades survive boiling, freezing, the vacuum of space and lethal radiation by drying into a "tun" — life\'s ultimate survivor.',
+    unlock: { stat: 'bossKills', value: 2, hint: 'Defeat the Macrophage Sentinel twice (lifetime).' } },
+  { id: 'physarum', name: 'Physarum', cell: 'Physarum polycephalum', icon: '🟡', color: '#d4ff3a',
+    weapon: 'spore', mods: { speed: 1.06, area: 1.1, slimeTrail: true },
+    desc: 'A slime-mold zone controller. Lays a living trail: YOU move faster on it, enemies bog down in it. Opens with Spore Burst.',
+    fact: 'Physarum is one giant many-nucleated cell that can solve mazes and rebuild efficient transport networks with no brain at all.',
+    unlock: { stat: 'bestEndless', value: 600, hint: 'Survive 10:00 in Endless mode.' } },
+  { id: 'radiolarian', name: 'Radiolarian', cell: 'Radiolaria', icon: '🔆', color: '#cdefff',
+    weapon: 'trichocyst', mods: { maxHp: 0.92, maxShield: 2.6, reflect: true },
+    desc: 'An armored geometric drifter. A thick silica shell holds a huge regenerating barrier that reflects enemy fire back at them. Opens with Trichocyst Volley.',
+    fact: 'Radiolarians build dazzling silica skeletons of mathematical symmetry — microscopic glass sculptures that astonished Ernst Haeckel.',
+    unlock: { stat: 'totalKills', value: 8000, hint: 'Defeat 8,000 microbes (lifetime).' } },
+];
+const CHAR_BY_ID = Object.fromEntries(CHARACTERS.map(c => [c.id, c]));
+
+/* Per-cell-line visual identity (colour, body shape, surface feature) so each *
+ * character renders distinctly in drawPlayer instead of all looking the same. */
+const CHAR_VIZ = {
+  paramecium:   { glow: '#2ff6ff', body: ['rgba(190,255,255,0.95)', 'rgba(47,246,255,0.5)', 'rgba(47,246,255,0.06)'],
+                  nucleus: ['rgba(10,40,55,0.85)', 'rgba(120,230,255,0.9)'], feature: 'cilia', elong: 1.12 },
+  euglena:      { glow: '#ff5fa2', body: ['rgba(255,205,228,0.95)', 'rgba(255,95,162,0.5)', 'rgba(255,95,162,0.06)'],
+                  nucleus: ['rgba(60,12,36,0.85)', 'rgba(255,175,208,0.9)'], feature: 'flagellum', eyespot: '#ff3b3b', elong: 1.45 },
+  bdellovibrio: { glow: '#b07bff', body: ['rgba(228,212,255,0.95)', 'rgba(176,123,255,0.5)', 'rgba(176,123,255,0.06)'],
+                  nucleus: ['rgba(42,22,72,0.85)', 'rgba(214,186,255,0.9)'], feature: 'vibrio', elong: 1.6 },
+  phagocyte:    { glow: '#aac4d6', body: ['rgba(238,247,255,0.96)', 'rgba(150,180,200,0.5)', 'rgba(120,150,175,0.08)'],
+                  nucleus: ['rgba(70,92,112,0.85)', 'rgba(214,232,246,0.9)'], feature: 'pseudopods', elong: 1.0 },
+  yeast:        { glow: '#ffd166', body: ['rgba(255,242,205,0.96)', 'rgba(255,209,102,0.55)', 'rgba(225,165,40,0.08)'],
+                  nucleus: ['rgba(120,82,12,0.85)', 'rgba(255,232,165,0.9)'], feature: 'bud', elong: 1.0 },
+  volvox:       { glow: '#3dffba', body: ['rgba(205,255,238,0.92)', 'rgba(61,255,186,0.42)', 'rgba(47,200,150,0.05)'],
+                  nucleus: ['rgba(10,55,40,0.6)', 'rgba(150,255,210,0.85)'], feature: 'colony', elong: 1.0 },
+  tardigrade:   { glow: '#ffb066', body: ['rgba(255,224,180,0.96)', 'rgba(210,150,80,0.55)', 'rgba(150,95,40,0.08)'],
+                  nucleus: ['rgba(90,55,20,0.85)', 'rgba(255,224,170,0.9)'], feature: 'tardigrade', elong: 1.28 },
+  physarum:     { glow: '#d4ff3a', body: ['rgba(238,255,170,0.94)', 'rgba(190,235,40,0.5)', 'rgba(140,180,20,0.06)'],
+                  nucleus: ['rgba(70,90,10,0.7)', 'rgba(225,255,150,0.9)'], feature: 'slime', elong: 1.05 },
+  radiolarian:  { glow: '#cdefff', body: ['rgba(235,250,255,0.95)', 'rgba(150,210,240,0.45)', 'rgba(120,170,210,0.06)'],
+                  nucleus: ['rgba(40,70,90,0.75)', 'rgba(210,240,255,0.9)'], feature: 'radiolarian', elong: 1.0 },
+};
+function charViz() { return CHAR_VIZ[game.character] || CHAR_VIZ.paramecium; }
+
+/* A cell line is playable once its milestone is met (or already recorded). */
+function charUnlocked(c) {
+  if (!c) return false;
+  if (SAVE.chars[c.id]) return true;
+  const u = c.unlock || {};
+  if (u.always) return true;
+  if (u.stat === 'bestTime')   return (SAVE.best.time || 0) >= u.value;
+  if (u.stat === 'bestEndless') return (SAVE.best.endless || 0) >= u.value;
+  if (u.stat === 'bestLevel')  return (SAVE.best.level || 0) >= u.value;
+  if (u.stat === 'totalKills') return (SAVE.stats.totalKills || 0) >= u.value;
+  if (u.stat === 'bossKills')  return (SAVE.stats.bossKills || 0) >= u.value;
+  return false;
+}
+/* Promote any freshly-earned cell lines into the save; return the new ones. */
+function evaluateUnlocks() {
+  const newly = [];
+  for (const c of CHARACTERS) if (!SAVE.chars[c.id] && charUnlocked(c)) { SAVE.chars[c.id] = true; newly.push(c); }
+  if (newly.length) commitSave();
+  return newly;
+}
+
+/* ======================================================================== *
+ *  SECTION 4c — MICRO-BOOST PADS (Grind-Survivors-style channel circles)     *
+ *  Glowing circles appear in the world. Stand inside one to channel it;      *
+ *  finishing grants a PERMANENT (for this run) stat boost. The pad's colour   *
+ *  telegraphs its rarity tier — and the numbers — before you commit to        *
+ *  standing still in the middle of a swarm.                                  *
+ * ======================================================================== */
+const BOOST_RARITIES = [
+  { id: 'green',  name: 'Adaptive',  dot: '🟢', color: '#6dff8a', rgb: '109,255,138', weight: 56, channel: 3.0 },
+  { id: 'blue',   name: 'Enhanced',  dot: '🔵', color: '#5fc8ff', rgb: '95,200,255',  weight: 27, channel: 3.6 },
+  { id: 'purple', name: 'Mutagenic', dot: '🟣', color: '#b07bff', rgb: '176,123,255', weight: 13, channel: 4.2 },
+  { id: 'orange', name: 'LEGENDARY', dot: '🟠', color: '#ff9d3a', rgb: '255,157,58',  weight: 4,  channel: 5.0 },
+];
+/* values[] indexes match BOOST_RARITIES order: [green, blue, purple, orange]. */
+const BOOST_STATS = [
+  { id: 'atkspd', name: 'Attack Speed',   icon: '⚡', values: [0.05, 0.08, 0.12, 0.18],
+    fmt: v => '−' + Math.round(v * 100) + '% weapon cooldown', apply: (bo, v) => { bo.cooldownMul *= (1 - v); } },
+  { id: 'movspd', name: 'Movement Speed', icon: '🏃', values: [0.08, 0.12, 0.18, 0.25],
+    fmt: v => '+' + Math.round(v * 100) + '% movement speed', apply: (bo, v) => { bo.speedMul *= (1 + v); } },
+  { id: 'range',  name: 'Range & Area',   icon: '📐', values: [0.10, 0.14, 0.20, 0.30],
+    fmt: v => '+' + Math.round(v * 100) + '% weapon range / area', apply: (bo, v) => { bo.areaMul *= (1 + v); } },
+  { id: 'magnet', name: 'Pickup Radius',  icon: '🧲', values: [0.10, 0.16, 0.24, 0.40],
+    fmt: v => '+' + Math.round(v * 100) + '% pickup radius', apply: (bo, v) => { bo.pickupMul *= (1 + v); } },
+  { id: 'power',  name: 'Damage',         icon: '💥', values: [0.05, 0.08, 0.12, 0.20],
+    fmt: v => '+' + Math.round(v * 100) + '% damage', apply: (bo, v) => { bo.damageMul *= (1 + v); } },
+  { id: 'vital',  name: 'Max Health',     icon: '❤️', values: [0.08, 0.12, 0.18, 0.28],
+    fmt: v => '+' + Math.round(v * 100) + '% max HP', apply: (bo, v) => { bo.hpMul *= (1 + v); } },
+  { id: 'regen',  name: 'Regeneration',   icon: '♻️', values: [0.4, 0.7, 1.1, 1.8],
+    fmt: v => '+' + v + ' HP/s regeneration', apply: (bo, v) => { bo.regenFlat += v; } },
+  { id: 'crit',   name: 'Critical Chance', icon: '🎯', values: [0.02, 0.03, 0.05, 0.08],
+    fmt: v => '+' + Math.round(v * 100) + '% crit chance', apply: (bo, v) => { bo.critAdd += v; } },
+];
+const BOOST_STAT_BY_ID = Object.fromEntries(BOOST_STATS.map(s => [s.id, s]));
+function defaultBoosts() {
+  return { cooldownMul: 1, speedMul: 1, areaMul: 1, pickupMul: 1, damageMul: 1, hpMul: 1, regenFlat: 0, critAdd: 0 };
+}
+function rollBoostRarity() {
+  let total = 0; for (const r of BOOST_RARITIES) total += r.weight;
+  let roll = rand(0, total);
+  for (let i = 0; i < BOOST_RARITIES.length; i++) { roll -= BOOST_RARITIES[i].weight; if (roll <= 0) return i; }
+  return 0;
+}
+
+/* ======================================================================== *
  *  SECTION 5 — THE BESTIARY (ENEMY SCALING ENGINE)                          *
  *  Base attributes are the t=0 values; CombatSystem applies the temporal    *
  *  scaling matrices from the GDD at spawn time.                             *
@@ -692,18 +1077,18 @@ const ENEMIES = {
   virus: {
     id: 'virus', name: 'Lysogenic Virus', icon: '🦠', color: '#7dff9a', glow: '#3dff6a',
     weight: 1, window: [0, 300], freq: 1.0,
-    hp: 8, damage: 3, speed: 110, radius: 8, xp: 1, coinChance: 0.012, coin: 1,
+    hp: 8, damage: 3, speed: 110, radius: 8, xp: 2, coinChance: 0.012, coin: 1,
     behavior: 'boids',
     fact: 'A lysogenic virus splices its DNA into the host genome and lies dormant, copied every time the host divides — until stress flips it to a lytic killing spree.',
     special: 'On death, 8% chance to burst into 3 fast sub-viral particles.'
   },
   bacterium: {
     id: 'bacterium', name: 'Flagellated Bacterium', icon: '🧫', color: '#5fc8ff', glow: '#2f9fff',
-    weight: 4, window: [180, 720], freq: 0.55,
-    hp: 35, damage: 8, speed: 160, radius: 14, xp: 4, coinChance: 0.03, coin: 2,
+    weight: 4, window: [210, 720], freq: 0.5,
+    hp: 26, damage: 7, speed: 116, radius: 14, xp: 5, coinChance: 0.03, coin: 2,
     behavior: 'sine',
     fact: 'Flagellated bacteria swim by spinning a corkscrew tail. They sense chemical gradients and "run and tumble" toward food — primitive navigation called chemotaxis.',
-    special: 'Within 150px it triggers an ATP surge — a 1.5s straight-line dash (4s cooldown).'
+    special: 'Within 120px it telegraphs for ~0.45s, then dashes in a straight line for 1.2s (6s cooldown).'
   },
   spore: {
     id: 'spore', name: 'Toxic Fungal Spore', icon: '🟤', color: '#d8a85f', glow: '#ffb84d',
@@ -800,7 +1185,12 @@ const DEFAULT_SAVE = () => ({
   quests: {},               // questId -> true once completed
   flags: {},                // FLAG_* -> true
   codex: {},                // entity id -> true once encountered
-  best: { time: 0, kills: 0, level: 0, endless: 0 }
+  best: { time: 0, kills: 0, level: 0, endless: 0 },
+  stats: { totalKills: 0, runs: 0, bossKills: 0 },  // lifetime metrics (drive char unlocks)
+  chars: { paramecium: true },                      // unlocked cell lines
+  lastChar: 'paramecium',                           // last picked cell
+  sound: { on: true, vol: 0.6, music: true },       // audio preferences
+  suspended: null           // snapshot of an in-progress run (for "Continue Run")
 });
 let SAVE = DEFAULT_SAVE();
 
@@ -812,6 +1202,8 @@ function loadSave() {
       SAVE = Object.assign(DEFAULT_SAVE(), parsed);
       SAVE.upgrades = Object.assign(DEFAULT_SAVE().upgrades, parsed.upgrades || {});
       SAVE.best = Object.assign(DEFAULT_SAVE().best, parsed.best || {});
+      SAVE.stats = Object.assign(DEFAULT_SAVE().stats, parsed.stats || {});
+      SAVE.chars = Object.assign(DEFAULT_SAVE().chars, parsed.chars || {});
     }
   } catch (e) { console.warn('save load failed', e); SAVE = DEFAULT_SAVE(); }
 }
@@ -820,6 +1212,201 @@ function commitSave() {
 }
 function metaTier(id) { return SAVE.upgrades[id] || 0; }
 function markCodex(id) { if (!SAVE.codex[id]) { SAVE.codex[id] = true; commitSave(); } }
+
+/* Portable save codes — base64 of the whole SAVE object (meta + suspended run) *
+ * so players can back progress up or carry it to another browser / device.    */
+function encodeSave(obj) {
+  try { return 'BIOEVO1.' + btoa(unescape(encodeURIComponent(JSON.stringify(obj)))); }
+  catch (e) { return ''; }
+}
+function decodeSave(str) {
+  str = String(str).trim();
+  const dot = str.indexOf('.');
+  const body = (str.slice(0, 6) === 'BIOEVO' && dot >= 0) ? str.slice(dot + 1) : str;
+  return JSON.parse(decodeURIComponent(escape(atob(body))));
+}
+
+/* ======================================================================== *
+ *  SECTION 8b — PROCEDURAL AUDIO (Web Audio, bio-themed, zero sound files)   *
+ *  Everything is synthesised live: wet squelchy blips, bubble pops, low      *
+ *  membrane thuds, organic chimes — plus a near-subliminal cellular drone.   *
+ *  Heavy events (hit/kill/shoot) are throttled so a 500-strong swarm dying   *
+ *  at once can't machine-gun the speakers or clip.                          *
+ * ======================================================================== */
+const Sound = {
+  ctx: null, master: null, on: true, vol: 0.6, _last: {},
+  init() {
+    this.on = SAVE.sound ? SAVE.sound.on !== false : true;
+    this.vol = (SAVE.sound && typeof SAVE.sound.vol === 'number') ? SAVE.sound.vol : 0.6;
+    const wake = () => this.ensure();          // AudioContext may only start after a user gesture
+    document.addEventListener('pointerdown', wake);
+    document.addEventListener('keydown', wake);
+  },
+  ensure() {
+    if (!this.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      this.ctx = new AC();
+      this.master = this.ctx.createGain();
+      this.master.gain.value = this.on ? this.vol : 0;
+      this.master.connect(this.ctx.destination);
+      this._ambient();
+    }
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    return this.ctx;
+  },
+  setVol(v) { this.vol = clamp(v, 0, 1); if (this.master) this.master.gain.value = this.on ? this.vol : 0; this._save(); },
+  toggle() { this.on = !this.on; this.ensure(); if (this.master) this.master.gain.setTargetAtTime(this.on ? this.vol : 0, this.ctx.currentTime, 0.02); this._save(); return this.on; },
+  _save() { SAVE.sound = { on: this.on, vol: this.vol }; commitSave(); },
+  _ok(name, gap) { const t = this.ctx ? this.ctx.currentTime : 0; if ((this._last[name] || 0) + gap > t) return false; this._last[name] = t; return true; },
+  // --- synthesis primitives ---
+  tone(freq, dur, type, peak, slideTo, when) {
+    const c = this.ctx; if (!c) return; const t = c.currentTime + (when || 0);
+    const o = c.createOscillator(); o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(1, slideTo), t + dur);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak || 0.25, t + Math.min(0.02, dur * 0.4));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(this.master); o.start(t); o.stop(t + dur + 0.05);
+  },
+  noise(dur, freq, q, peak, when) {
+    const c = this.ctx; if (!c) return; const t = c.currentTime + (when || 0);
+    const n = Math.max(1, Math.floor(c.sampleRate * dur)), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const s = c.createBufferSource(); s.buffer = buf;
+    const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq || 1000; f.Q.value = q || 1;
+    const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak || 0.18, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f); f.connect(g); g.connect(this.master); s.start(t); s.stop(t + dur + 0.02);
+  },
+  _ambient() {                                  // very quiet detuned cellular drone
+    const c = this.ctx; if (!c) return;
+    const g = c.createGain(); g.gain.value = 0.014; g.connect(this.master);
+    [55, 82.5, 110].forEach((f, i) => {
+      const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = f;
+      const lfo = c.createOscillator(); lfo.frequency.value = 0.05 + i * 0.03;
+      const lg = c.createGain(); lg.gain.value = f * 0.012; lfo.connect(lg); lg.connect(o.frequency);
+      o.connect(g); o.start(); lfo.start();
+    });
+  },
+  // --- named bio sound effects ---
+  play(name) {
+    if (!this.on) return; const c = this.ensure(); if (!c) return;
+    switch (name) {
+      case 'shoot':  if (!this._ok('shoot', 0.045)) return; this.tone(520 + rand(-50, 50), 0.08, 'sine', 0.10, 300); break;
+      case 'hit':    if (!this._ok('hit', 0.04)) return; this.noise(0.04, 1500, 1.6, 0.05); break;
+      case 'kill':   if (!this._ok('kill', 0.028)) return; this.tone(460 + rand(-70, 70), 0.13, 'sine', 0.14, 110); this.noise(0.05, 650, 0.8, 0.04); break;
+      case 'hurt':   this.tone(190, 0.22, 'sawtooth', 0.22, 70); this.noise(0.14, 220, 0.7, 0.12); break;
+      case 'xp':     if (!this._ok('xp', 0.02)) return; this.tone(860 + rand(-40, 40), 0.03, 'triangle', 0.05); break;
+      case 'coin':   if (!this._ok('coin', 0.03)) return; this.tone(1080, 0.08, 'square', 0.07, 1550); break;
+      case 'heal':   this.tone(330, 0.18, 'sine', 0.16, 540); break;
+      case 'level':  [523, 659, 784].forEach((f, i) => this.tone(f, 0.16, 'triangle', 0.18, 0, i * 0.08)); break;
+      case 'mutation': this.tone(300, 0.5, 'sawtooth', 0.14, 900); this.tone(303, 0.5, 'sawtooth', 0.12, 905); [523, 784, 1046].forEach((f, i) => this.tone(f, 0.3, 'sine', 0.12, 0, 0.12 + i * 0.09)); break;
+      case 'apex':   this.tone(220, 0.7, 'sawtooth', 0.18, 1100); [440, 660, 880, 1320].forEach((f, i) => this.tone(f, 0.4, 'triangle', 0.13, 0, i * 0.07)); break;
+      case 'objective': [523, 659, 784, 1046].forEach((f, i) => this.tone(f, 0.22, 'sine', 0.16, 0, i * 0.07)); break;
+      case 'boost':  this.tone(440, 0.18, 'sine', 0.14, 880); this.tone(660, 0.16, 'triangle', 0.10, 0, 0.06); break;
+      case 'boss':   this.tone(140, 1.4, 'sawtooth', 0.22, 50); this.noise(1.2, 90, 0.5, 0.1); break;
+      case 'chest':  this.tone(523, 0.12, 'triangle', 0.14, 0); this.tone(784, 0.18, 'triangle', 0.14, 0, 0.07); break;
+      case 'ui':     this.tone(680, 0.03, 'sine', 0.08, 520); break;
+    }
+  }
+};
+function sfx(name) { Sound.play(name); }
+
+/* ======================================================================== *
+ *  SECTION 8c — CHIPTUNE MUSIC SEQUENCER                                     *
+ *  A live 8-bit jam: square-wave bass, bubbly triangle arpeggios, a pulse    *
+ *  lead melody and noise drums, scheduled on the Web Audio clock with a      *
+ *  lookahead timer. Loops a 4-bar Am-F-C-G progression; boss fights bump the *
+ *  intensity (double-time hats, octave-doubled lead). Shares Sound.master so  *
+ *  the one volume slider rules everything; runs through a gentle lowpass so   *
+ *  the square waves never get harsh. Zero audio files — all synthesised.     *
+ * ======================================================================== */
+function mtof(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+const Music = {
+  on: true, vol: 0.5, gain: null, lp: null, timer: null, playing: false,
+  step: 0, nextTime: 0, bpm: 134, schedAhead: 0.18, intensity: 0, _leadAt: null,
+  roots: [45, 41, 48, 43],                                   // Am F C G bass roots (oct 2-3)
+  triads: [[57, 60, 64], [53, 57, 60], [60, 64, 67], [55, 59, 62]],   // chord tones (oct 4)
+  lead: [                                                     // [stepInLoop, midi, dur16ths] — A-minor pentatonic riff
+    [0, 69, 2], [2, 72, 1], [3, 71, 1], [4, 69, 2], [8, 67, 2], [11, 69, 1], [12, 72, 2], [14, 74, 2],
+    [16, 65, 2], [19, 69, 1], [20, 72, 2], [24, 71, 2], [27, 69, 1], [28, 65, 2],
+    [32, 72, 2], [35, 76, 1], [36, 79, 2], [40, 76, 2], [43, 72, 1], [44, 74, 2],
+    [48, 67, 2], [50, 71, 1], [51, 74, 1], [52, 79, 3], [56, 74, 2], [59, 71, 1], [60, 69, 4],
+  ],
+  init() { if (SAVE.sound && typeof SAVE.sound.music === 'boolean') this.on = SAVE.sound.music; },
+  _save() { SAVE.sound = Object.assign({ on: Sound.on, vol: Sound.vol }, SAVE.sound, { music: this.on }); commitSave(); },
+  _bus() {
+    const c = Sound.ctx; if (!c || this.gain) return;
+    this.lp = c.createBiquadFilter(); this.lp.type = 'lowpass'; this.lp.frequency.value = 3600; this.lp.Q.value = 0.4;
+    this.gain = c.createGain(); this.gain.gain.value = this.vol;
+    this.gain.connect(this.lp); this.lp.connect(Sound.master);
+    this._leadAt = {}; for (const e of this.lead) this._leadAt[e[0]] = [e[1], e[2]];
+  },
+  voice(midi, dur, type, peak, time, detune) {
+    const c = Sound.ctx; if (!c) return;
+    const o = c.createOscillator(); o.type = type; o.frequency.value = mtof(midi); if (detune) o.detune.value = detune;
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, time); g.gain.exponentialRampToValueAtTime(peak, time + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    o.connect(g); g.connect(this.gain); o.start(time); o.stop(time + dur + 0.03);
+  },
+  drum(kind, time) {
+    const c = Sound.ctx; if (!c) return;
+    if (kind === 'kick') {
+      const o = c.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(150, time); o.frequency.exponentialRampToValueAtTime(48, time + 0.11);
+      const g = c.createGain(); g.gain.setValueAtTime(0.0001, time); g.gain.exponentialRampToValueAtTime(0.6, time + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, time + 0.16);
+      o.connect(g); g.connect(this.gain); o.start(time); o.stop(time + 0.18);
+    } else {
+      const isS = kind === 'snare', len = isS ? 0.14 : 0.035;
+      const n = Math.max(1, Math.floor(c.sampleRate * len)), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+      const s = c.createBufferSource(); s.buffer = buf;
+      const f = c.createBiquadFilter(); f.type = isS ? 'bandpass' : 'highpass'; f.frequency.value = isS ? 1900 : 7000; f.Q.value = isS ? 1.2 : 0.7;
+      const g = c.createGain(); g.gain.setValueAtTime(0.0001, time); g.gain.exponentialRampToValueAtTime(isS ? 0.2 : 0.06, time + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, time + len);
+      s.connect(f); f.connect(g); g.connect(this.gain); s.start(time); s.stop(time + len + 0.02);
+    }
+  },
+  _tick(s, time) {
+    const bar = (s / 16) | 0, b = s % 16, six = (60 / this.bpm) / 4;
+    const root = this.roots[bar], triad = this.triads[bar];
+    // bass — syncopated root/fifth
+    if (b === 0 || b === 6) this.voice(root, six * 2.2, 'square', 0.16, time, 4);
+    else if (b === 8) this.voice(root + 7, six * 1.6, 'square', 0.14, time);
+    else if (b === 10 || b === 14) this.voice(root + (b === 14 ? 12 : 0), six * 1.4, 'triangle', 0.12, time);
+    // arp — bubbly triangle every 16th
+    this.voice(triad[b % 3] + (b % 6 < 3 ? 0 : 12), six * 0.9, 'triangle', 0.05, time);
+    // drums
+    if (b === 0 || b === 8) this.drum('kick', time);
+    if (b === 4 || b === 12) this.drum('snare', time);
+    if (b % 2 === 0) this.drum('hat', time);
+    if (this.intensity > 0) { if (b % 2 === 1) this.drum('hat', time); if (b === 4 || b === 12) this.drum('kick', time); }
+    // lead melody
+    const ld = this._leadAt[s];
+    if (ld) { this.voice(ld[0], six * ld[1] * 0.95, 'square', this.intensity > 0 ? 0.15 : 0.1, time, 6);
+      if (this.intensity > 0) this.voice(ld[0] + 12, six * ld[1] * 0.9, 'square', 0.05, time, -6); }
+  },
+  _scheduler() {
+    const c = Sound.ctx; if (!c || !this.playing) return;
+    while (this.nextTime < c.currentTime + this.schedAhead) {
+      this._tick(this.step % 64, this.nextTime);
+      this.nextTime += (60 / this.bpm) / 4;
+      this.step++;
+    }
+  },
+  start() {
+    if (!this.on) return; const c = Sound.ensure(); if (!c) return;
+    this._bus(); if (this.playing) return;
+    this.playing = true; this.step = 0; this.nextTime = c.currentTime + 0.12;
+    this.timer = setInterval(() => this._scheduler(), 30);
+  },
+  stop() { this.playing = false; if (this.timer) { clearInterval(this.timer); this.timer = null; } },
+  setIntensity(n) { this.intensity = n; },
+  toggle() {
+    this.on = !this.on; this._save();
+    if (!this.on) this.stop();
+    else if (game.state !== 'menu' && game.player) this.start();
+    return this.on;
+  }
+};
 
 /* ======================================================================== *
  *  SECTION 9 — GLOW SPRITE FACTORY                                          *
@@ -851,80 +1438,105 @@ const SPR = {}; // sprite atlas, populated in buildSprites()
 
 function buildSprites() {
   // --- Lysogenic Virus: spiky green capsid -------------------------------
-  SPR.virus = makeSprite(40, (g, r) => {
-    g.shadowColor = '#3dff6a'; g.shadowBlur = 14;
-    g.fillStyle = '#0a2a16'; g.beginPath(); g.arc(0, 0, r * 0.46, 0, TAU); g.fill();
-    g.shadowBlur = 8; g.fillStyle = '#7dff9a';
-    for (let i = 0; i < 9; i++) { const a = i / 9 * TAU; const x = Math.cos(a) * r * 0.55, y = Math.sin(a) * r * 0.55;
-      g.beginPath(); g.arc(x, y, r * 0.1, 0, TAU); g.fill(); }
-    g.shadowBlur = 0; blob(g, r * 0.5, 'rgba(125,255,154,0.85)', '#bfffce', 0.6);
-    g.fillStyle = '#eafff0'; g.beginPath(); g.arc(0, 0, r * 0.16, 0, TAU); g.fill();
+  // --- Lysogenic Virus: faceted icosahedral capsid with receptor spikes ---
+  SPR.virus = makeSprite(64, (g, r) => {
+    g.shadowColor = '#3dff6a'; g.shadowBlur = 22;
+    // receptor-protein spikes
+    g.strokeStyle = '#69ef88'; g.lineWidth = r * 0.05; g.fillStyle = '#8bf7a4';
+    for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; const sx = Math.cos(a) * r * 0.42, sy = Math.sin(a) * r * 0.42, x = Math.cos(a) * r * 0.62, y = Math.sin(a) * r * 0.62;
+      g.beginPath(); g.moveTo(sx, sy); g.lineTo(x, y); g.stroke(); g.beginPath(); g.arc(x, y, r * 0.07, 0, TAU); g.fill(); }
+    g.shadowBlur = 0;
+    // faceted capsid body
+    const grad = g.createRadialGradient(-r * 0.16, -r * 0.16, r * 0.04, 0, 0, r * 0.5);
+    grad.addColorStop(0, '#e2ffe9'); grad.addColorStop(0.45, '#7dff9a'); grad.addColorStop(1, '#1f7a3e');
+    g.fillStyle = grad; g.beginPath(); g.arc(0, 0, r * 0.45, 0, TAU); g.fill();
+    g.strokeStyle = 'rgba(18,84,40,0.5)'; g.lineWidth = r * 0.022;
+    for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + 0.3; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a) * r * 0.45, Math.sin(a) * r * 0.45); g.stroke(); }
+    g.fillStyle = 'rgba(8,40,20,0.85)'; g.beginPath(); g.arc(0, 0, r * 0.18, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.5)'; g.beginPath(); g.ellipse(-r * 0.16, -r * 0.18, r * 0.1, r * 0.06, -0.6, 0, TAU); g.fill();
   });
-  SPR.subvirus = makeSprite(22, (g, r) => {
-    g.shadowColor = '#9dffb6'; g.shadowBlur = 8; blob(g, r * 0.7, 'rgba(160,255,180,0.9)', '#eaffe0', 0.8);
+  SPR.subvirus = makeSprite(24, (g, r) => {
+    g.shadowColor = '#9dffb6'; g.shadowBlur = 9; blob(g, r * 0.7, 'rgba(160,255,180,0.9)', '#eaffe0', 0.8);
   });
-  // --- Flagellated Bacterium: blue rod ----------------------------------
-  SPR.bacterium = makeSprite(54, (g, r) => {
-    g.rotate(-0.5); g.shadowColor = '#2f9fff'; g.shadowBlur = 14;
-    g.fillStyle = 'rgba(95,200,255,0.92)';
-    g.beginPath(); g.ellipse(0, 0, r * 0.62, r * 0.34, 0, 0, TAU); g.fill();
-    g.shadowBlur = 0; g.strokeStyle = '#cdeeff'; g.lineWidth = 2;
-    g.beginPath(); g.ellipse(0, 0, r * 0.62, r * 0.34, 0, 0, TAU); g.stroke();
-    g.fillStyle = 'rgba(207,238,255,0.85)';
-    g.beginPath(); g.ellipse(-r * 0.2, -r * 0.06, r * 0.12, r * 0.08, 0, 0, TAU); g.fill();
-    g.beginPath(); g.ellipse(r * 0.18, r * 0.05, r * 0.1, r * 0.07, 0, 0, TAU); g.fill();
+  // --- Flagellated Bacterium: glossy rod with a corkscrew flagellum -------
+  SPR.bacterium = makeSprite(88, (g, r) => {
+    g.rotate(-0.25);
+    // flagellum (baked behind, trails the rear)
+    g.shadowColor = '#2f9fff'; g.shadowBlur = 6; g.strokeStyle = 'rgba(170,224,255,0.85)'; g.lineWidth = r * 0.045; g.lineCap = 'round';
+    g.beginPath(); for (let i = 0; i <= 22; i++) { const tt = i / 22, x = -r * 0.55 - tt * r * 0.5, y = Math.sin(tt * Math.PI * 4) * r * 0.13 * (1 - tt * 0.4); i ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke();
+    // capsule body
+    g.shadowColor = '#2f9fff'; g.shadowBlur = 18;
+    const grad = g.createLinearGradient(0, -r * 0.34, 0, r * 0.34);
+    grad.addColorStop(0, '#d4f0ff'); grad.addColorStop(0.5, '#5fc8ff'); grad.addColorStop(1, '#1c69ab');
+    g.fillStyle = grad; g.beginPath(); g.ellipse(0, 0, r * 0.6, r * 0.32, 0, 0, TAU); g.fill();
+    g.shadowBlur = 0; g.strokeStyle = 'rgba(220,245,255,0.9)'; g.lineWidth = r * 0.028; g.beginPath(); g.ellipse(0, 0, r * 0.6, r * 0.32, 0, 0, TAU); g.stroke();
+    // ribosomes / plasmids
+    g.fillStyle = 'rgba(20,80,130,0.55)';
+    for (let i = 0; i < 5; i++) { g.beginPath(); g.arc(-r * 0.32 + i * r * 0.16, Math.sin(i * 1.7) * r * 0.09, r * 0.055, 0, TAU); g.fill(); }
+    g.fillStyle = 'rgba(232,248,255,0.85)'; g.beginPath(); g.ellipse(r * 0.06, -r * 0.04, r * 0.15, r * 0.1, 0, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.5)'; g.beginPath(); g.ellipse(-r * 0.18, -r * 0.15, r * 0.2, r * 0.05, 0, 0, TAU); g.fill();
   });
-  // --- Toxic Fungal Spore: bumpy ochre sphere ---------------------------
-  SPR.spore = makeSprite(62, (g, r) => {
-    g.shadowColor = '#ffb84d'; g.shadowBlur = 16;
-    blob(g, r * 0.7, 'rgba(216,168,95,0.95)', '#ffd9a0', 0.9);
-    g.shadowBlur = 0; g.fillStyle = 'rgba(120,72,20,0.6)';
-    for (let i = 0; i < 7; i++) { const a = i / 7 * TAU + 0.3; const x = Math.cos(a) * r * 0.35, y = Math.sin(a) * r * 0.35;
-      g.beginPath(); g.arc(x, y, r * 0.1, 0, TAU); g.fill(); }
+  // --- Toxic Fungal Spore: spiky-coated, pitted ochre capsule ------------
+  SPR.spore = makeSprite(96, (g, r) => {
+    g.shadowColor = '#ffb84d'; g.shadowBlur = 22;
+    g.fillStyle = '#b78a4a'; g.beginPath();
+    const sp = 16; for (let i = 0; i <= sp; i++) { const a = i / sp * TAU, rr = r * 0.5 * (i % 2 ? 1.12 : 0.9), x = Math.cos(a) * rr, y = Math.sin(a) * rr; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.closePath(); g.fill();
+    g.shadowBlur = 0;
+    const grad = g.createRadialGradient(-r * 0.12, -r * 0.12, r * 0.05, 0, 0, r * 0.48);
+    grad.addColorStop(0, '#ffe6b0'); grad.addColorStop(0.5, '#d8a85f'); grad.addColorStop(1, '#74501e');
+    g.fillStyle = grad; g.beginPath(); g.arc(0, 0, r * 0.45, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(74,46,12,0.6)';
+    for (let i = 0; i < 8; i++) { const a = i / 8 * TAU + 0.3, x = Math.cos(a) * r * 0.27, y = Math.sin(a) * r * 0.27; g.beginPath(); g.arc(x, y, r * 0.06, 0, TAU); g.fill(); }
+    g.fillStyle = 'rgba(58,34,8,0.7)'; g.beginPath(); g.arc(0, 0, r * 0.12, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,246,212,0.45)'; g.beginPath(); g.ellipse(-r * 0.14, -r * 0.16, r * 0.1, r * 0.06, -0.5, 0, TAU); g.fill();
   });
-  // --- Amoeboid Pseudopod: irregular violet blob ------------------------
-  SPR.amoeboid = makeSprite(120, (g, r) => {
-    g.shadowColor = '#b07bff'; g.shadowBlur = 28;
-    g.fillStyle = 'rgba(201,139,255,0.9)';
-    g.beginPath();
-    const lobes = 9;
-    for (let i = 0; i <= lobes; i++) { const a = i / lobes * TAU; const rr = r * (0.62 + 0.12 * Math.sin(a * 3 + 1));
-      const x = Math.cos(a) * rr, y = Math.sin(a) * rr; i ? g.lineTo(x, y) : g.moveTo(x, y); }
-    g.closePath(); g.fill();
-    g.shadowBlur = 0; g.fillStyle = 'rgba(80,30,130,0.7)';
-    g.beginPath(); g.arc(0, 0, r * 0.26, 0, TAU); g.fill();
-    g.fillStyle = '#e9d6ff'; g.beginPath(); g.arc(-r * 0.07, -r * 0.07, r * 0.1, 0, TAU); g.fill();
+  // --- Amoeboid Pseudopod: organic violet blob with vacuoles -------------
+  SPR.amoeboid = makeSprite(180, (g, r) => {
+    g.shadowColor = '#b07bff'; g.shadowBlur = 38;
+    const grad = g.createRadialGradient(-r * 0.1, -r * 0.1, r * 0.08, 0, 0, r * 0.78);
+    grad.addColorStop(0, '#ecdcff'); grad.addColorStop(0.45, '#c98bff'); grad.addColorStop(1, '#532a93');
+    g.fillStyle = grad; g.beginPath();
+    const lobes = 11; for (let i = 0; i <= lobes; i++) { const a = i / lobes * TAU, rr = r * (0.6 + 0.16 * Math.sin(a * 3 + 1) + 0.05 * Math.sin(a * 7)), x = Math.cos(a) * rr, y = Math.sin(a) * rr; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.closePath(); g.fill();
+    g.shadowBlur = 0; g.strokeStyle = 'rgba(222,192,255,0.5)'; g.lineWidth = r * 0.025; g.stroke();
+    g.fillStyle = 'rgba(150,90,210,0.5)';
+    for (let i = 0; i < 5; i++) { const a = i / 5 * TAU + 0.5, x = Math.cos(a) * r * 0.32, y = Math.sin(a) * r * 0.32; g.beginPath(); g.arc(x, y, r * 0.1, 0, TAU); g.fill(); }
+    g.fillStyle = 'rgba(70,24,120,0.85)'; g.beginPath(); g.arc(0, 0, r * 0.23, 0, TAU); g.fill();
+    g.fillStyle = '#efe0ff'; g.beginPath(); g.arc(-r * 0.06, -r * 0.06, r * 0.09, 0, TAU); g.fill();
   });
-  // --- Macrophage Sentinel: massive red immune cell ---------------------
-  SPR.macrophage = makeSprite(240, (g, r) => {
-    g.shadowColor = '#ff3a3a'; g.shadowBlur = 40;
-    g.fillStyle = 'rgba(255,122,122,0.92)';
-    g.beginPath();
-    const lobes = 16;
-    for (let i = 0; i <= lobes; i++) { const a = i / lobes * TAU; const rr = r * (0.66 + 0.07 * Math.sin(a * 5));
-      const x = Math.cos(a) * rr, y = Math.sin(a) * rr; i ? g.lineTo(x, y) : g.moveTo(x, y); }
-    g.closePath(); g.fill();
-    g.shadowBlur = 10; g.strokeStyle = 'rgba(255,200,200,0.6)'; g.lineWidth = 4;
-    for (let i = 0; i < 14; i++) { const a = i / 14 * TAU; g.beginPath();
-      g.moveTo(Math.cos(a) * r * 0.5, Math.sin(a) * r * 0.5);
-      g.lineTo(Math.cos(a) * r * 0.74, Math.sin(a) * r * 0.74); g.stroke(); }
-    g.shadowBlur = 0; g.fillStyle = 'rgba(120,10,10,0.85)';
-    g.beginPath(); g.arc(0, 0, r * 0.3, 0, TAU); g.fill();
-    g.fillStyle = '#ffd9d9'; g.beginPath(); g.arc(-r * 0.1, -r * 0.1, r * 0.1, 0, TAU); g.fill();
+  // --- Macrophage Sentinel: menacing ruffled red immune cell -------------
+  SPR.macrophage = makeSprite(300, (g, r) => {
+    g.shadowColor = '#ff3a3a'; g.shadowBlur = 55;
+    const grad = g.createRadialGradient(-r * 0.12, -r * 0.12, r * 0.1, 0, 0, r * 0.78);
+    grad.addColorStop(0, '#ffd2d2'); grad.addColorStop(0.4, '#ff7a7a'); grad.addColorStop(1, '#8a1414');
+    g.fillStyle = grad; g.beginPath();
+    const lobes = 22; for (let i = 0; i <= lobes; i++) { const a = i / lobes * TAU, rr = r * (0.64 + 0.06 * Math.sin(a * 6) + 0.03 * Math.sin(a * 13)), x = Math.cos(a) * rr, y = Math.sin(a) * rr; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.closePath(); g.fill();
+    g.shadowBlur = 12; g.strokeStyle = 'rgba(255,180,180,0.5)'; g.lineWidth = r * 0.02;
+    for (let i = 0; i < 22; i++) { const a = i / 22 * TAU; g.beginPath(); g.moveTo(Math.cos(a) * r * 0.5, Math.sin(a) * r * 0.5); g.lineTo(Math.cos(a) * r * 0.72, Math.sin(a) * r * 0.72); g.stroke(); }
+    g.shadowBlur = 0; g.fillStyle = 'rgba(180,30,30,0.6)';
+    for (let i = 0; i < 7; i++) { const a = i / 7 * TAU + 0.4, x = Math.cos(a) * r * 0.38, y = Math.sin(a) * r * 0.38; g.beginPath(); g.arc(x, y, r * 0.07, 0, TAU); g.fill(); }
+    g.fillStyle = 'rgba(90,8,8,0.9)'; g.beginPath(); g.arc(0, 0, r * 0.27, 0, TAU); g.fill();
+    g.fillStyle = '#ffcaca'; g.beginPath(); g.arc(-r * 0.09, -r * 0.09, r * 0.09, 0, TAU); g.fill();
   });
   // --- Pickups -----------------------------------------------------------
-  SPR.biomass = makeSprite(22, (g, r) => {
-    g.shadowColor = '#2ff6ff'; g.shadowBlur = 12; g.fillStyle = '#bff8ff';
-    g.beginPath(); g.moveTo(0, -r * 0.7); g.lineTo(r * 0.55, 0); g.lineTo(0, r * 0.7); g.lineTo(-r * 0.55, 0);
-    g.closePath(); g.fill();
-    g.shadowBlur = 0; g.fillStyle = '#2ff6ff';
-    g.beginPath(); g.moveTo(0, -r * 0.4); g.lineTo(r * 0.32, 0); g.lineTo(0, r * 0.4); g.lineTo(-r * 0.32, 0);
-    g.closePath(); g.fill();
+  SPR.biomass = makeSprite(28, (g, r) => {       // XP — faceted cyan biomass crystal
+    g.shadowColor = '#2ff6ff'; g.shadowBlur = 15;
+    const grad = g.createLinearGradient(0, -r * 0.72, 0, r * 0.6);
+    grad.addColorStop(0, '#e2fdff'); grad.addColorStop(0.5, '#5ff0ff'); grad.addColorStop(1, '#159fc2');
+    g.fillStyle = grad; g.beginPath(); g.moveTo(0, -r * 0.72); g.lineTo(r * 0.5, -r * 0.1); g.lineTo(r * 0.3, r * 0.6); g.lineTo(-r * 0.3, r * 0.6); g.lineTo(-r * 0.5, -r * 0.1); g.closePath(); g.fill();
+    g.shadowBlur = 0; g.strokeStyle = 'rgba(220,255,255,0.7)'; g.lineWidth = 1; g.stroke();
+    g.fillStyle = 'rgba(255,255,255,0.55)'; g.beginPath(); g.moveTo(0, -r * 0.5); g.lineTo(r * 0.16, -r * 0.05); g.lineTo(0, r * 0.12); g.lineTo(-r * 0.16, -r * 0.05); g.closePath(); g.fill();
   });
   SPR.biomassBig = makeSprite(30, (g, r) => {
     g.shadowColor = '#6dff8a'; g.shadowBlur = 16; g.fillStyle = '#d6ffe0';
     g.beginPath(); g.arc(0, 0, r * 0.5, 0, TAU); g.fill();
     g.shadowBlur = 0; g.fillStyle = '#6dff8a'; g.beginPath(); g.arc(0, 0, r * 0.3, 0, TAU); g.fill();
+  });
+  SPR.nutrient = makeSprite(26, (g, r) => {
+    g.shadowColor = '#9dff5f'; g.shadowBlur = 12; g.fillStyle = '#d6ffb0';
+    g.beginPath();
+    for (let i = 0; i < 6; i++) { const a = i / 6 * TAU - Math.PI / 2; const x = Math.cos(a) * r * 0.5, y = Math.sin(a) * r * 0.5; i ? g.lineTo(x, y) : g.moveTo(x, y); }
+    g.closePath(); g.fill();
+    g.shadowBlur = 0; g.fillStyle = '#4fae33'; g.beginPath(); g.arc(0, 0, r * 0.22, 0, TAU); g.fill();
   });
   SPR.coin = makeSprite(24, (g, r) => {
     g.shadowColor = '#ffd166'; g.shadowBlur = 14; g.fillStyle = '#ffe9a8';
@@ -944,6 +1556,11 @@ function buildSprites() {
   SPR.dart = makeSprite(20, (g, r) => {
     g.shadowColor = '#b07bff'; g.shadowBlur = 10; g.fillStyle = '#e6d4ff';
     g.beginPath(); g.moveTo(r * 0.8, 0); g.lineTo(-r * 0.5, -r * 0.28); g.lineTo(-r * 0.5, r * 0.28); g.closePath(); g.fill();
+  });
+  SPR.needle = makeSprite(20, (g, r) => {
+    g.shadowColor = '#5fc8ff'; g.shadowBlur = 10; g.fillStyle = '#dff3ff';
+    g.beginPath(); g.moveTo(r * 0.85, 0); g.lineTo(-r * 0.55, -r * 0.22); g.lineTo(-r * 0.3, 0); g.lineTo(-r * 0.55, r * 0.22); g.closePath(); g.fill();
+    g.shadowBlur = 0; g.strokeStyle = '#5fc8ff'; g.lineWidth = 1; g.stroke();
   });
   SPR.acid = makeSprite(24, (g, r) => {
     g.shadowColor = '#9dff5f'; g.shadowBlur = 12; blob(g, r * 0.7, 'rgba(157,255,95,0.95)', '#e8ffd0', 0.9);
@@ -1014,8 +1631,12 @@ const particlePool = makePool(() => ({}));
 const game = {
   mode: 'timed',          // 'timed' | 'endless'
   state: 'menu',          // menu | running | levelup | apex | paused | over
+  character: 'paramecium',// selected cell line
   time: 0,                // elapsed run time (s) — drives every scaling matrix
   dt: 0,
+  env: [], objective: null, showMinimap: true,   // environment hazards / objective / sensor map
+  pads: [], boosts: null, boostLog: [],          // micro-boost channel pads + run-permanent gains
+  mutations: {},                                 // objective-reward mutations (id -> stack count)
   camera: { x: 0, y: 0 },
   shake: 0,
   flash: 0, flashColor: '#fff',
@@ -1038,28 +1659,33 @@ const game = {
 /* ---- Player factory: assembles the component bundle for the PlayerCell ---- */
 function createPlayer() {
   const hpTier = metaTier('UPG_HP'), armTier = metaTier('UPG_ARM'), spdTier = metaTier('UPG_SPD');
-  const baseMaxHp = 100 + hpTier * 10;
+  const cm = (CHAR_BY_ID[game.character] && CHAR_BY_ID[game.character].mods) || {};   // cell-line stat identity
+  const baseMaxHp = Math.round((100 + hpTier * 10) * (cm.maxHp || 1));
+  const baseSpeed = 210 * (1 + spdTier * 0.04) * (cm.speed || 1);
   const p = {
     // Transform2D + Velocity2D
     x: 0, y: 0, dx: 0, dy: 0, angle: 0, r: 16,
-    baseSpeed: 210 * (1 + spdTier * 0.04), speed: 210 * (1 + spdTier * 0.04),
+    cmods: cm,
+    baseSpeed, speed: baseSpeed,
     // Health component (incl. regenerating cell-wall shield)
     baseMaxHp, maxHp: baseMaxHp, hp: baseMaxHp,
-    shieldHp: 30, maxShield: 30, shieldRegenDelay: 0, shieldRegenRate: 7, regen: 0.5,
-    armor: armTier, invuln: 0, hitFlash: 0,
+    shieldHp: Math.round(30 * (cm.maxShield || 1)), maxShield: Math.round(30 * (cm.maxShield || 1)),
+    shieldRegenDelay: 0, shieldRegenRate: cm.maxShield ? 14 : 7, regen: 0.5,
+    armor: armTier, invuln: 0, hitFlash: 0, onSlime: false, slimeT: 0,
     // Progression
     level: 1, xp: 0, xpNext: xpForLevel(1),
     // Registries
     weapons: [],                 // [{id, level, timer, apex, apexId}]
-    passives: {},                // id -> tier
+    passives: {},                // id -> tier (the six organelles)
+    adaptations: {},             // id -> tier (secondary stat passives)
     // Derived multipliers (recomputed on any change) — fed into the pipelines
     mult: {
       ribosome: 0, cooldown: 1, area: 1, projSpeed: 1, projDur: 1,
-      pickup: 1, flatReduce: 0, ecoGain: 1, crit: 0.05, critMult: 2.0
+      pickup: 1, flatReduce: 0, ecoGain: 1, crit: 0.05, critMult: 2.0, damageMul: 1
     },
     pickupRadius: 90,
     // Transient buffs
-    surge: 0, invulnTrail: 0, invertCtrl: 0, slowT: 0,
+    surge: 0, invulnTrail: 0, invertCtrl: 0, slowT: 0, powerSpeed: 0, frenzy: 0,
     // misc
     cloneTimer: 0,
   };
@@ -1067,13 +1693,18 @@ function createPlayer() {
 }
 
 /* XP curve: round(10·N^1.6 + 25) biomass to go from level N to N+1. */
-function xpForLevel(N) { return Math.round(10 * Math.pow(N, 1.6) + 25); }
+/* XP curve: round(5·N^1.4 + 8) biomass to go from level N to N+1.             *
+ * Much flatter + lower than the original 10·N^1.6+25 so levels come quickly   *
+ * (first few in seconds, ~a level every 20-30s early) — leveling was too slow.*/
+function xpForLevel(N) { return Math.round(5 * Math.pow(N, 1.4) + 8); }
 
 /* Recompute every derived multiplier from passive tiers + meta upgrades.     *
  * Called whenever a passive is gained or the run starts.                     */
 function recomputeStats() {
   const p = game.player, pv = p.passives;
   const tier = id => pv[id] || 0;
+  const adapt = id => (p.adaptations && p.adaptations[id]) || 0;   // secondary passives
+  const bo = game.boosts || defaultBoosts();     // run-permanent micro-boost gains
 
   // Ribosomes -> additive damage multiplier term used by the damage pipeline.
   p.mult.ribosome = tier('ribo') ? PASSIVE_BY_ID.ribo.values[tier('ribo') - 1] : 0;
@@ -1088,12 +1719,40 @@ function recomputeStats() {
   p.mult.pickup = 1 + (tier('phyto') ? PASSIVE_BY_ID.phyto.values[tier('phyto') - 1] : 0);
   // Cytoskeleton -> flat damage reduction + max HP bonus (+ meta armor).
   const cytoT = tier('cyto');
-  p.mult.flatReduce = (cytoT ? PASSIVE_BY_ID.cyto.values[cytoT - 1] : 0) + p.armor;
+  p.mult.flatReduce = (cytoT ? PASSIVE_BY_ID.cyto.values[cytoT - 1] : 0) + p.armor + ((p.cmods && p.cmods.armorFlat) || 0);
   const hpBonus = cytoT ? PASSIVE_BY_ID.cyto.hpBonus[cytoT - 1] : 0;
-  const newMax = Math.round(p.baseMaxHp * (1 + hpBonus));
+  const newMax = Math.round(p.baseMaxHp * (1 + hpBonus) * bo.hpMul * (1 + adapt('vitality') * 0.08));
   if (newMax !== p.maxHp) { const ratio = p.hp / p.maxHp; p.maxHp = newMax; p.hp = Math.min(p.maxHp, Math.round(p.maxHp * ratio)); }
   // Eco -> coin & XP gain (meta only).
   p.mult.ecoGain = 1 + metaTier('UPG_ECO') * 0.08;
+  // Cell-line identity mods fold in on top of organelles.
+  const cm = p.cmods || {};
+  p.mult.area     *= (cm.area || 1);
+  p.mult.pickup   *= (cm.pickup || 1);
+  p.mult.projSpeed*= (cm.projSpeed || 1);
+  p.mult.projDur  *= (cm.projDur || 1);
+  if (cm.cooldown) p.mult.cooldown *= cm.cooldown;
+  p.mult.damageMul = (cm.damage || 1);
+  // Micro-boost pads stack multiplicatively on top of everything above.
+  p.mult.cooldown *= bo.cooldownMul;
+  p.mult.area     *= bo.areaMul;
+  p.mult.pickup   *= bo.pickupMul;
+  p.mult.damageMul *= bo.damageMul;
+  p.mult.crit = 0.05 + bo.critAdd;
+  p.mult.critMult = 2.0;
+  p.speed = p.baseSpeed * bo.speedMul;
+  p.regen = 0.5 + bo.regenFlat;
+  // Secondary passives (adaptations).
+  p.mult.cooldown  *= (1 - adapt('reflex') * 0.06);
+  p.mult.damageMul *= (1 + adapt('potency') * 0.07);
+  p.speed          *= (1 + adapt('motility') * 0.06);
+  p.regen          += adapt('regen') * 0.6;
+  p.mult.crit      += adapt('lethality') * 0.03;
+  p.mult.critMult  += adapt('lethality') * 0.15;
+  // Run mutations (objective rewards) stack on top.
+  p.mult.damageMul *= (1 + 0.20 * mut('power'));
+  p.mult.cooldown  *= Math.pow(0.88, mut('haste'));
+  p.mult.area      *= (1 + 0.20 * mut('giant'));
   // Pickup radius in world units.
   p.pickupRadius = 90 * p.mult.pickup;
 }
@@ -1114,8 +1773,9 @@ const META_DAMAGE_BONUS = 1.0;
  */
 function computeDamage(base, flat = 0, forceCrit = null) {
   const p = game.player;
-  let dmg = (base + flat) * (1 + p.mult.ribosome) * META_DAMAGE_BONUS;
+  let dmg = (base + flat) * (1 + p.mult.ribosome) * META_DAMAGE_BONUS * (p.mult.damageMul || 1) * (p.frenzy > 0 ? 1.5 : 1);
   dmg += rand(-0.05, 0.05) * dmg;                       // ±5% variance
+  if (!isFinite(dmg)) dmg = 1;                          // never poison an enemy's hp with NaN
   const crit = forceCrit == null ? chance(p.mult.crit) : forceCrit;
   if (crit) dmg *= p.mult.critMult;
   return { dmg: Math.max(1, dmg), crit };
@@ -1150,10 +1810,17 @@ function damageEnemy(e, amount, opts = {}) {
   if (e.dead) return;
   if (e.invulnShield) { if (!opts.silent) spawnFloater(e.x, e.y - e.r, 'IMMUNE', '#7fa8b8'); return; }
   // Acidic "armor strip" amplifies all damage taken while debuffed.
-  const amt = amount * (1 + (e.amplify || 0));
+  let amt = amount * (1 + (e.amplify || 0));
+  // SYNERGY · Cytolysis: a crit on a meaningfully-slowed cell shatters its wall.
+  const shatter = !!opts.crit && !opts.silent && (e.slow || 0) >= 0.15;
+  if (shatter) amt *= 1.6;
   e.hp -= amt;
   e.hitFlash = 0.12;
-  if (!opts.silent) spawnFloater(e.x, e.y - e.r, Math.round(amt).toString(), opts.crit ? '#ffd166' : '#ffffff', opts.crit);
+  if (!opts.silent) {
+    spawnFloater(e.x, e.y - e.r, Math.round(amt).toString(), shatter ? '#9fe0ff' : (opts.crit ? '#ffd166' : '#ffffff'), opts.crit || shatter);
+    if (shatter) { spawnFloater(e.x, e.y - e.r - 16, 'SHATTER', '#9fe0ff', true); spawnRing(e.x, e.y, '#9fe0ff', e.r * 2.4, 0.3); }
+    sfx('hit');
+  }
   // Knockback (juggernaut & boss are immune).
   if (opts.knockback && !e.kbImmune) {
     const a = opts.angle != null ? opts.angle : angTo(opts.fromX || game.player.x, opts.fromY || game.player.y, e.x, e.y);
@@ -1164,7 +1831,28 @@ function damageEnemy(e, amount, opts = {}) {
   if (opts.bleedPct && opts.bleedDur) { e.bleed = opts.bleedPct; e.bleedDmgBase = opts.bleedBase || amount; e.bleedT = opts.bleedDur; e.bleedTick = 0; }
   if (opts.paralyze) { e.paralyze = opts.paralyze; }
   if (opts.slow) { e.slow = Math.max(e.slow || 0, opts.slow); e.slowT = 0.4; }
+  checkSynergy(e);
   if (e.hp <= 0) killEnemy(e, opts);
+}
+
+/* Status synergies — layering debuffs from DIFFERENT weapons pays off, à la
+ * elemental reactions. (Shatter is handled inline above as it modifies a hit.) */
+function checkSynergy(e) {
+  if (e.dead || (e.synCd || 0) > 0) return;
+  // NECROSIS: corroded (Acidic Vacuoles) + paralysed (Phage Darts) -> the cell
+  // ruptures, blasting neighbours and spreading the corrosion outward.
+  if ((e.amplify || 0) > 0 && (e.paralyze || 0) > 0) {
+    e.synCd = 0.6; e.paralyze = 0;
+    spawnFloater(e.x, e.y - e.r - 6, 'NECROSIS', '#9dff5f', true);
+    spawnRing(e.x, e.y, '#9dff5f', 95, 0.4); spawnParticles(e.x, e.y, '#9dff5f', 14, { speed: 210 });
+    sfx('mutation');
+    const dmg = e.maxHp * 0.18 + 35, list = enemiesInRadius(e.x, e.y, 95);
+    for (let i = 0; i < list.length; i++) {
+      const o = list[i]; if (o.dead || dist2(e.x, e.y, o.x, o.y) > 95 * 95) continue;
+      if (o !== e) { o.amplify = Math.max(o.amplify || 0, 0.3); o.amplifyT = 2.2; }
+      damageEnemy(o, dmg, { silent: true });
+    }
+  }
 }
 
 /* ---- Kill an enemy: drops, specials, particles, recycle ---------------- */
@@ -1174,7 +1862,24 @@ function killEnemy(e, opts = {}) {
   const def = e.def;
   game.kills++;
   game.killsByType[e.type] = (game.killsByType[e.type] || 0) + 1;
+  sfx(e.boss ? 'apex' : 'kill');
+  // Objective hooks: count purge-zone kills; reward the Golden Plasmid.
+  const obj = game.objective;
+  if (obj && obj.type === 'purge' && dist2(e.x, e.y, obj.x, obj.y) < obj.r * obj.r) obj.count++;
+  if (e.golden) {
+    for (let i = 0; i < 8; i++) spawnPickup('coin', e.x + rand(-30, 30), e.y + rand(-30, 30), 20);
+    spawnRing(e.x, e.y, '#ffd166', 70, 0.5);
+    // record the kill NOW — the pooled object may be recycled before the next objective tick
+    if (obj && obj.type === 'hunt' && obj.target === e) obj.targetDown = true;
+  }
   spawnParticles(e.x, e.y, def.glow, e.boss ? 60 : (e.elite ? 28 : 8), { speed: e.boss ? 320 : 160, size: e.boss ? 6 : 3, life: 0.6 });
+  // SYNERGY · Hemorrhage: a bleeding cell bursts on death, spreading bleed to neighbours.
+  if (e.bleed > 0) {
+    spawnParticles(e.x, e.y, '#ff5a5a', 10, { speed: 160 });
+    const bl = enemiesInRadius(e.x, e.y, 85);
+    for (let i = 0; i < bl.length; i++) { const o = bl[i]; if (o.dead || o === e || o.bleedT > 0) continue;
+      if (dist2(e.x, e.y, o.x, o.y) <= 85 * 85) { o.bleed = e.bleed * 0.7; o.bleedDmgBase = e.bleedDmgBase || 10; o.bleedT = 1.6; o.bleedTick = 0; } }
+  }
   spawnRing(e.x, e.y, def.glow, e.r * 2.2, 0.4);
 
   // Special: Lysogenic Virus 8% burst into 3 fast sub-viruses
@@ -1195,6 +1900,8 @@ function killEnemy(e, opts = {}) {
   if (e.elite) spawnPickup('chest', e.x, e.y, 1);
   // Heal orb sometimes from elites
   if (e.elite && chance(0.6)) spawnPickup('heal', e.x + rand(-20, 20), e.y, 25);
+  // Floor power-up: rare from normal kills, guaranteed from elites.
+  maybeDropPower(e);
 
   if (e.boss) onBossDefeated(e);
 
@@ -1222,6 +1929,7 @@ function damagePlayer(raw, fromX, fromY) {
     game.shake = Math.max(game.shake, Math.min(14, 5 + dmg * 0.2));
     game.flash = 0.18; game.flashColor = 'rgba(255,60,60,';
     spawnFloater(p.x, p.y - p.r, '-' + Math.round(dmg), '#ff7a7a');
+    sfx(p.hp <= 0 ? 'boss' : 'hurt');
     if (p.hp <= 0) { p.hp = 0; endRun(false); }
   }
 }
@@ -1247,20 +1955,21 @@ function spawnEnemy(typeId, x, y, opts = {}) {
   const hpScale = Math.pow(1 + 0.015 * t, 1.1);
   e.maxHp = def.hp * hpScale * (opts.hpMul || 1);
   e.hp = e.maxHp;
-  // EnemyDamage(t) = Base · (1 + 0.008t)
-  e.damage = def.damage * (1 + 0.008 * t) * (opts.dmgMul || 1);
-  // EnemySpeed(t) = min(Base·(1+0.002t), Base·1.5)
-  e.speed = Math.min(def.speed * (1 + 0.002 * t), def.speed * 1.5);
+  // EnemyDamage(t) = Base · (1 + 0.005t)   (was 0.008 — late-game hits were brutal)
+  e.damage = def.damage * (1 + 0.005 * t) * (opts.dmgMul || 1);
+  // EnemySpeed(t) = min(Base·(1+0.0014t), Base·1.35)  (gentler; nothing out-kites the player)
+  e.speed = Math.min(def.speed * (1 + 0.0014 * t), def.speed * 1.35);
   e.r = def.radius * (opts.scale || 1);
   e.boss = !!def.boss && !opts.asClone; e.elite = !!def.elite && !opts.asClone;
   e.bossClone = !!opts.asClone;
   e.behavior = opts.asClone ? 'juggernaut' : def.behavior;
   e.invulnShield = false; e.fungal = null;
+  e.golden = false; e.tendrilActive = false;      // pooled-object hygiene: clear recycled flags
   e.kbImmune = e.behavior === 'juggernaut' || e.behavior === 'boss';
   e.mass = e.boss ? 14 : (e.elite ? 6 : (def.weight * 0.35 + 0.7));
   e.hitFlash = 0; e.amplify = 0; e.amplifyT = 0; e.bleed = 0; e.bleedT = 0; e.bleedTick = 0;
   e.paralyze = 0; e.slow = 0; e.slowT = 0; e.contactCd = 0;
-  e.infected = 0; e.infectT = 0; e.charmed = 0;
+  e.infected = 0; e.infectT = 0; e.charmed = 0; e.synCd = 0;
   e.phase = rand(0, TAU); e.dashCd = rand(2, 4); e.dashT = 0;
   e.mortarT = rand(1.2, 2.8); e.anchored = false; e.leechCd = 1.5; e.tendrilT = 0;
   if (opts.sub) { e.speed *= 2; e.angle = opts.dashAngle != null ? opts.dashAngle : rand(0, TAU); e.subLife = 2.2; e.maxHp = e.hp = def.hp; }
@@ -1280,12 +1989,52 @@ function spawnRingEnemy(typeId) {
 function camHalfDiag() { return Math.hypot(view.w, view.h) / 2; }
 
 /* ---- Pickups ----------------------------------------------------------- */
+/* ---- Floor power-ups (consumable drops: magnet, health, speed, bomb, …) --- */
+const POWERS = {
+  magnet: { icon: '🧲', color: '#2ff6ff', name: 'Vacuum',        note: 'pulls in all biomass' },
+  health: { icon: '✚', color: '#6dff8a', name: 'Med-Vesicle',    note: '+40% health' },
+  speed:  { icon: '⚡', color: '#ffd166', name: 'ATP Rush',       note: '+60% speed · 8s' },
+  frenzy: { icon: '🔥', color: '#ff7a3a', name: 'Mitotic Frenzy', note: '+50% damage & fire rate · 8s' },
+  freeze: { icon: '❄', color: '#9fe0ff', name: 'Cryo-Shock',     note: 'freezes the swarm · 3s' },
+  bomb:   { icon: '💥', color: '#ff5a5a', name: 'Lysis Burst',    note: 'detonates the whole screen' },
+};
+const POWER_BAG = ['magnet', 'magnet', 'magnet', 'health', 'health', 'health', 'speed', 'speed', 'frenzy', 'frenzy', 'freeze', 'bomb'];
+function pickPowerType() { return pick(POWER_BAG); }
+/* Rare from normal kills; guaranteed from elites (bosses drop them on death). */
+function maybeDropPower(e) {
+  if (e.boss) return;
+  if (chance(e.elite ? 1 : 0.005)) spawnPickup('power', e.x + rand(-18, 18), e.y + rand(-18, 18), pickPowerType());
+}
+function applyPower(id) {
+  const p = game.player, def = POWERS[id] || POWERS.health;
+  if (id === 'magnet') {
+    for (const pk of game.pickups) if (pk.kind === 'xp' || pk.kind === 'coin' || pk.kind === 'nutrient') pk.magnet = true;
+    spawnRing(p.x, p.y, '#2ff6ff', camHalfDiag(), 0.6);
+  } else if (id === 'health') {
+    const h = Math.min(p.maxHp - p.hp, p.maxHp * 0.4); p.hp += h; spawnFloater(p.x, p.y - p.r, '+' + Math.round(h) + ' HP', '#6dff8a');
+  } else if (id === 'speed') {
+    p.powerSpeed = 8;
+  } else if (id === 'frenzy') {
+    p.frenzy = 8;
+  } else if (id === 'freeze') {
+    for (const e of game.enemies) if (!e.dead && !e.boss) e.paralyze = Math.max(e.paralyze || 0, 3);
+    game.flash = 0.3; game.flashColor = 'rgba(159,224,255,'; spawnRing(p.x, p.y, '#9fe0ff', camHalfDiag(), 0.55);
+  } else if (id === 'bomb') {
+    const dmg = 280 * (1 + 0.005 * game.time);
+    for (const e of game.enemies.slice()) { if (e.dead || !onScreen(e.x, e.y)) continue; damageEnemy(e, e.boss ? dmg * 0.5 : dmg, { fromX: p.x, fromY: p.y }); }
+    game.flash = 0.4; game.flashColor = 'rgba(255,120,80,'; game.shake = Math.max(game.shake, 18);
+    spawnRing(p.x, p.y, '#ff5a5a', camHalfDiag() + 100, 0.6); spawnParticles(p.x, p.y, '#ff9a5a', 30, { speed: 360, life: 0.7 });
+  }
+  bigBanner(def.icon + ' ' + def.name + ' — ' + def.note, 2.4);
+  sfx(id === 'bomb' ? 'boss' : id === 'health' ? 'heal' : 'apex');
+}
+
 function spawnPickup(kind, x, y, value) {
   const pk = pickupPool.obtain();
   pk.kind = kind; pk.x = x; pk.y = y; pk.value = value;
   pk.dx = rand(-40, 40); pk.dy = rand(-60, -10); pk.magnet = false;
-  pk.r = kind === 'chest' ? 16 : (kind === 'coin' ? 9 : (kind === 'heal' ? 10 : 7));
-  pk.life = kind === 'chest' ? 9999 : 30; pk.born = game.time; pk.bob = rand(0, TAU);
+  pk.r = kind === 'chest' ? 16 : kind === 'power' ? 13 : kind === 'coin' ? 9 : kind === 'heal' ? 10 : kind === 'nutrient' ? 8 : 7;
+  pk.life = (kind === 'chest' || kind === 'nutrient') ? 9999 : (kind === 'power' ? 45 : 30); pk.born = game.time; pk.bob = rand(0, TAU);
   game.pickups.push(pk);
   if (kind === 'xp') game.xpOrbsAlive++;
   return pk;
@@ -1298,6 +2047,9 @@ function createDirector() {
     spawnTimer: 0,
     eliteIdx: 0, bossDone: false,
     endlessEliteT: 90, endlessBossT: 300, endlessWave: 0,
+    objT: 90, objCount: 0,        // challenge-objective scheduler
+    envT: 0,                      // environment-hazard streaming throttle
+    padT: 30,                     // first micro-boost pad lands at 0:30
   };
 }
 
@@ -1314,6 +2066,7 @@ function activeTypes(t) {
   return out;
 }
 function weightedPickType(pool) {
+  if (!pool.length) return null;                 // spawn windows can all be closed late-game
   let total = 0; for (const d of pool) total += d.freq;
   let r = rand(0, total);
   for (const d of pool) { r -= d.freq; if (r <= 0) return d.id; }
@@ -1345,10 +2098,20 @@ function updateDirector(dt) {
     const pool = activeTypes(t);
     if (pool.length) {
       // density grows with time; spawn a small burst per tick late-game
-      const burst = 1 + Math.floor(t / 240);
+      const burst = 1 + Math.floor(t / 300);
       for (let i = 0; i < burst && dir.weight < dir.cap; i++) spawnRingEnemy(weightedPickType(pool));
     }
     dir.spawnTimer = clamp(0.55 - t * 0.00035, 0.07, 0.55);
+  }
+
+  // --- challenge objectives (Spell-Brigade style) — never during a boss ---
+  if (!game.objective && (!game.boss || game.boss.dead)) {
+    dir.objT -= dt;
+    if (dir.objT <= 0 && t > 60) {
+      startObjective();
+      dir.objCount++;
+      dir.objT = clamp(150 - dir.objCount * 6, 80, 150);
+    }
   }
 }
 
@@ -1360,11 +2123,11 @@ function triggerExtinctionEvent(endless = false) {
   game.director.weight = 0;
   const hpMul = endless ? (1 + game.director.endlessWave * 0.6) : 1;
   const boss = spawnEnemy('macrophage', game.player.x, game.player.y - camHalfDiag() - 120, { hpMul });
-  game.boss = boss; game.bossSpawned = true;
+  game.boss = boss; game.bossSpawned = true; Music.setIntensity(1);
   bigBanner(endless ? `WAVE ${game.director.endlessWave} · MACROPHAGE SENTINEL` : 'EXTINCTION EVENT — MACROPHAGE SENTINEL');
-  game.shake = 24; game.flash = 0.4; game.flashColor = 'rgba(255,40,40,';
+  game.shake = 24; game.flash = 0.4; game.flashColor = 'rgba(255,40,40,'; sfx('boss');
 }
-function announceElite() { bigBanner('⚠ ELITE: AMOEBOID PSEUDOPOD'); game.shake = 12; }
+function announceElite() { bigBanner('⚠ ELITE: AMOEBOID PSEUDOPOD'); game.shake = 12; sfx('boss'); }
 
 /* Remove without drops/specials (used by the field-wipe). */
 function killEnemyQuiet(e) {
@@ -1374,6 +2137,7 @@ function killEnemyQuiet(e) {
 }
 
 function onBossDefeated(e) {
+  SAVE.stats.bossKills = (SAVE.stats.bossKills || 0) + 1; commitSave();   // lifetime boss kills (unlocks Yeast)
   spawnParticles(e.x, e.y, '#ffffff', 120, { speed: 420, size: 7, life: 1.0 });
   spawnRing(e.x, e.y, '#ff6a6a', 360, 0.8);
   game.shake = 30; game.flash = 0.5; game.flashColor = 'rgba(255,255,255,';
@@ -1381,7 +2145,8 @@ function onBossDefeated(e) {
   for (let i = 0; i < 40; i++) spawnPickup('xp', e.x + rand(-60, 60), e.y + rand(-60, 60), 6);
   for (let i = 0; i < 6; i++) spawnPickup('coin', e.x + rand(-40, 40), e.y + rand(-40, 40), 30);
   spawnPickup('chest', e.x, e.y, 1);
-  game.boss = null;
+  for (let i = 0; i < 3; i++) spawnPickup('power', e.x + rand(-60, 60), e.y + rand(-40, 40), pickPowerType());
+  game.boss = null; Music.setIntensity(0);
   if (game.mode === 'timed') { game.win = true; setTimeout(() => endRun(true), 1400); }
   else { bigBanner('SENTINEL PURGED — THE SWARM RETURNS'); }
 }
@@ -1427,7 +2192,7 @@ function dealArc(x, y, facing, arc, range, base, opts = {}) {
     const e = list[i]; if (e.dead) continue;
     if (dist2(x, y, e.x, e.y) > (range + e.r) * (range + e.r)) continue;
     const ang = angTo(x, y, e.x, e.y);
-    let diff = Math.abs(((ang - facing + Math.PI) % TAU) - Math.PI);
+    const diff = Math.abs(angDiff(ang, facing));
     if (diff <= arc / 2) {
       const { dmg, crit } = computeDamage(base);
       damageEnemy(e, dmg, Object.assign({ crit, angle: ang, fromX: x, fromY: y }, opts));
@@ -1443,13 +2208,20 @@ const FIRE = {
   cilia(w, s, p) {
     const area = p.mult.area;
     const range = s.range * area;
-    w.phase = (w.phase || 0) + Math.PI / 3;              // rotate the lash pattern
+    w.phase = ((w.phase || 0) + Math.PI / 3) % TAU;      // rotate the lash pattern (wrapped)
     for (let i = 0; i < s.count; i++) {
       const ang = w.phase + i * (TAU / s.count);
       const opts = { knockback: s.knockback, melee: true };
       if (s.bleedPct) { opts.bleedPct = s.bleedPct; opts.bleedDur = s.bleedDur; opts.bleedBase = s.damage; }
       dealArc(p.x, p.y, ang, s.arc, range, s.damage, opts);
       addFx({ kind: 'whip', x: p.x, y: p.y, ang, arc: s.arc, range, life: 0.18, maxLife: 0.18, color: '#7dff9a' });
+    }
+    // MUTATION · Bilateral Symmetry: counter-rotating mirror zone(s), cast simultaneously.
+    const mir = mut('mirror');
+    for (let m = 1; m <= mir; m++) for (let i = 0; i < s.count; i++) {
+      const ang = -w.phase + i * (TAU / s.count) + m * 0.5;
+      dealArc(p.x, p.y, ang, s.arc, range, s.damage * 0.8, { knockback: s.knockback * 0.6, melee: true });
+      addFx({ kind: 'whip', x: p.x, y: p.y, ang, arc: s.arc, range, life: 0.18, maxLife: 0.18, color: '#b07bff' });
     }
   },
   vortex(w, s, p) {                                       // APEX: permanent buzz-saw aura
@@ -1462,7 +2234,8 @@ const FIRE = {
   },
   vacuole(w, s, p) {
     const target = nearestEnemy(p.x, p.y, 900) || randomEnemyOnScreen();
-    for (let i = 0; i < s.count; i++) {
+    const count = s.count + mut('multishot');
+    for (let i = 0; i < count; i++) {
       const ang = target ? angTo(p.x, p.y, target.x, target.y) + rand(-0.18, 0.18) : rand(0, TAU);
       const spd = s.projSpeed * p.mult.projSpeed;
       fireProjectile({
@@ -1484,8 +2257,9 @@ const FIRE = {
     const area = p.mult.area;
     const behind = Math.atan2(-p.dy, -p.dx);
     const moving = lenOf(p.dx, p.dy) > 5;
-    for (let i = 0; i < s.count; i++) {
-      const spread = (i - (s.count - 1) / 2) * 0.5;
+    const count = s.count + mut('multishot');
+    for (let i = 0; i < count; i++) {
+      const spread = (i - (count - 1) / 2) * 0.5;
       const a = (moving ? behind : rand(0, TAU)) + spread;
       const off = 26;
       makeHazard({
@@ -1498,15 +2272,19 @@ const FIRE = {
   },
   phage(w, s, p) {
     const apex = w.apexId === 'retro';
-    for (let i = 0; i < s.count; i++) {
+    const count = s.count + mut('multishot');
+    const splitHitN = mut('splitHit'), splitEndN = mut('splitEnd');
+    const rad = 7 * (1 + 0.12 * mut('giant'));
+    for (let i = 0; i < count; i++) {
       const target = randomEnemyOnScreen();
       const ang = target ? angTo(p.x, p.y, target.x, target.y) : rand(0, TAU);
       const spd = s.speed * p.mult.projSpeed;
       fireProjectile({
         kind: 'dart', x: p.x, y: p.y, dx: Math.cos(ang) * spd, dy: Math.sin(ang) * spd,
-        r: 7, life: 1.6 * p.mult.projDur, spr: SPR.dart, color: '#b07bff',
+        r: rad, life: 1.6 * p.mult.projDur, spr: SPR.dart, color: '#b07bff',
         damage: s.damage, pierce: apex ? 9999 : s.pierce, homing: s.homing, speed: spd,
-        paralyze: s.paralyze, bounce: apex ? 6 : 0, charm: apex ? 5 : 0, hitSet: new Set()
+        paralyze: s.paralyze, bounce: apex ? 6 : 0, charm: apex ? 5 : 0, hitSet: new Set(),
+        canSplit: !apex, splitHitN, splitEndN
       });
     }
   },
@@ -1519,10 +2297,33 @@ const FIRE = {
       dealArc(p.x, p.y, d, s.arc, range, s.damage, { knockback: s.knockback });
       addFx({ kind: 'wave', x: p.x, y: p.y, ang: d, arc: s.arc, range, life: 0.34, maxLife: 0.34, color: '#ff5fa2' });
     }
+    // MUTATION · Bilateral Symmetry: add perpendicular side waves.
+    if (mut('mirror') > 0) for (const d of [back + Math.PI / 2, back - Math.PI / 2]) {
+      dealArc(p.x, p.y, d, s.arc, range, s.damage * 0.8, { knockback: s.knockback * 0.7 });
+      addFx({ kind: 'wave', x: p.x, y: p.y, ang: d, arc: s.arc, range, life: 0.34, maxLife: 0.34, color: '#b07bff' });
+    }
     if (s.surge) { p.surge = Math.max(p.surge, s.surgeDur); }
     if (w.apexId === 'wake') { dropSlipstream(p, range); }
   },
-  wake(w, s, p) { FIRE.flagella(w, s, p); }                // apex shares the strike, adds slipstream
+  wake(w, s, p) { FIRE.flagella(w, s, p); },               // apex shares the strike, adds slipstream
+  trichocyst(w, s, p) {                                     // BEGINNER: auto-aim needle volley
+    const count = s.count + mut('multishot');
+    const splitHitN = mut('splitHit'), splitEndN = mut('splitEnd');
+    const rad = 6 * (1 + 0.12 * mut('giant'));
+    const primary = nearestEnemy(p.x, p.y, 1100) || randomEnemyOnScreen();
+    for (let i = 0; i < count; i++) {
+      // first needle locks the nearest target dead-on; the rest fan out a little
+      const t = i === 0 ? primary : (nearestEnemy(p.x, p.y, 1100) || primary);
+      const ang = t ? angTo(p.x, p.y, t.x, t.y) + (i ? rand(-0.22, 0.22) : 0) : rand(0, TAU);
+      const spd = s.speed * p.mult.projSpeed;
+      fireProjectile({
+        kind: 'dart', x: p.x, y: p.y, dx: Math.cos(ang) * spd, dy: Math.sin(ang) * spd,
+        r: rad, life: 1.2 * p.mult.projDur, spr: SPR.needle, color: '#9fe0ff',
+        damage: s.damage, pierce: s.pierce, homing: s.homing, speed: spd, hitSet: new Set(),
+        canSplit: true, splitHitN, splitEndN
+      });
+    }
+  }
 };
 
 /* WeaponSystem: tick cooldowns (scaled by ATP) and fire when ready. */
@@ -1537,10 +2338,12 @@ function updateWeapons(dt) {
                         apexId === 'swarm' ? 'swarm' : apexId === 'retro' ? 'phage' :
                         apexId === 'wake' ? 'wake' : apexId === 'fungal' ? 'spore' : w.id];
     let cd = s.cooldown * p.mult.cooldown;
+    if (p.frenzy > 0) cd *= 0.6;                          // Mitotic Frenzy power-up
     if (apexId === 'vortex') cd = 0.1;                    // buzz-saw ticks
     w.timer -= dt;
     if (w.timer <= 0) {
       fireFn(w, s, p);
+      if (apexId !== 'vortex') sfx('shoot');              // vortex is continuous — don't machine-gun the blip
       w.timer += Math.max(0.04, cd);
       if (w.timer < 0) w.timer = cd;                      // guard against spiral after long pauses
     }
@@ -1554,9 +2357,25 @@ function fireProjectile(o) {
   const b = projPool.obtain();
   Object.assign(b, { kind: 'dart', x: 0, y: 0, dx: 0, dy: 0, r: 6, life: 1.5, spr: null, color: '#fff',
     damage: 0, pierce: 0, homing: 0, speed: 0, drag: 0, paralyze: 0, bounce: 0, charm: 0,
-    hostile: false, onHit: null, onExpire: null, hitSet: null, spin: 0, rot: 0 }, o);
+    hostile: false, onHit: null, onExpire: null, hitSet: null, spin: 0, rot: 0,
+    canSplit: false, splitHitN: 0, splitEndN: 0, isFragment: false, _reflected: false }, o);
   game.projectiles.push(b);
   return b;
+}
+/* MUTATION · Schizogony / Terminal Fission — burst a projectile into shrapnel.  *
+ * Fragments are flagged isFragment so they can never split again (no runaway   *
+ * exponential spawning).                                                       */
+function spawnFragments(b, n) {
+  n = Math.min(n, 6);
+  const base = Math.max(1, (b.damage || 12) * 0.5);
+  const spd = (lenOf(b.dx, b.dy) || b.speed || 420) * 0.85;
+  for (let k = 0; k < n; k++) {
+    const a = (k / n) * TAU + rand(-0.2, 0.2);
+    fireProjectile({ kind: 'dart', x: b.x, y: b.y, dx: Math.cos(a) * spd, dy: Math.sin(a) * spd,
+      r: Math.max(4, b.r * 0.7), life: 0.7, spr: SPR.dart, color: '#ffd1a0',
+      damage: base, pierce: 0, speed: spd, hitSet: new Set(), isFragment: true });
+  }
+  spawnParticles(b.x, b.y, '#ffd1a0', 4, { life: 0.3, speed: 120 });
 }
 /* hostile (enemy/boss) bullet helper */
 function fireHostile(x, y, ang, speed, dmg, color = '#ff7a7a', r = 8) {
@@ -1585,11 +2404,23 @@ function updateProjectiles(dt) {
       if (b.x < cx - hw || b.x > cx + hw) { b.dx *= -1; b.x = clamp(b.x, cx - hw, cx + hw); b.bounce--; }
       if (b.y < cy - hh || b.y > cy + hh) { b.dy *= -1; b.y = clamp(b.y, cy - hh, cy + hh); b.bounce--; }
     }
-    if (b.life <= 0) { if (b.onExpire) b.onExpire(b); arr[i] = arr[arr.length - 1]; arr.pop(); projPool.release(b); continue; }
+    if (b.life <= 0) {
+      if (b.onExpire) b.onExpire(b);
+      if (b.splitEndN && b.canSplit && !b.isFragment) spawnFragments(b, b.splitEndN + 1);   // Terminal Fission
+      arr[i] = arr[arr.length - 1]; arr.pop(); projPool.release(b); continue;
+    }
 
     if (b.hostile) {
       // enemy bullet vs player
       if (dist2(b.x, b.y, p.x, p.y) < (b.r + p.r) * (b.r + p.r)) {
+        // Radiolarian: while shielded, reflect enemy fire back at double damage.
+        if (p.cmods && p.cmods.reflect && p.shieldHp > 0 && !b._reflected) {
+          const a = angTo(p.x, p.y, b.x, b.y), sp = lenOf(b.dx, b.dy) || 320;
+          b.hostile = false; b._reflected = true; b.damage = (b.damage || 10) * 2;
+          b.dx = Math.cos(a) * sp; b.dy = Math.sin(a) * sp; b.pierce = 2; b.color = '#cdefff'; b.hitSet = new Set();
+          p.shieldRegenDelay = 1.5; spawnParticles(p.x, p.y, '#cdefff', 6, { life: 0.3 }); spawnRing(p.x, p.y, '#cdefff', p.r + 12, 0.25);
+          continue;
+        }
         damagePlayer(b.damage, b.x, b.y); arr[i] = arr[arr.length - 1]; arr.pop(); projPool.release(b); continue;
       }
     } else if (!b.inert) {
@@ -1611,7 +2442,10 @@ function updateProjectiles(dt) {
         if (b.pierce <= 0) { consumed = true; break; }
         b.pierce--;
       }
-      if (consumed) { arr[i] = arr[arr.length - 1]; arr.pop(); projPool.release(b); continue; }
+      if (consumed) {
+        if (b.splitHitN && b.canSplit && !b.isFragment) spawnFragments(b, b.splitHitN + 1);   // Schizogony
+        arr[i] = arr[arr.length - 1]; arr.pop(); projPool.release(b); continue;
+      }
     }
   }
 }
@@ -1644,9 +2478,11 @@ function makeAcidPool(x, y, s, p) {
 
 function updateHazards(dt) {
   const arr = game.hazards, p = game.player;
+  p.onSlime = false;                                  // Physarum slime-trail contact (recomputed each frame)
   for (let i = arr.length - 1; i >= 0; i--) {
     const h = arr[i];
     h.life -= dt;
+    if (h.kind === 'slime' && dist2(h.x, h.y, p.x, p.y) < h.r * h.r) p.onSlime = true;
 
     if (h.kind === 'spore') {
       if (!h.armed) { h.arm -= dt; if (h.arm <= 0) h.armed = true; }
@@ -1750,11 +2586,11 @@ function updateClones(dt) {
     }
     // contact damage + durability
     if (c.touchCd <= 0) {
-      const list = enemiesInRadius(c.x, c.y, 18);
+      const list = enemiesInRadius(c.x, c.y, 22);
       for (let j = 0; j < list.length; j++) { const e = list[j]; if (e.dead || e.charmed) continue;
-        if (dist2(c.x, c.y, e.x, e.y) < (18 + e.r) * (18 + e.r)) {
-          const { dmg, crit } = computeDamage(36 * c.scalar); damageEnemy(e, dmg, { crit, knockback: c.knockback, fromX: c.x, fromY: c.y });
-          c.touchCd = 0.3; if (!c.apex) c.hits--; break;
+        if (dist2(c.x, c.y, e.x, e.y) < (22 + e.r) * (22 + e.r)) {
+          const { dmg, crit } = computeDamage(44 * c.scalar); damageEnemy(e, dmg, { crit, knockback: c.knockback, fromX: c.x, fromY: c.y });
+          c.touchCd = 0.24; if (!c.apex) c.hits--; break;
         } }
     }
     if (!c.apex && c.hits <= 0) { meltClone(c, i); }
@@ -1783,6 +2619,7 @@ function updateEnemies(dt) {
     if (e.slowT > 0) { e.slowT -= dt; if (e.slowT <= 0) e.slow = 0; }
     if (e.amplifyT > 0) { e.amplifyT -= dt; if (e.amplifyT <= 0) e.amplify = 0; }
     if (e.contactCd > 0) e.contactCd -= dt;
+    if (e.synCd > 0) e.synCd -= dt;
     if (e.bleedT > 0) {
       e.bleedT -= dt; e.bleedTick -= dt;
       if (e.bleedTick <= 0) { e.bleedTick = 0.5; const { dmg } = computeDamage(e.bleedDmgBase * e.bleed); damageEnemy(e, dmg, { silent: true }); if (e.dead) continue; }
@@ -1820,12 +2657,14 @@ function updateEnemies(dt) {
         case 'sine': {
           e.phase += dt * 6;
           const perp = a2p + Math.PI / 2;
-          const sway = Math.sin(e.phase) * e.speed * 0.6;
-          // emergency ATP dash
+          const sway = Math.sin(e.phase) * e.speed * 0.4;     // gentler weave -> easier to hit
+          // ATP dash: brief wind-up telegraph, then a slower lunge (1.6× not 2.1×)
           e.dashCd -= dt;
-          if (e.dashT > 0) { e.dashT -= dt; vx = Math.cos(e.dashAng) * e.speed * 2.1; vy = Math.sin(e.dashAng) * e.speed * 2.1; }
+          if (e.dashWind > 0) { e.dashWind -= dt; vx = Math.cos(a2p) * e.speed * 0.2; vy = Math.sin(a2p) * e.speed * 0.2;
+            if (e.dashWind <= 0) { e.dashT = 1.2; e.dashAng = a2p; } }
+          else if (e.dashT > 0) { e.dashT -= dt; vx = Math.cos(e.dashAng) * e.speed * 1.45; vy = Math.sin(e.dashAng) * e.speed * 1.45; }
           else {
-            if (dToP < 150 && e.dashCd <= 0) { e.dashT = 1.5; e.dashCd = 4.0; e.dashAng = a2p; }
+            if (dToP < 120 && e.dashCd <= 0) { e.dashWind = 0.45; e.dashCd = 6.0; }
             vx = Math.cos(a2p) * e.speed + Math.cos(perp) * sway;
             vy = Math.sin(a2p) * e.speed + Math.sin(perp) * sway;
           }
@@ -1843,6 +2682,13 @@ function updateEnemies(dt) {
         case 'juggernaut': {
           vx = Math.cos(a2p) * e.speed; vy = Math.sin(a2p) * e.speed;
           if (!e.bossClone) updateAmoeboidTendril(e, p, dt);
+          break;
+        }
+        case 'flee': {                                   // Golden Plasmid — evasive, jittery sprinter
+          const away = a2p + Math.PI;
+          e.phase += dt * 3;
+          vx = Math.cos(away) * e.speed + Math.cos(e.phase) * e.speed * 0.4;
+          vy = Math.sin(away) * e.speed + Math.sin(e.phase) * e.speed * 0.4;
           break;
         }
         case 'boss': { updateBoss(e, p, dt); vx = e._vx || 0; vy = e._vy || 0; break; }
@@ -1958,7 +2804,73 @@ function updateBoss(e, p, dt) {
 /* ======================================================================== *
  *  SECTION 17 — PLAYER UPDATE, PICKUPS, LEVELING & QUESTS                    *
  * ======================================================================== */
-const input = { up: false, down: false, left: false, right: false, mx: 0, my: 0, mouseDown: false, stick: null };
+const input = { up: false, down: false, left: false, right: false, mx: 0, my: 0, mouseDown: false, stick: null, _fromPad: false };
+
+/* ======================================================================== *
+ *  SECTION 19b — GAMEPAD / CONTROLLER SUPPORT                                *
+ *  Left stick or D-pad moves (reusing the analog touch-stick path). Face     *
+ *  buttons drive the UI: A = confirm / pick the highlighted card, B = back / *
+ *  skip, X = reroll, Start = pause. In any card modal the D-pad / bumpers /  *
+ *  stick move a highlight cursor so the whole game is playable pad-only.      *
+ * ======================================================================== */
+const gpad = { connected: false, prev: {} };
+let padFocus = 0;
+function gpBtn(gp, i) { const b = gp.buttons[i]; return b ? (b.pressed || b.value > 0.5) : false; }
+function gpEdge(name, now, fn) { if (now && !gpad.prev[name]) fn(); gpad.prev[name] = now; }
+function activeCards() {
+  if (game.state === 'levelup') return document.querySelectorAll('#levelup-cards .card');
+  if (game.state === 'mutation') return document.querySelectorAll('#mutation-cards .card');
+  if (game.state === 'apex') return document.querySelectorAll('#apex-cards .card');
+  if ($('char-modal').classList.contains('show')) return document.querySelectorAll('#char-cards .card:not(.locked)');
+  if ($('mode-modal').classList.contains('show')) return document.querySelectorAll('#mode-cards .card');
+  return null;
+}
+function renderPadFocus(cards) {
+  cards = cards || activeCards(); if (!cards || !cards.length) return;
+  if (padFocus >= cards.length) padFocus = 0;
+  cards.forEach((c, i) => c.classList.toggle('pad-focus', i === padFocus));
+}
+function padMoveFocus(d) { const cards = activeCards(); if (!cards || !cards.length) return; padFocus = (padFocus + d + cards.length) % cards.length; renderPadFocus(cards); sfx('ui'); }
+function padConfirm() {
+  if (game.state === 'paused') { resumeRun(); return; }
+  const cards = activeCards();
+  if (cards && cards.length) { cards[Math.min(padFocus, cards.length - 1)].click(); padFocus = 0; return; }
+  const menu = $('menu-main');
+  if (game.state === 'menu' && menu.classList.contains('show')) { const b = menu.querySelector('[data-act="play"]'); if (b) b.click(); }
+}
+function padBack() {
+  if (game.state === 'apex') { const s = $('apex-skip'); if (s) s.click(); return; }
+  if (game.state === 'paused') { resumeRun(); return; }
+  const back = document.querySelector('.overlay.show [data-act="back-main"]'); if (back) back.click();
+}
+function pollGamepad() {
+  if (!navigator.getGamepads) return;
+  const gps = navigator.getGamepads(); let gp = null;
+  for (const g of gps) if (g) { gp = g; break; }
+  if (!gp) { if (gpad.connected) { gpad.connected = false; if (input._fromPad) { input.stick = null; input._fromPad = false; } } return; }
+  if (!gpad.connected) { gpad.connected = true; toast('🎮 Controller connected', 2); }
+
+  const cards = activeCards();
+  const dL = gpBtn(gp, 14), dR = gpBtn(gp, 15), dU = gpBtn(gp, 12), dD = gpBtn(gp, 13);
+  const LB = gpBtn(gp, 4), RB = gpBtn(gp, 5), sx = gp.axes[0] || 0, sy = gp.axes[1] || 0;
+
+  if (cards && cards.length) {                         // a card modal is open -> navigate, don't move
+    gpEdge('navL', dL || LB || sx < -0.55, () => padMoveFocus(-1));
+    gpEdge('navR', dR || RB || sx > 0.55, () => padMoveFocus(1));
+    renderPadFocus(cards);
+    if (input._fromPad) { input.stick = null; input._fromPad = false; }
+  } else {                                             // free movement
+    let ax = sx, ay = sy;
+    if (dU || dD || dL || dR) { ax = (dR ? 1 : 0) - (dL ? 1 : 0); ay = (dD ? 1 : 0) - (dU ? 1 : 0); }
+    if (Math.hypot(ax, ay) > 0.24) { input.stick = { x: ax, y: ay }; input._fromPad = true; }
+    else if (input._fromPad) { input.stick = null; input._fromPad = false; }
+  }
+  gpEdge('A', gpBtn(gp, 0), padConfirm);
+  gpEdge('B', gpBtn(gp, 1), padBack);
+  gpEdge('X', gpBtn(gp, 2), () => { if (game.state === 'levelup') doReroll(); });
+  gpEdge('START', gpBtn(gp, 9) || gpBtn(gp, 8), () => { if (game.state === 'running' || game.state === 'paused') togglePause(); });
+}
+window.addEventListener('gamepadconnected', () => { gpad.connected = true; toast('🎮 Controller connected', 2.4); });
 
 function updatePlayer(dt) {
   const p = game.player;
@@ -1974,7 +2886,15 @@ function updatePlayer(dt) {
   if (p.invertCtrl > 0) { ix = -ix; iy = -iy; p.invertCtrl -= dt; }
   const il = lenOf(ix, iy); if (il > 1) { ix /= il; iy /= il; }
 
-  let spd = p.speed * (p.surge > 0 ? 1.4 : 1) * (p.slipBoost > 0 ? 2 : 1);
+  let spd = p.speed * (p.surge > 0 ? 1.4 : 1) * (p.slipBoost > 0 ? 2 : 1) * (p.powerSpeed > 0 ? 1.6 : 1) * (p.onSlime ? 1.4 : 1);
+  // Physarum lays a living slime trail behind it (faster for you, sticky for enemies).
+  if (p.cmods && p.cmods.slimeTrail) {
+    p.slimeT -= dt;
+    if (p.slimeT <= 0 && lenOf(p.dx, p.dy) > 12) {
+      p.slimeT = 0.16;
+      makeHazard({ kind: 'slime', x: p.x, y: p.y, r: 38, life: 2.4, slow: 0.4, color: 'rgba(190,235,40,0.13)' });
+    }
+  }
   p.dx = lerp(p.dx, ix * spd, 0.25); p.dy = lerp(p.dy, iy * spd, 0.25);
   p.x += p.dx * dt; p.y += p.dy * dt;
   if (il > 0.01) p.angle = Math.atan2(iy, ix);
@@ -1985,6 +2905,8 @@ function updatePlayer(dt) {
   if (p.surge > 0) p.surge -= dt;
   if (p.invulnTrail > 0) p.invulnTrail -= dt;
   if (p.slipBoost > 0) p.slipBoost -= dt;
+  if (p.powerSpeed > 0) p.powerSpeed -= dt;
+  if (p.frenzy > 0) p.frenzy -= dt;
 
   // ---- shield + health regen ----
   if (p.shieldRegenDelay > 0) p.shieldRegenDelay -= dt;
@@ -2008,7 +2930,7 @@ function updatePickups(dt) {
     pk.bob += dt * 4;
     if (pk.kind !== 'chest') pk.life -= dt;
     const d2 = dist2(pk.x, pk.y, p.x, p.y);
-    if (!pk.magnet && pk.kind !== 'chest' && d2 < pr2) pk.magnet = true;
+    if (!pk.magnet && pk.kind !== 'chest' && pk.kind !== 'power' && d2 < pr2) pk.magnet = true;
     if (pk.magnet) {
       const a = angTo(pk.x, pk.y, p.x, p.y), pull = 260 + (1 - Math.min(1, d2 / pr2)) * 360;
       pk.x += Math.cos(a) * pull * dt; pk.y += Math.sin(a) * pull * dt;
@@ -2024,10 +2946,12 @@ function updatePickups(dt) {
 }
 function collectPickup(pk) {
   const p = game.player;
-  if (pk.kind === 'xp') { game.xpOrbsAlive--; gainXP(pk.value); }
-  else if (pk.kind === 'coin') { gainCoins(pk.value); spawnFloater(p.x, p.y - p.r - 8, '+' + pk.value + '🪙', '#ffd166'); }
-  else if (pk.kind === 'heal') { const h = Math.min(p.maxHp - p.hp, pk.value); p.hp += h; spawnFloater(p.x, p.y - p.r, '+' + Math.round(h) + ' HP', '#6dff8a'); }
-  else if (pk.kind === 'chest') { openLootChest(); }
+  if (pk.kind === 'xp') { game.xpOrbsAlive--; gainXP(pk.value); sfx('xp'); }
+  else if (pk.kind === 'coin') { gainCoins(pk.value); spawnFloater(p.x, p.y - p.r - 8, '+' + pk.value + '🪙', '#ffd166'); sfx('coin'); }
+  else if (pk.kind === 'heal') { const h = Math.min(p.maxHp - p.hp, pk.value); p.hp += h; spawnFloater(p.x, p.y - p.r, '+' + Math.round(h) + ' HP', '#6dff8a'); sfx('heal'); }
+  else if (pk.kind === 'nutrient') { spawnFloater(p.x, p.y - p.r - 8, '🧪 spore', '#9dff5f'); spawnParticles(pk.x, pk.y, '#9dff5f', 6, { life: 0.3 }); sfx('coin'); }
+  else if (pk.kind === 'power') { applyPower(pk.value); }
+  else if (pk.kind === 'chest') { sfx('chest'); openLootChest(); }
   spawnParticles(pk.x, pk.y, '#bff8ff', 4, { life: 0.3, speed: 70 });
 }
 
@@ -2114,6 +3038,214 @@ function updateParticles(dt) {
 }
 
 /* ======================================================================== *
+ *  SECTION 17b — ENVIRONMENTAL HAZARDS                                       *
+ *  Static, world-anchored terrain features streamed in around the player.    *
+ *  They affect BOTH the cell and the swarm, so they're a tactical layer      *
+ *  (kite enemies through a vent!) rather than pure punishment.               *
+ * ======================================================================== */
+const ENV_TYPES = {
+  pool:    { name: 'Caustic Pool',    color: '#9dff5f', r: [70, 120] },   // slow + DoT zone
+  vent:    { name: 'Thermal Vent',    color: '#ff8a3a', r: [60, 92] },    // periodic eruption
+  current: { name: 'Riptide Current', color: '#5fc8ff', r: [92, 150] },   // directional shove
+};
+function spawnEnvHazard() {
+  const kind = pick(['pool', 'vent', 'current', 'pool', 'current']);      // pools/currents a bit commoner
+  const def = ENV_TYPES[kind];
+  const a = rand(0, TAU), dst = camHalfDiag() + rand(120, 520);
+  game.env.push({
+    kind, x: game.player.x + Math.cos(a) * dst, y: game.player.y + Math.sin(a) * dst,
+    r: rand(def.r[0], def.r[1]), color: def.color, tick: 0,
+    cycle: rand(2.2, 3.6), phase: rand(0, 3), flow: rand(0, TAU), born: game.time,
+  });
+}
+function updateEnvironment(dt) {
+  const p = game.player;
+  const cullR = camHalfDiag() + 900;
+  for (let i = game.env.length - 1; i >= 0; i--)
+    if (dist2(game.env[i].x, game.env[i].y, p.x, p.y) > cullR * cullR) game.env.splice(i, 1);
+
+  const target = 5 + Math.min(5, Math.floor(game.time / 180));
+  game.director.envT -= dt;
+  if (game.env.length < target && game.director.envT <= 0) { spawnEnvHazard(); game.director.envT = 0.6; }
+
+  const inv = p.invuln > 0 || p.invulnTrail > 0 || (p.cmods && p.cmods.hazardImmune);   // Tardigrade shrugs off terrain
+  for (const h of game.env) {
+    const d = dist(h.x, h.y, p.x, p.y);
+    if (h.kind === 'pool') {
+      h.tick -= dt;
+      if (d < h.r + p.r && !inv && h.tick <= 0) { damagePlayer(7, h.x, h.y); h.tick = 0.5; }
+      const list = enemiesInRadius(h.x, h.y, h.r);
+      for (const e of list) if (!e.dead && dist2(h.x, h.y, e.x, e.y) < (h.r + e.r) * (h.r + e.r)) { e.slow = Math.max(e.slow || 0, 0.2); e.slowT = 0.3; }
+    } else if (h.kind === 'vent') {
+      h.phase += dt;
+      if (h.phase >= h.cycle) {
+        h.phase = 0;
+        spawnRing(h.x, h.y, '#ff8a3a', h.r * 1.4, 0.4);
+        spawnParticles(h.x, h.y, '#ffb066', 16, { speed: 240, life: 0.6 });
+        if (onScreen(h.x, h.y)) game.shake = Math.max(game.shake, 6);
+        if (d < h.r + p.r && !inv) damagePlayer(16, h.x, h.y);
+        const list = enemiesInRadius(h.x, h.y, h.r);
+        for (const e of list) if (!e.dead && dist2(h.x, h.y, e.x, e.y) < (h.r + e.r) * (h.r + e.r)) damageEnemy(e, 40, { silent: true });
+      }
+    } else if (h.kind === 'current') {
+      const fx = Math.cos(h.flow), fy = Math.sin(h.flow);
+      if (d < h.r) { p.x += fx * 70 * dt; p.y += fy * 70 * dt; }
+      const list = enemiesInRadius(h.x, h.y, h.r);
+      for (const e of list) if (!e.dead) { e.x += fx * 55 * dt; e.y += fy * 55 * dt; }
+    }
+  }
+}
+
+/* ---- Micro-boost pads: spawn, channel, grant ---------------------------- */
+function spawnBoostPad() {
+  const rIdx = rollBoostRarity();
+  const a = rand(0, TAU), dst = rand(380, 640);
+  game.pads.push({
+    x: game.player.x + Math.cos(a) * dst, y: game.player.y + Math.sin(a) * dst,
+    r: 118, rarityIdx: rIdx, stat: pick(BOOST_STATS),
+    progress: 0, need: BOOST_RARITIES[rIdx].channel, life: 45,
+  });
+}
+function applyBoost(pad) {
+  const rar = BOOST_RARITIES[pad.rarityIdx], stat = pad.stat, v = stat.values[pad.rarityIdx];
+  if (!game.boosts) game.boosts = defaultBoosts();
+  stat.apply(game.boosts, v);
+  game.boostLog.push({ s: stat.id, r: pad.rarityIdx });
+  recomputeStats();
+  const msg = rar.dot + ' ' + rar.name + ' BOOST — ' + stat.icon + ' ' + stat.fmt(v);
+  if (rar.id === 'orange') { bigBanner(msg, 3.2); game.shake = Math.max(game.shake, 10); game.flash = 0.2; game.flashColor = 'rgba(255,157,58,'; sfx('apex'); }
+  else { toast(msg, 2.8); sfx('boost'); }
+  spawnRing(pad.x, pad.y, rar.color, pad.r * 2.2, 0.5);
+  spawnParticles(pad.x, pad.y, rar.color, 26, { speed: 240, life: 0.7 });
+}
+function updateBoostPads(dt) {
+  const dir = game.director, p = game.player;
+  // scheduling: first pad at 0:30, then every 40–60s, max 2 waiting in the world
+  dir.padT -= dt;
+  if (dir.padT <= 0) {
+    if (game.pads.length < 2) spawnBoostPad();
+    dir.padT = rand(40, 60);
+  }
+  for (let i = game.pads.length - 1; i >= 0; i--) {
+    const pad = game.pads[i];
+    pad.life -= dt;
+    if (pad.life <= 0 || dist2(pad.x, pad.y, p.x, p.y) > 4000 * 4000) { game.pads.splice(i, 1); continue; }
+    if (dist(pad.x, pad.y, p.x, p.y) < pad.r + p.r * 0.5) {
+      pad.progress += dt;
+      if (chance(dt * 14)) spawnParticles(pad.x + rand(-pad.r, pad.r) * 0.7, pad.y + rand(-pad.r, pad.r) * 0.7,
+        BOOST_RARITIES[pad.rarityIdx].color, 1, { speed: 50, life: 0.5 });
+      if (pad.progress >= pad.need) { applyBoost(pad); game.pads.splice(i, 1); }
+    } else {
+      pad.progress = Math.max(0, pad.progress - dt * 0.8);   // channel decays when you step out
+    }
+  }
+}
+
+/* ======================================================================== *
+ *  SECTION 17c — IN-RUN OBJECTIVES (timed challenge events)                  *
+ *  A rotating "do a task" beat: hold a zone, purge a zone, harvest spores,    *
+ *  hunt the Golden Plasmid, or survive a surge. Success showers rewards.      *
+ * ======================================================================== */
+const OBJ_DEFS = {
+  hold:    { icon: '🎯', name: 'Stabilize the Membrane', verb: 'Stay inside the marked zone' },
+  purge:   { icon: '☣️', name: 'Sterilize the Colony',  verb: 'Destroy the microbes in the zone' },
+  collect: { icon: '🧪', name: 'Harvest Nutrients',     verb: 'Gather every nutrient spore' },
+  hunt:    { icon: '⭐', name: 'Hunt the Golden Plasmid', verb: 'Chase down the golden cell' },
+  survive: { icon: '🌊', name: 'Immune Surge',          verb: 'Survive the incoming onslaught' },
+};
+function startObjective() {
+  const type = pick(['hold', 'purge', 'collect', 'hunt', 'survive']);
+  const p = game.player, a = rand(0, TAU), dst = rand(260, 460);
+  const o = {
+    type, def: OBJ_DEFS[type], x: p.x + Math.cos(a) * dst, y: p.y + Math.sin(a) * dst,
+    r: 150, time: 0, limit: 32, state: 'active', meter: 0, need: 0, count: 0, target: null,
+  };
+  if (type === 'hold')         { o.limit = 30; o.holdNeed = 8; }
+  else if (type === 'purge')   { o.limit = 35; o.need = 12 + Math.floor(game.time / 120) * 4; }
+  else if (type === 'collect') { o.limit = 35; o.need = 6; spawnNutrients(o); }
+  else if (type === 'hunt')    { o.limit = 30; o.target = spawnGolden(o.x, o.y); }
+  else if (type === 'survive') { o.limit = 28; }
+  game.objective = o;
+  bigBanner(o.def.icon + ' OBJECTIVE — ' + o.def.name, 3);
+  toast(o.def.verb, 3);
+  game.shake = Math.max(game.shake, 6);
+}
+function spawnNutrients(o) {
+  for (let i = 0; i < o.need; i++) {
+    const a = rand(0, TAU), d = rand(40, o.r * 1.4);
+    spawnPickup('nutrient', o.x + Math.cos(a) * d, o.y + Math.sin(a) * d, 1);
+  }
+}
+function spawnGolden(x, y) {
+  const e = spawnEnemy('bacterium', x, y, {});
+  e.golden = true; e.behavior = 'flee'; e.kbImmune = false;
+  // Catchable on purpose: clearly slower than the player's ~210 base speed, and
+  // not too tanky, so you can corner it AND shoot it down within the timer.
+  e.maxHp = e.hp = 170 * Math.pow(1 + 0.015 * game.time, 1.0);
+  e.r = 26; e.speed = 145; e.phase = rand(0, TAU);
+  return e;
+}
+function rewardObjective() {
+  const o = game.objective; if (!o) return;
+  const coins = 120 + (game.director ? game.director.objCount : 0) * 20;
+  gainCoins(coins);
+  for (let i = 0; i < 10; i++) spawnPickup('xp', o.x + rand(-40, 40), o.y + rand(-40, 40), 8);
+  spawnPickup('heal', o.x, o.y, 30);
+  if (chance(0.5)) spawnPickup('chest', o.x, o.y, 1);
+  bigBanner('✔ OBJECTIVE COMPLETE — +' + coins + '🪙', 3);
+  game.shake = Math.max(game.shake, 8); game.flash = 0.2; game.flashColor = 'rgba(120,255,160,';
+  sfx('objective');
+  clearObjectiveEntities(o); game.objective = null;
+  openMutationChoice();          // the reward: pick a stackable mutation
+}
+function failObjective() {
+  const o = game.objective; if (!o) return;
+  if (o.type === 'hunt' && o.target && !o.target.dead) killEnemyQuiet(o.target);
+  bigBanner('✗ OBJECTIVE FAILED — ' + o.def.name, 2.6);
+  clearObjectiveEntities(o); game.objective = null;
+}
+function clearObjectiveEntities(o) {
+  if (o.type === 'collect') {                                  // sweep up leftover nutrient pods
+    const arr = game.pickups;
+    for (let i = arr.length - 1; i >= 0; i--) if (arr[i].kind === 'nutrient') { arr[i] = arr[arr.length - 1]; arr.pop(); }
+  }
+}
+function updateObjective(dt) {
+  const o = game.objective; if (!o) return;
+  const p = game.player;
+  o.time += dt;
+  const left = o.limit - o.time;
+  const inZone = dist(o.x, o.y, p.x, p.y) < o.r;
+
+  if (o.type === 'hold') {
+    if (inZone) o.meter += dt; else o.meter = Math.max(0, o.meter - dt * 0.6);
+    if (o.meter >= o.holdNeed) { rewardObjective(); return; }
+  } else if (o.type === 'purge') {
+    if (o.count >= o.need) { rewardObjective(); return; }
+    if (chance(dt * 2) && enemiesInRadius(o.x, o.y, o.r).length < 18) {
+      const ty = weightedPickType(activeTypes(game.time));
+      if (ty) { const a = rand(0, TAU), d = rand(0, o.r); spawnEnemy(ty, o.x + Math.cos(a) * d, o.y + Math.sin(a) * d, {}); }
+    }
+  } else if (o.type === 'collect') {
+    let remaining = 0; for (const pk of game.pickups) if (pk.kind === 'nutrient') remaining++;
+    o.count = o.need - remaining;
+    if (remaining === 0) { rewardObjective(); return; }
+  } else if (o.type === 'hunt') {
+    if (o.targetDown || !o.target || o.target.dead) { rewardObjective(); return; }
+    // Catching IS capturing: simply reaching the golden cell claims it (ranged
+    // builds can still gun it down — either way completes the hunt).
+    if (dist(p.x, p.y, o.target.x, o.target.y) < p.r + o.target.r + 6) {
+      spawnFloater(o.target.x, o.target.y - o.target.r, 'CAUGHT!', '#ffd166');
+      killEnemy(o.target); rewardObjective(); return;
+    }
+  } else if (o.type === 'survive') {
+    if (left <= 0) { rewardObjective(); return; }
+    if (chance(dt * 3)) { const ty = weightedPickType(activeTypes(game.time)) || 'virus'; spawnRingEnemy(ty); }
+  }
+  if (o.type !== 'survive' && left <= 0) failObjective();
+}
+
+/* ======================================================================== *
  *  SECTION 18 — RENDERING SYSTEM (Canvas2D, bioluminescent microscope look) *
  * ======================================================================== */
 let canvas, ctx;
@@ -2162,6 +3294,9 @@ function render(time) {
 
   drawGrid(cam);
   if (game.state !== 'menu') {
+    drawEnvironment(t);
+    drawBoostPads(t);
+    drawObjective(t);
     drawHazards(t);
     drawPickups(t);
     drawProjectiles();
@@ -2178,6 +3313,7 @@ function render(time) {
   drawVignette();
   if (game.flash > 0) { ctx.fillStyle = game.flashColor + Math.max(0, game.flash) + ')'; ctx.fillRect(0, 0, view.w, view.h); }
   if (game.boss && !game.boss.dead) drawBossBar();
+  if (game.state !== 'menu' && game.player) drawMinimap();
 }
 
 function drawGrid(cam) {
@@ -2190,34 +3326,108 @@ function drawGrid(cam) {
 }
 
 function drawPlayer(t) {
-  const p = game.player;
-  if (p.invuln > 0 && Math.floor(t * 30) % 2 === 0 && p.invulnTrail <= 0) { /* hit flicker */ }
+  const p = game.player, viz = charViz();
   ctx.save(); ctx.translate(p.x, p.y);
   const lowHp = p.hp / p.maxHp < 0.3;
   const pulse = 1 + 0.05 * Math.sin(t * (lowHp ? 14 : 5));
   const R = p.r * pulse;
-  ctx.shadowColor = p.invulnTrail > 0 ? '#ffffff' : (lowHp ? '#ff5a5a' : '#2ff6ff');
-  ctx.shadowBlur = p.surge > 0 || p.invulnTrail > 0 ? 34 : 22;
-  // wobbly membrane
+  const glow = p.invulnTrail > 0 ? '#ffffff' : (lowHp ? '#ff5a5a' : viz.glow);
+
+  // transient buff auras
+  if (p.frenzy > 0) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = 'rgba(255,122,58,0.5)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0, 0, R + 13 + 2 * Math.sin(t * 12), 0, TAU); ctx.stroke(); ctx.restore(); }
+  if (p.powerSpeed > 0) { ctx.save(); ctx.globalAlpha = 0.4; ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 2;
+    const ba = p.angle + Math.PI; for (let k = 1; k <= 3; k++) { ctx.beginPath(); ctx.arc(Math.cos(ba) * k * 6, Math.sin(ba) * k * 6, R - k * 2, p.angle - 0.6, p.angle + 0.6); ctx.stroke(); } ctx.restore(); }
+
+  // --- membrane body (oriented + elongated along the movement axis) ---
+  ctx.save();
+  ctx.rotate(p.angle);
+  ctx.scale(viz.elong, 1 / Math.sqrt(viz.elong));
+  ctx.shadowColor = glow; ctx.shadowBlur = (p.surge > 0 || p.powerSpeed > 0 || p.invulnTrail > 0) ? 34 : 22;
   ctx.beginPath();
-  const lobes = 12;
-  for (let i = 0; i <= lobes; i++) { const a = i / lobes * TAU; const rr = R * (1 + 0.07 * Math.sin(a * 3 + t * 3));
+  const lobes = 14, wobK = viz.feature === 'pseudopods' ? 0.15 : 0.07;
+  for (let i = 0; i <= lobes; i++) { const a = i / lobes * TAU; const rr = R * (1 + wobK * Math.sin(a * 3 + t * 3));
     const x = Math.cos(a) * rr, y = Math.sin(a) * rr; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
   ctx.closePath();
-  const g = ctx.createRadialGradient(0, 0, 2, 0, 0, R);
-  g.addColorStop(0, 'rgba(180,255,255,0.95)'); g.addColorStop(0.5, 'rgba(47,246,255,0.55)'); g.addColorStop(1, 'rgba(47,246,255,0.08)');
+  const g = ctx.createRadialGradient(-R * 0.18, -R * 0.18, 2, 0, 0, R);
+  g.addColorStop(0, viz.body[0]); g.addColorStop(0.5, viz.body[1]); g.addColorStop(1, viz.body[2]);
   ctx.fillStyle = g; ctx.fill();
+  ctx.restore();
   ctx.shadowBlur = 0;
-  // cilia ring (beating)
-  ctx.strokeStyle = 'rgba(190,255,255,0.7)'; ctx.lineWidth = 2;
-  for (let i = 0; i < 18; i++) { const a = i / 18 * TAU + t * 0.6; const beat = 4 + 3 * Math.sin(t * 8 + i);
-    ctx.beginPath(); ctx.moveTo(Math.cos(a) * R, Math.sin(a) * R); ctx.lineTo(Math.cos(a) * (R + beat), Math.sin(a) * (R + beat)); ctx.stroke(); }
-  // nucleus
-  ctx.fillStyle = 'rgba(10,40,55,0.85)'; ctx.beginPath(); ctx.arc(0, 0, R * 0.42, 0, TAU); ctx.fill();
-  ctx.fillStyle = 'rgba(120,230,255,0.9)'; ctx.beginPath(); ctx.arc(-R * 0.12, -R * 0.12, R * 0.18, 0, TAU); ctx.fill();
-  // shield ring
-  if (p.shieldHp > 0) { ctx.strokeStyle = `rgba(47,246,255,${0.25 + 0.4 * (p.shieldHp / p.maxShield)})`; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(0, 0, R + 9, 0, TAU); ctx.stroke(); }
+
+  // --- surface feature (the visual identity of each cell line) ---
+  if (viz.feature === 'cilia') {
+    ctx.strokeStyle = glow; ctx.globalAlpha = 0.7; ctx.lineWidth = 2;
+    for (let i = 0; i < 20; i++) { const a = i / 20 * TAU + t * 0.6; const beat = 4 + 3 * Math.sin(t * 8 + i);
+      ctx.beginPath(); ctx.moveTo(Math.cos(a) * R, Math.sin(a) * R); ctx.lineTo(Math.cos(a) * (R + beat), Math.sin(a) * (R + beat)); ctx.stroke(); }
+    ctx.globalAlpha = 1;
+  } else if (viz.feature === 'flagellum') {                 // Euglena — one long whip at the front
+    const fa = p.angle; ctx.strokeStyle = glow; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (let i = 0; i <= 24; i++) { const tt = i / 24, len = R * 0.8 + tt * R * 2.6, wob = Math.sin(tt * Math.PI * 3 - t * 10) * R * 0.45 * tt;
+      const bx = Math.cos(fa) * len + Math.cos(fa + Math.PI / 2) * wob, by = Math.sin(fa) * len + Math.sin(fa + Math.PI / 2) * wob;
+      i ? ctx.lineTo(bx, by) : ctx.moveTo(bx, by); }
+    ctx.stroke();
+  } else if (viz.feature === 'vibrio') {                    // Bdellovibrio — corkscrew flagellum at the rear
+    const ra = p.angle + Math.PI; ctx.strokeStyle = glow; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (let i = 0; i <= 20; i++) { const tt = i / 20, len = R * 0.7 + tt * R * 2.1, wob = Math.sin(tt * Math.PI * 4 - t * 14) * R * 0.32 * tt;
+      const bx = Math.cos(ra) * len + Math.cos(ra + Math.PI / 2) * wob, by = Math.sin(ra) * len + Math.sin(ra + Math.PI / 2) * wob;
+      i ? ctx.lineTo(bx, by) : ctx.moveTo(bx, by); }
+    ctx.stroke();
+  } else if (viz.feature === 'pseudopods') {                // Phagocyte — internal vacuoles (membrane already ruffled)
+    ctx.fillStyle = 'rgba(150,180,205,0.4)';
+    for (let i = 0; i < 4; i++) { const a = i / 4 * TAU + t * 0.3, x = Math.cos(a) * R * 0.45, y = Math.sin(a) * R * 0.45;
+      ctx.beginPath(); ctx.arc(x, y, R * 0.14, 0, TAU); ctx.fill(); }
+  } else if (viz.feature === 'bud') {                       // Yeast — thick wall + a budding daughter cell
+    ctx.strokeStyle = 'rgba(255,209,102,0.55)'; ctx.lineWidth = R * 0.12; ctx.beginPath(); ctx.arc(0, 0, R * 0.9, 0, TAU); ctx.stroke();
+    const ba = -0.7, bx = Math.cos(ba) * R * 1.05, by = Math.sin(ba) * R * 1.05, br = R * 0.5;
+    ctx.shadowColor = glow; ctx.shadowBlur = 14;
+    const bg = ctx.createRadialGradient(bx - br * 0.2, by - br * 0.2, 1, bx, by, br); bg.addColorStop(0, viz.body[0]); bg.addColorStop(1, viz.body[2]);
+    ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(bx, by, br, 0, TAU); ctx.fill(); ctx.shadowBlur = 0;
+  } else if (viz.feature === 'colony') {                    // Volvox — many daughter cells around the sphere
+    ctx.shadowColor = glow; ctx.shadowBlur = 6; ctx.fillStyle = 'rgba(120,255,200,0.85)';
+    for (let i = 0; i < 14; i++) { const a = i / 14 * TAU + t * 0.2, x = Math.cos(a) * R * 0.62, y = Math.sin(a) * R * 0.62;
+      ctx.beginPath(); ctx.arc(x, y, R * 0.12, 0, TAU); ctx.fill(); }
+    ctx.shadowBlur = 0;
+    for (let i = 0; i < 5; i++) { const a = i / 5 * TAU + 0.5; ctx.beginPath(); ctx.arc(Math.cos(a) * R * 0.3, Math.sin(a) * R * 0.3, R * 0.08, 0, TAU); ctx.fill(); }
+  } else if (viz.feature === 'tardigrade') {                // Water bear — stubby legs + body segments
+    ctx.save(); ctx.rotate(p.angle);
+    ctx.strokeStyle = glow; ctx.lineWidth = Math.max(2.5, R * 0.16); ctx.lineCap = 'round'; ctx.globalAlpha = 0.85;
+    for (let i = 0; i < 4; i++) { const lx = -R * 0.55 + i * (R * 0.37);
+      for (const sgn of [-1, 1]) { const wob = Math.sin(t * 9 + i + (sgn > 0 ? 0 : 1.6)) * R * 0.14;
+        ctx.beginPath(); ctx.moveTo(lx, sgn * R * 0.5); ctx.lineTo(lx + wob, sgn * R * 0.92); ctx.stroke(); } }
+    ctx.globalAlpha = 1; ctx.strokeStyle = 'rgba(150,95,40,0.45)'; ctx.lineWidth = 2;
+    for (let i = 1; i < 4; i++) { const sx = -R * 0.45 + i * (R * 0.3); ctx.beginPath(); ctx.moveTo(sx, -R * 0.5); ctx.lineTo(sx, R * 0.5); ctx.stroke(); }
+    ctx.restore();
+  } else if (viz.feature === 'slime') {                     // Slime mold — branching internal vein network
+    ctx.strokeStyle = 'rgba(190,235,40,0.6)'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+    for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + t * 0.15;
+      ctx.beginPath(); ctx.moveTo(0, 0);
+      for (let j = 1; j <= 4; j++) { const rr = R * 0.22 * j, aa = a + Math.sin(t * 2 + i + j) * 0.32; ctx.lineTo(Math.cos(aa) * rr, Math.sin(aa) * rr); }
+      ctx.stroke(); }
+    ctx.fillStyle = 'rgba(225,255,150,0.7)';
+    for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + t * 0.15; ctx.beginPath(); ctx.arc(Math.cos(a) * R * 0.85, Math.sin(a) * R * 0.85, R * 0.1 + R * 0.03 * Math.sin(t * 4 + i), 0, TAU); ctx.fill(); }
+  } else if (viz.feature === 'radiolarian') {               // Silica shell — radial spikes + hex lattice
+    ctx.strokeStyle = glow; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.85;
+    for (let i = 0; i < 12; i++) { const a = i / 12 * TAU + t * 0.1; ctx.beginPath(); ctx.moveTo(Math.cos(a) * R * 0.7, Math.sin(a) * R * 0.7); ctx.lineTo(Math.cos(a) * (R + 9), Math.sin(a) * (R + 9)); ctx.stroke(); }
+    for (const [rad, off] of [[0.7, 0], [0.42, 0.5]]) {
+      ctx.beginPath(); for (let i = 0; i <= 6; i++) { const a = i / 6 * TAU + off + t * 0.1, x = Math.cos(a) * R * rad, y = Math.sin(a) * R * rad; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.closePath(); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // --- nucleus (skip the big central one for the colony) ---
+  if (viz.feature !== 'colony') {
+    ctx.fillStyle = viz.nucleus[0]; ctx.beginPath(); ctx.arc(0, 0, R * 0.4, 0, TAU); ctx.fill();
+    ctx.fillStyle = viz.nucleus[1]; ctx.beginPath(); ctx.arc(-R * 0.12, -R * 0.12, R * 0.17, 0, TAU); ctx.fill();
+  }
+  // --- eyespot (Euglena) ---
+  if (viz.eyespot) { ctx.fillStyle = viz.eyespot; ctx.beginPath(); ctx.arc(Math.cos(p.angle) * R * 0.45, Math.sin(p.angle) * R * 0.45, R * 0.13, 0, TAU); ctx.fill(); }
+
+  // --- shield ring (tinted to the cell's glow) ---
+  if (p.shieldHp > 0) { ctx.globalAlpha = 0.25 + 0.4 * (p.shieldHp / p.maxShield); ctx.strokeStyle = glow; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0, 0, R + 9, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; }
   ctx.restore();
 }
 
@@ -2240,6 +3450,14 @@ function drawEnemies(t) {
     if (e.charmed) { ctx.globalAlpha = 0.85; }
     ctx.drawImage(spr, -spr.width / 2, -spr.height / 2);
     ctx.restore();
+    // Golden Plasmid objective target — unmistakable gold aura
+    if (e.golden) {
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      ctx.strokeStyle = 'rgba(255,209,102,0.9)'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 6 + 2 * Math.sin(t * 8), 0, TAU); ctx.stroke();
+      ctx.shadowColor = '#ffd166'; ctx.shadowBlur = 18;
+      ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, TAU); ctx.stroke(); ctx.restore();
+    }
     // hit flash
     if (e.hitFlash > 0) { ctx.save(); ctx.globalAlpha = e.hitFlash * 4; ctx.globalCompositeOperation = 'lighter';
       ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, TAU); ctx.fill(); ctx.restore(); }
@@ -2284,8 +3502,18 @@ function drawPickups(t) {
   const arr = game.pickups;
   for (let i = 0; i < arr.length; i++) {
     const pk = arr[i]; if (!onScreen(pk.x, pk.y, 30)) continue;
-    const spr = pk.kind === 'coin' ? SPR.coin : pk.kind === 'heal' ? SPR.biomassBig : pk.kind === 'chest' ? SPR.chest : SPR.biomass;
     const bob = Math.sin(pk.bob) * 2;
+    if (pk.kind === 'power') {                              // glowing capsule with the power glyph
+      const def = POWERS[pk.value] || POWERS.health, pulse = 1 + 0.08 * Math.sin(t * 4 + pk.bob);
+      ctx.save(); ctx.translate(pk.x, pk.y + bob); ctx.scale(pulse, pulse);
+      ctx.shadowColor = def.color; ctx.shadowBlur = 18;
+      ctx.fillStyle = 'rgba(8,20,28,0.92)'; ctx.beginPath(); ctx.arc(0, 0, 14, 0, TAU); ctx.fill();
+      ctx.lineWidth = 2.5; ctx.strokeStyle = def.color; ctx.beginPath(); ctx.arc(0, 0, 14, 0, TAU); ctx.stroke();
+      ctx.shadowBlur = 0; ctx.font = '16px Segoe UI, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff'; ctx.fillText(def.icon, 0, 1);
+      ctx.restore(); continue;
+    }
+    const spr = pk.kind === 'coin' ? SPR.coin : pk.kind === 'heal' ? SPR.biomassBig : pk.kind === 'chest' ? SPR.chest : pk.kind === 'nutrient' ? SPR.nutrient : SPR.biomass;
     ctx.save(); ctx.translate(pk.x, pk.y + bob);
     if (pk.kind === 'chest') { const s = 1 + 0.08 * Math.sin(t * 5); ctx.scale(s, s); }
     ctx.drawImage(spr, -spr.width / 2, -spr.height / 2); ctx.restore();
@@ -2369,6 +3597,145 @@ function drawBossBar() {
   ctx.restore();
 }
 
+/* ---- Environmental hazards (drawn under entities) ---------------------- */
+function drawEnvironment(t) {
+  for (const h of game.env) {
+    if (!onScreen(h.x, h.y, h.r + 40)) continue;
+    ctx.save();
+    if (h.kind === 'pool') {
+      const g = ctx.createRadialGradient(h.x, h.y, h.r * 0.2, h.x, h.y, h.r);
+      g.addColorStop(0, 'rgba(157,255,95,0.20)'); g.addColorStop(0.7, 'rgba(120,220,70,0.12)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(h.x, h.y, h.r, 0, TAU); ctx.fill();
+      ctx.globalAlpha = 0.4; ctx.strokeStyle = 'rgba(180,255,120,0.5)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(h.x, h.y, h.r * (0.9 + 0.05 * Math.sin(t * 3)), 0, TAU); ctx.stroke();
+    } else if (h.kind === 'vent') {
+      const k = clamp(h.phase / h.cycle, 0, 1);                       // eruption charge 0..1
+      const g = ctx.createRadialGradient(h.x, h.y, 1, h.x, h.y, h.r);
+      g.addColorStop(0, `rgba(255,${Math.floor(120 + 120 * k)},60,${0.18 + 0.25 * k})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(h.x, h.y, h.r, 0, TAU); ctx.fill();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.strokeStyle = `rgba(255,150,60,${0.3 + 0.5 * k})`; ctx.lineWidth = 2 + 4 * k;
+      ctx.beginPath(); ctx.arc(h.x, h.y, h.r * (0.4 + 0.6 * k), 0, TAU); ctx.stroke();
+    } else if (h.kind === 'current') {
+      const g = ctx.createRadialGradient(h.x, h.y, h.r * 0.2, h.x, h.y, h.r);
+      g.addColorStop(0, 'rgba(95,200,255,0.16)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(h.x, h.y, h.r, 0, TAU); ctx.fill();
+      ctx.globalAlpha = 0.5; ctx.strokeStyle = 'rgba(170,225,255,0.7)'; ctx.lineWidth = 2;
+      const fx = Math.cos(h.flow), fy = Math.sin(h.flow);
+      for (let i = 0; i < 3; i++) {
+        const off = ((t * 60 + i * 40) % 120) - 60, cx = h.x + fx * off, cy = h.y + fy * off;
+        ctx.beginPath(); ctx.moveTo(cx - fx * 10 - fy * 6, cy - fy * 10 + fx * 6);
+        ctx.lineTo(cx + fx * 10, cy + fy * 10); ctx.lineTo(cx - fx * 10 + fy * 6, cy - fy * 10 - fx * 6); ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+}
+
+/* ---- Micro-boost channel pads ------------------------------------------ */
+function drawBoostPads(t) {
+  for (const pad of game.pads) {
+    if (!onScreen(pad.x, pad.y, pad.r + 50)) continue;
+    const rar = BOOST_RARITIES[pad.rarityIdx];
+    const fadeIn = clamp((45 - pad.life) * 2, 0, 1);           // pop in
+    const fadeOut = clamp(pad.life / 5, 0, 1);                 // wink out near expiry
+    const alpha = Math.min(fadeIn, fadeOut);
+    const channeling = pad.progress > 0.01;
+    const pulse = 1 + (channeling ? 0.05 * Math.sin(t * 10) : 0.025 * Math.sin(t * 3));
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    // soft fill
+    const g = ctx.createRadialGradient(pad.x, pad.y, 4, pad.x, pad.y, pad.r);
+    g.addColorStop(0, `rgba(${rar.rgb},0.22)`); g.addColorStop(0.8, `rgba(${rar.rgb},0.10)`); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(pad.x, pad.y, pad.r * pulse, 0, TAU); ctx.fill();
+    // rim
+    ctx.strokeStyle = `rgba(${rar.rgb},0.75)`; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(pad.x, pad.y, pad.r * pulse, 0, TAU); ctx.stroke();
+    // channel progress arc (thick, from 12 o'clock)
+    if (channeling) {
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.strokeStyle = rar.color; ctx.lineWidth = 6; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(pad.x, pad.y, pad.r - 8, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(pad.progress / pad.need, 0, 1));
+      ctx.stroke();
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    // stat glyph + rarity label
+    ctx.shadowColor = rar.color; ctx.shadowBlur = 12;
+    ctx.font = '26px Segoe UI, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#ffffff'; ctx.fillText(pad.stat.icon, pad.x, pad.y - 4);
+    ctx.shadowBlur = 0; ctx.font = 'bold 10px Segoe UI, sans-serif';
+    ctx.fillStyle = rar.color; ctx.fillText(rar.name, pad.x, pad.y + 20);
+    ctx.restore();
+  }
+}
+
+/* ---- Objective zone ring (hold / purge / collect) ---------------------- */
+function drawObjective(t) {
+  const o = game.objective; if (!o || o.type === 'survive' || o.type === 'hunt') return;
+  const pulse = 1 + 0.04 * Math.sin(t * 4);
+  const col = o.type === 'purge' ? '255,90,90' : o.type === 'collect' ? '157,255,95' : '47,246,255';
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  ctx.strokeStyle = `rgba(${col},0.7)`; ctx.lineWidth = 4;
+  ctx.setLineDash([14, 10]); ctx.lineDashOffset = -t * 30;
+  ctx.beginPath(); ctx.arc(o.x, o.y, o.r * pulse, 0, TAU); ctx.stroke();
+  ctx.setLineDash([]);
+  const g = ctx.createRadialGradient(o.x, o.y, o.r * 0.3, o.x, o.y, o.r);
+  g.addColorStop(0, `rgba(${col},0.03)`); g.addColorStop(1, `rgba(${col},0.13)`);
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(o.x, o.y, o.r * pulse, 0, TAU); ctx.fill();
+  ctx.restore();
+}
+
+/* ---- Sensor minimap (screen space, bottom-right) ----------------------- */
+function mmRoundRect(x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function drawMinimap() {
+  if (!game.showMinimap) return;
+  const size = Math.min(168, view.w * 0.26), pad = 14;
+  const x0 = view.w - size - pad, y0 = view.h - size - pad;
+  const cx = x0 + size / 2, cy = y0 + size / 2, range = 1500, sc = (size / 2) / range, maxR = size / 2 - 6;
+  const p = game.player;
+  const toMap = (wx, wy) => { let dx = (wx - p.x) * sc, dy = (wy - p.y) * sc; const m = Math.hypot(dx, dy); if (m > maxR) { dx = dx / m * maxR; dy = dy / m * maxR; } return [cx + dx, cy + dy]; };
+  ctx.save();
+  ctx.fillStyle = 'rgba(6,18,26,0.72)'; ctx.strokeStyle = 'rgba(74,226,255,0.3)'; ctx.lineWidth = 1.5;
+  mmRoundRect(x0, y0, size, size, 10); ctx.fill(); ctx.stroke();
+  mmRoundRect(x0, y0, size, size, 10); ctx.clip();
+  // environment hazards
+  for (const h of game.env) { const m = toMap(h.x, h.y); ctx.fillStyle = h.kind === 'vent' ? 'rgba(255,138,58,0.7)' : h.kind === 'current' ? 'rgba(95,200,255,0.6)' : 'rgba(157,255,95,0.6)'; ctx.fillRect(m[0] - 2, m[1] - 2, 4, 4); }
+  // micro-boost pads — pulsing ring in rarity colour so they're worth chasing
+  for (const pad of game.pads) { const m = toMap(pad.x, pad.y); const rar = BOOST_RARITIES[pad.rarityIdx];
+    ctx.strokeStyle = rar.color; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(m[0], m[1], 4.5, 0, TAU); ctx.stroke();
+    ctx.fillStyle = rar.color; ctx.beginPath(); ctx.arc(m[0], m[1], 1.6, 0, TAU); ctx.fill(); }
+  // objective
+  const o = game.objective;
+  if (o) {
+    const m = toMap(o.x, o.y); ctx.strokeStyle = 'rgba(255,209,102,0.95)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(m[0], m[1], 6, 0, TAU); ctx.stroke();
+    if (o.type === 'hunt' && o.target && !o.target.dead) { const g = toMap(o.target.x, o.target.y); ctx.fillStyle = '#ffd166'; ctx.beginPath(); ctx.arc(g[0], g[1], 3, 0, TAU); ctx.fill(); }
+  }
+  // enemies (sampled so huge swarms stay cheap)
+  const es = game.enemies, step = es.length > 240 ? Math.ceil(es.length / 240) : 1;
+  for (let i = 0; i < es.length; i += step) {
+    const e = es[i]; if (e.dead) continue; const m = toMap(e.x, e.y);
+    if (e.boss) { ctx.fillStyle = '#ff3a3a'; ctx.fillRect(m[0] - 3, m[1] - 3, 6, 6); }
+    else if (e.elite) { ctx.fillStyle = '#c98bff'; ctx.fillRect(m[0] - 2.5, m[1] - 2.5, 5, 5); }
+    else { ctx.fillStyle = e.golden ? '#ffd166' : ((e.def && e.def.glow) || '#7dff9a'); ctx.fillRect(m[0] - 1, m[1] - 1, 2, 2); }
+  }
+  // loot chests
+  for (const pk of game.pickups) {
+    if (pk.kind === 'chest') { const m = toMap(pk.x, pk.y); ctx.fillStyle = '#ffd166'; ctx.fillRect(m[0] - 2, m[1] - 2, 4, 4); }
+    else if (pk.kind === 'power') { const m = toMap(pk.x, pk.y), c = (POWERS[pk.value] || POWERS.health).color; ctx.fillStyle = c; ctx.beginPath(); ctx.arc(m[0], m[1], 3, 0, TAU); ctx.fill(); }
+  }
+  // player at centre
+  ctx.fillStyle = '#2ff6ff'; ctx.shadowColor = '#2ff6ff'; ctx.shadowBlur = 8;
+  ctx.beginPath(); ctx.arc(cx, cy, 3.5, 0, TAU); ctx.fill(); ctx.shadowBlur = 0;
+  ctx.restore();
+  ctx.save(); ctx.fillStyle = 'rgba(127,168,184,0.85)'; ctx.font = '9px Segoe UI, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('SENSOR MAP · M', x0 + 8, y0 + 13); ctx.restore();
+}
+
 /* ======================================================================== *
  *  SECTION 19 — INPUT SYSTEM (keyboard, mouse-hold, touch joystick)          *
  * ======================================================================== */
@@ -2381,8 +3748,10 @@ function setupInput() {
     const k = e.key.toLowerCase();
     if (keymap[k]) { input[keymap[k]] = true; e.preventDefault(); }
     if (k === 'escape') togglePause();
+    if (k === 'm') game.showMinimap = !game.showMinimap;
     if (k === 'r' && game.state === 'levelup') doReroll();
     if (game.state === 'levelup' && k >= '1' && k <= '4') { const idx = +k - 1; const cards = document.querySelectorAll('#levelup-cards .card'); if (cards[idx]) cards[idx].click(); }
+    if (game.state === 'mutation' && k >= '1' && k <= '3') { const idx = +k - 1; const cards = document.querySelectorAll('#mutation-cards .card'); if (cards[idx]) cards[idx].click(); }
   });
   addEventListener('keyup', (e) => { const k = e.key.toLowerCase(); if (keymap[k]) input[keymap[k]] = false; });
   addEventListener('blur', () => { input.up = input.down = input.left = input.right = false; input.mouseDown = false; });
@@ -2446,6 +3815,64 @@ function updateHUD() {
   $('hp-text').textContent = Math.ceil(p.hp) + ' / ' + p.maxHp + (p.shieldHp > 0 ? '  ⛨' + Math.ceil(p.shieldHp) : '');
 }
 
+/* Objective tracker panel — only visible while a challenge is active. */
+function updateObjectiveHUD() {
+  const el = $('objective'); if (!el) return;
+  const o = game.objective;
+  if (!o) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  const left = Math.max(0, Math.ceil(o.limit - o.time));
+  let prog = '', frac = 0;
+  if (o.type === 'hold')         { prog = `Held ${o.meter.toFixed(1)} / ${o.holdNeed}s`; frac = o.meter / o.holdNeed; }
+  else if (o.type === 'purge')   { prog = `Purged ${o.count} / ${o.need}`; frac = o.count / o.need; }
+  else if (o.type === 'collect') { prog = `Spores ${o.count} / ${o.need}`; frac = o.count / o.need; }
+  else if (o.type === 'hunt')    { prog = (o.target && !o.target.dead) ? 'Target on the run…' : 'Down!'; frac = 0; }
+  else if (o.type === 'survive') { prog = 'Hold the line!'; frac = o.time / o.limit; }
+  el.innerHTML = `<div class="obj-head">${o.def.icon} ${o.def.name}</div>
+    <div class="obj-sub">${prog} · ⏱ ${left}s</div>
+    <div class="obj-bar"><div class="obj-fill" style="width:${clamp(frac * 100, 0, 100)}%"></div></div>`;
+}
+
+/* ---- Live stat sheet ---------------------------------------------------- *
+ * Shows the cell's effective, current stats and updates the instant a level- *
+ * up, boost pad, mutation or power-up changes recomputeStats(). Each value is *
+ * coloured green when above the universal baseline (or pink when below, e.g.  *
+ * the Phagocyte's slower speed) so improvements are obvious at a glance.      */
+function statPct(m) { const d = Math.round((m - 1) * 100); return (d >= 0 ? '+' : '') + d + '%'; }
+const STAT_ROWS = [
+  { k: 'hp',   ic: '❤️', lbl: 'Max Health',      get: p => String(Math.round(p.maxHp)),                            rat: p => p.maxHp / 100 },
+  { k: 'rgn',  ic: '🩹', lbl: 'Regeneration',    get: p => p.regen.toFixed(1) + '/s',                              rat: p => p.regen / 0.5 },
+  { k: 'arm',  ic: '🛡️', lbl: 'Armor',           get: p => String(Math.round(p.mult.flatReduce)),                  rat: p => 1 + (p.mult.flatReduce > 0 ? 0.5 : 0) },
+  { k: 'spd',  ic: '🏃', lbl: 'Move Speed',      get: p => String(Math.round(p.speed)),                            rat: p => p.speed / 210 },
+  { k: 'dmg',  ic: '💥', lbl: 'Damage',          get: p => '×' + ((1 + p.mult.ribosome) * p.mult.damageMul).toFixed(2), rat: p => (1 + p.mult.ribosome) * p.mult.damageMul },
+  { k: 'atk',  ic: '⚡', lbl: 'Attack Speed',    get: p => statPct(1 / p.mult.cooldown),                           rat: p => 1 / p.mult.cooldown },
+  { k: 'crt',  ic: '🎯', lbl: 'Crit Chance',     get: p => Math.round(p.mult.crit * 100) + '%',                    rat: p => p.mult.crit / 0.05 },
+  { k: 'crd',  ic: '💢', lbl: 'Crit Damage',     get: p => '×' + p.mult.critMult.toFixed(2),                       rat: p => p.mult.critMult / 2 },
+  { k: 'area', ic: '📐', lbl: 'Area / Size',     get: p => statPct(p.mult.area),                                   rat: p => p.mult.area },
+  { k: 'prj',  ic: '🚀', lbl: 'Projectile Spd',  get: p => statPct(p.mult.projSpeed),                              rat: p => p.mult.projSpeed },
+  { k: 'pck',  ic: '🧲', lbl: 'Pickup Radius',   get: p => String(Math.round(p.pickupRadius)),                     rat: p => p.mult.pickup },
+  { k: 'eco',  ic: '🪙', lbl: 'XP & Coins',      get: p => statPct(p.mult.ecoGain),                                rat: p => p.mult.ecoGain },
+];
+/* Compact "what is this weapon doing right now" readout, built from getStats. */
+const STAT_LABEL = {
+  count: '×', damage: 'dmg', cooldown: 'cd', pierce: 'pierce', blast: 'blast', range: 'range',
+  poolRadius: 'pool', poolDur: 'pool·s', orbit: 'orbit', hits: 'durability', scalar: 'inherit',
+  speed: 'velocity', knockback: 'knock', arc: 'arc', cloudDur: 'cloud·s', cloudDps: 'cloud/s',
+  count2: '', surgeDur: 'surge·s',
+};
+function weaponSummary(def, lvl) {
+  const s = def.getStats(lvl), out = [];
+  for (const k in s) {
+    if (typeof s[k] !== 'number' || !s[k] || !(k in STAT_LABEL) || STAT_LABEL[k] === '') continue;
+    let v = s[k];
+    if (k === 'arc') v = Math.round(v * 180 / Math.PI) + '°';
+    else if (k === 'scalar') v = Math.round(v * 100) + '%';
+    else v = Math.round(v * 100) / 100;
+    out.push(k === 'count' ? v + STAT_LABEL[k] : STAT_LABEL[k] + ' ' + v);
+  }
+  return out.join('  ');
+}
+
 function refreshTray() {
   const p = game.player;
   const ws = $('weapon-slots'), ps = $('passive-slots');
@@ -2466,6 +3893,22 @@ function refreshTray() {
       slot.innerHTML = `<span>${def.icon}</span>${pips}`; slot.title = def.name + ' · Tier ' + lv; }
     ps.appendChild(slot);
   }
+  // secondary adaptations (compact chips) after the six organelle slots
+  for (const id in p.adaptations) {
+    const def = ADAPT_BY_ID[id], lv = p.adaptations[id];
+    const chip = document.createElement('div'); chip.className = 'slot mini';
+    chip.innerHTML = `<span>${def.icon}</span><span class="lvl">${lv}</span>`;
+    chip.title = def.name + ' · Tier ' + lv + ' — ' + def.tierText(lv);
+    ps.appendChild(chip);
+  }
+  // run mutations (gold chips)
+  for (const id in game.mutations) {
+    const def = MUT_BY_ID[id], n = game.mutations[id];
+    const chip = document.createElement('div'); chip.className = 'slot mini mut';
+    chip.innerHTML = `<span>${def.icon}</span><span class="lvl">×${n}</span>`;
+    chip.title = def.name + ' ×' + n + ' — ' + def.desc;
+    ps.appendChild(chip);
+  }
 }
 
 /* ---- Level-up: build a weighted pool of 4 distinct evolution choices ---- */
@@ -2481,6 +3924,8 @@ function getLevelUpChoices() {
   if (hasWeaponSlot) for (const def of WEAPONS) if (!p.weapons.find(w => w.id === def.id)) pool.push({ kind: 'weapon-new', id: def.id, target: 1, weight: 7 });
   // new passives
   if (hasPassiveSlot) for (const def of PASSIVES) if (!(def.id in p.passives)) pool.push({ kind: 'passive-new', id: def.id, target: 1, weight: 6 });
+  // secondary adaptations (always offerable, stack to max — they don't use a slot)
+  for (const def of ADAPTATIONS) { const cur = p.adaptations[def.id] || 0; if (cur < def.max) pool.push({ kind: cur ? 'adapt-up' : 'adapt-new', id: def.id, target: cur + 1, weight: cur ? 6 : 5 }); }
   // fallbacks
   pool.push({ kind: 'heal', weight: 2 });
   pool.push({ kind: 'coins', weight: 2 });
@@ -2501,7 +3946,7 @@ function getLevelUpChoices() {
 }
 function openLevelUp() {
   if (game.state === 'apex') return;                 // apex takes precedence
-  game.state = 'levelup';
+  game.state = 'levelup'; sfx('level');
   const choices = getLevelUpChoices();
   const wrap = $('levelup-cards'); wrap.innerHTML = '';
   $('levelup-title').textContent = 'EVOLUTIONARY PRESSURE';
@@ -2521,6 +3966,10 @@ function buildChoiceCard(c, i) {
     const def = PASSIVE_BY_ID[c.id]; cls += ' passive';
     icon = def.icon; type = 'Passive Trait'; name = def.name; level = c.kind === 'passive-new' ? 'NEW · Tier 1' : 'Tier ' + c.target;
     desc = def.tierText(c.target) + ' — ' + def.desc; fact = def.fact;
+  } else if (c.kind === 'adapt-up' || c.kind === 'adapt-new') {
+    const def = ADAPT_BY_ID[c.id]; cls += ' passive';
+    icon = def.icon; type = 'Adaptation'; name = def.name; level = c.kind === 'adapt-new' ? 'NEW · Tier 1' : 'Tier ' + c.target;
+    desc = def.tierText(c.target) + ' — ' + def.desc; fact = def.fact;
   } else if (c.kind === 'heal') { cls += ' heal'; icon = '💚'; type = 'Recovery'; name = 'Cytoplasm Repair'; level = ''; desc = 'Restore 40% of max health instantly.'; fact = 'Cells repair their membranes by patching tears with internal vesicles within seconds of injury.'; }
   else { cls += ' heal'; icon = '🪙'; type = 'Resource'; name = 'Genetic Cache'; level = ''; desc = 'Gain 60 Genetic Code for the meta-lab.'; fact = 'DNA stores ~2 bits per base pair; your genome packs ~1.5 GB of data into every cell.'; }
   card.className = cls; card.style.animationDelay = (i * 0.05) + 's';
@@ -2533,6 +3982,7 @@ function buildChoiceCard(c, i) {
 function cardColor(c) {
   if (c.id && WEAPON_BY_ID[c.id]) return WEAPON_BY_ID[c.id].color;
   if (c.id && PASSIVE_BY_ID[c.id]) return PASSIVE_BY_ID[c.id].color;
+  if (c.id && ADAPT_BY_ID[c.id]) return ADAPT_BY_ID[c.id].color;
   return '#6dff8a';
 }
 function chooseUpgrade(c) {
@@ -2541,6 +3991,7 @@ function chooseUpgrade(c) {
   else if (c.kind === 'weapon-new') { p.weapons.push({ id: c.id, level: 1, timer: 0, apex: false, apexId: null }); markCodex(c.id); }
   else if (c.kind === 'passive-up') { p.passives[c.id] = c.target; recomputeStats(); markCodex(c.id); }
   else if (c.kind === 'passive-new') { p.passives[c.id] = 1; recomputeStats(); markCodex(c.id); }
+  else if (c.kind === 'adapt-up' || c.kind === 'adapt-new') { p.adaptations[c.id] = c.target; recomputeStats(); }
   else if (c.kind === 'heal') { p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.4); }
   else if (c.kind === 'coins') { game.coinsThisRun += 60; }
   refreshTray();
@@ -2564,7 +4015,7 @@ function doReroll() {
 
 /* ---- Apex Mutation modal ---- */
 function openApex(apexDef) {
-  game.state = 'apex'; game.apexOffered[apexDef.base] = true;
+  game.state = 'apex'; game.apexOffered[apexDef.base] = true; sfx('apex');
   const wrap = $('apex-cards'); wrap.innerHTML = '';
   const card = document.createElement('div'); card.className = 'card apex';
   const baseDef = WEAPON_BY_ID[apexDef.base];
@@ -2586,59 +4037,172 @@ function chooseApex(apexDef) {
 }
 $('apex-skip').onclick = () => { hideOverlay('apex-modal'); resumeRun(); };
 
+/* ---- Mutation choice modal (objective reward) ---- */
+function getMutationChoices() {
+  const avail = MUTATIONS.filter(m => mut(m.id) < m.max);
+  shuffle(avail);
+  return avail.slice(0, 3);
+}
+function openMutationChoice() {
+  const choices = getMutationChoices();
+  if (!choices.length) { gainCoins(150); bigBanner('🧬 GENOME SATURATED — +150🪙', 2.6); resumeRun(); return; }
+  game.state = 'mutation'; sfx('mutation');
+  const wrap = $('mutation-cards'); wrap.innerHTML = '';
+  choices.forEach((m, i) => wrap.appendChild(buildMutationCard(m, i)));
+  showOverlay('mutation-modal');
+}
+function buildMutationCard(m, i) {
+  const have = mut(m.id);
+  const card = document.createElement('div'); card.className = 'card apex'; card.style.animationDelay = (i * 0.05) + 's';
+  card.innerHTML = `<div class="corner">${i + 1}</div><div class="ic-big" style="color:${m.color}">${m.icon}</div>
+    <div class="ctype">Mutation</div><div class="cname">${m.name}</div>
+    <div class="clevel">${have ? 'STACK → ×' + (have + 1) : 'NEW'}</div>
+    <div class="cdesc">${m.desc}</div><div class="cfact">🔬 ${m.fact}</div>`;
+  card.onclick = () => chooseMutation(m);
+  return card;
+}
+function chooseMutation(m) {
+  game.mutations[m.id] = (game.mutations[m.id] || 0) + 1;
+  recomputeStats(); refreshTray();
+  hideOverlay('mutation-modal');
+  bigBanner('🧬 MUTATION: ' + m.name + (mut(m.id) > 1 ? '  ×' + mut(m.id) : ''), 3);
+  resumeRun();
+}
+
 /* ---- Run lifecycle ---- */
 function setHud(v) { $('hud').style.display = v ? 'block' : 'none'; }
 
 function startRun(mode) {
+  clearSuspended();                 // a fresh run discards any suspended one
+  _autosaveT = 0;
   RNG = makeRNG((Math.random() * 1e9) | 0);
   game.mode = mode; game.state = 'running'; game.time = 0;
   game.enemies = []; game.projectiles = []; game.pickups = []; game.hazards = [];
   game.particles = []; game.floaters = []; game.clones = []; game.effects = [];
+  game.env = []; game.objective = null; game._finalized = false;
+  game.pads = []; game.boosts = defaultBoosts(); game.boostLog = []; game.mutations = {};
   game.kills = 0; game.killsByType = {}; game.coinsThisRun = 0; game.xpOrbsAlive = 0;
   game.pendingLevelUps = 0; game.apexOffered = {}; game.boss = null; game.bossSpawned = false;
   game.win = false; game.questsCompletedThisRun = [];
   game.quest = { cloneStreak: 0, shieldBroke: false };
   game.rerolls = metaTier('UPG_RER');
+  // Resolve the chosen cell line (fall back to the always-unlocked Paramecium).
+  if (!CHAR_BY_ID[game.character] || !charUnlocked(CHAR_BY_ID[game.character])) game.character = 'paramecium';
+  SAVE.lastChar = game.character; commitSave();
+  const ch = CHAR_BY_ID[game.character];
   game.player = createPlayer();
-  // start with one random offensive weapon so auto-fire engages immediately
-  // (Mitosis/Spore are excluded as starters — they shine as secondaries).
-  const starter = WEAPON_BY_ID[pick(['cilia', 'phage', 'vacuole', 'flagella'])];
-  game.player.weapons.push({ id: starter.id, level: 1, timer: 0, apex: false, apexId: null });
-  markCodex(starter.id);
+  // The cell line dictates the opening weapon (and any starting organelle).
+  game.player.weapons.push({ id: ch.weapon, level: ch.weaponLevel || 1, timer: 0, apex: false, apexId: null });
+  markCodex(ch.weapon);
+  if (ch.passiveStart) { game.player.passives[ch.passiveStart.id] = ch.passiveStart.tier; markCodex(ch.passiveStart.id); }
   recomputeStats();
   game.camera.x = game.player.x; game.camera.y = game.player.y;
   game.director = createDirector();
   refreshTray();
   hideAllOverlays(); $('banner').innerHTML = ''; setHud(true);
   bigBanner(mode === 'timed' ? 'INCUBATION BEGINS — SURVIVE 20:00' : 'ENDLESS INCUBATION — HOW LONG CAN YOU LAST?', 2.6);
-  toast('Starter weapon: ' + starter.name, 2.4);
+  toast(ch.icon + ' ' + ch.name + ' · opens with ' + WEAPON_BY_ID[ch.weapon].name, 2.6);
+  Music.setIntensity(0); Music.start();
 }
 function resumeRun() { if (game.player && game.player.hp > 0) { game.state = 'running'; hideOverlay('pause-modal'); } }
+const PAUSE_TABS = [{ id: 'stats', label: '📊 Stats' }, { id: 'arsenal', label: '🧬 Arsenal' }];
+let pauseTab = 'stats';
 function togglePause() {
   if (game.state === 'running') {
     game.state = 'paused';
-    const p = game.player, mm = Math.floor(game.time / 60), ss = Math.floor(game.time % 60);
-    $('pause-stats').innerHTML = statRows([
-      ['Time', `${mm}:${String(ss).padStart(2, '0')}`], ['Level', p.level],
-      ['Kills', game.kills.toLocaleString()], ['Run Coins', game.coinsThisRun.toLocaleString()],
-      ['Weapons', p.weapons.length + '/6'], ['Passives', Object.keys(p.passives).length + '/6'],
-    ]);
+    buildPauseTabs(); renderPause();
     showOverlay('pause-modal');
   } else if (game.state === 'paused') { resumeRun(); }
+}
+function buildPauseTabs() {
+  const w = $('pause-tabs'); w.innerHTML = '';
+  for (const t of PAUSE_TABS) {
+    const e = document.createElement('div'); e.className = 'codex-tab' + (t.id === pauseTab ? ' active' : '');
+    e.textContent = t.label; e.onclick = () => { pauseTab = t.id; buildPauseTabs(); renderPause(); };
+    w.appendChild(e);
+  }
+}
+function renderPause() {
+  const p = game.player; if (!p) return;
+  const mm = Math.floor(game.time / 60), ss = Math.floor(game.time % 60), ch = CHAR_BY_ID[game.character];
+  $('pause-sub').textContent = (ch ? ch.icon + ' ' + ch.name : 'Cell') + '  ·  ' + mm + ':' + String(ss).padStart(2, '0') + '  ·  Level ' + p.level;
+  $('pause-body').innerHTML = pauseTab === 'arsenal' ? pauseArsenalHTML(p) : pauseStatsHTML(p);
+}
+function pauseStatsHTML(p) {
+  let stats = '';
+  for (const r of STAT_ROWS) {
+    const rr = r.rat ? r.rat(p) : 1, cls = rr > 1.005 ? ' up' : (rr < 0.995 ? ' down' : '');
+    stats += `<div class="ps-cell"><span class="ps-ic">${r.ic}</span><span class="ps-lbl">${r.lbl}</span><span class="ps-val${cls}">${r.get(p)}</span></div>`;
+  }
+  const adaptN = Object.values(p.adaptations || {}).reduce((a, b) => a + b, 0);
+  const mutN = Object.values(game.mutations || {}).reduce((a, b) => a + b, 0);
+  const run = [
+    ['☠', 'Kills', game.kills.toLocaleString()], ['🪙', 'Run Coins', game.coinsThisRun.toLocaleString()],
+    ['🔫', 'Weapons', p.weapons.length + ' / 6'], ['🔬', 'Organelles', Object.keys(p.passives).length + ' / 6'],
+    ['🧬', 'Adaptations', adaptN + ' tiers'], ['🧪', 'Mutations', mutN + ' spliced'],
+    ['⬆', 'Boost Pads', (game.boostLog || []).length], ['🎯', 'Challenges', (game.director ? game.director.objCount : 0)],
+  ];
+  let runHtml = '';
+  for (const [ic, lbl, v] of run) runHtml += `<div class="ps-cell"><span class="ps-ic">${ic}</span><span class="ps-lbl">${lbl}</span><span class="ps-val">${v}</span></div>`;
+  const buffs = [];
+  if (p.frenzy > 0) buffs.push('⚡ Mitotic Frenzy ' + Math.ceil(p.frenzy) + 's');
+  if (p.powerSpeed > 0) buffs.push('🏃 Flagellar Sprint ' + Math.ceil(p.powerSpeed) + 's');
+  if (p.surge > 0) buffs.push('🌀 Propulsion Surge');
+  if (p.invulnTrail > 0) buffs.push('✨ Slipstream Invulnerability');
+  return `<div class="ps-section"><h3>Effective Stats — green = boosted above baseline</h3><div class="ps-grid">${stats}</div></div>`
+    + (buffs.length ? `<div class="ps-section"><div class="ps-buffs">Active: ${buffs.join('  ·  ')}</div></div>` : '')
+    + `<div class="ps-section"><h3>This Run</h3><div class="ps-grid">${runHtml}</div></div>`;
+}
+function pauseArsenalHTML(p) {
+  let h = '<div class="ps-section"><h3>Weapons — what each is doing now</h3><div class="ps-arsenal">';
+  for (const w of p.weapons) {
+    const def = WEAPON_BY_ID[w.id], apexDef = w.apex ? APEX_BY_BASE[w.id] : null;
+    const icon = apexDef ? apexDef.icon : def.icon, name = apexDef ? apexDef.name : def.name;
+    const lv = w.apex ? 'APEX' : ('Lv ' + w.level + '/' + def.maxLevel);
+    const desc = apexDef ? apexDef.desc : def.desc;
+    const summary = apexDef ? '' : `<div class="ps-item-s">${weaponSummary(def, w.level)}</div>`;
+    h += `<div class="ps-item${apexDef ? ' apex' : ''}"><div class="ps-item-h"><span class="ps-item-ic" style="color:${def.color}">${icon}</span><span class="ps-item-nm">${name}</span><span class="ps-item-lv">${lv}</span></div><div class="ps-item-d">${desc}</div>${summary}</div>`;
+  }
+  h += '</div></div>';
+  const groups = [
+    ['Organelles', p.passives, PASSIVE_BY_ID, (d, lv) => d.tierText(lv), 'T'],
+    ['Adaptations', p.adaptations, ADAPT_BY_ID, (d, lv) => d.tierText(lv), 'T'],
+  ];
+  for (const [title, reg, byId, fx, pfx] of groups) {
+    const ids = Object.keys(reg || {}); if (!ids.length) continue;
+    h += `<div class="ps-section"><h3>${title}</h3><div class="ps-arsenal">`;
+    for (const id of ids) { const d = byId[id], lv = reg[id];
+      h += `<div class="ps-item"><div class="ps-item-h"><span class="ps-item-ic" style="color:${d.color}">${d.icon}</span><span class="ps-item-nm">${d.name}</span><span class="ps-item-lv">${pfx}${lv}</span></div><div class="ps-item-d">${fx(d, lv)}</div></div>`; }
+    h += '</div></div>';
+  }
+  const muts = Object.keys(game.mutations || {});
+  if (muts.length) {
+    h += `<div class="ps-section"><h3>Mutations</h3><div class="ps-arsenal">`;
+    for (const id of muts) { const d = MUT_BY_ID[id], n = game.mutations[id];
+      h += `<div class="ps-item apex"><div class="ps-item-h"><span class="ps-item-ic" style="color:${d.color}">${d.icon}</span><span class="ps-item-nm">${d.name}</span><span class="ps-item-lv">×${n}</span></div><div class="ps-item-d">${d.desc}</div></div>`; }
+    h += '</div></div>';
+  }
+  return h;
 }
 function statRows(rows) { return rows.map(([k, v]) => `<div class="k">${k}</div><div class="v">${v}</div>`).join(''); }
 
 function finalizeRun() {
+  if (game._finalized) return;      // bank a run's results exactly once
+  game._finalized = true;
   SAVE.coins += game.coinsThisRun;
   SAVE.best.time = Math.max(SAVE.best.time, game.time);
   SAVE.best.kills = Math.max(SAVE.best.kills, game.kills);
   SAVE.best.level = Math.max(SAVE.best.level, game.player.level);
   if (game.mode === 'endless') SAVE.best.endless = Math.max(SAVE.best.endless, game.time);
+  SAVE.stats.totalKills += game.kills;
+  SAVE.stats.runs += 1;
+  SAVE.suspended = null;            // a finished run is no longer resumable
   commitSave();
+  game._newlyUnlocked = evaluateUnlocks();   // surfaced on the game-over screen
 }
 function endRun(win) {
   if (game.state === 'over') return;
-  game.state = 'over'; game.win = win; finalizeRun();
+  game.state = 'over'; game.win = win; finalizeRun(); Music.stop();
   const p = game.player, mm = Math.floor(game.time / 60), ss = Math.floor(game.time % 60);
   $('go-title').textContent = win ? '🏆 EXTINCTION SURVIVED' : 'CELL LYSED';
   $('go-sub').textContent = win ? 'You outlasted the Macrophage Sentinel and escaped the slide.' : 'Your membrane ruptured. The swarm consumes all.';
@@ -2648,16 +4212,138 @@ function endRun(win) {
     ['Best Time', fmtTime(SAVE.best.time)], ['Best Kills', SAVE.best.kills.toLocaleString()],
   ]);
   $('go-coins').textContent = '🪙 +' + game.coinsThisRun.toLocaleString() + ' Genetic Code  ·  Bank: ' + SAVE.coins.toLocaleString();
-  $('go-quests').innerHTML = game.questsCompletedThisRun.length
-    ? '✔ Quests completed: ' + game.questsCompletedThisRun.map(q => q.name).join(', ')
-    : '';
+  const lines = [];
+  if (game.questsCompletedThisRun.length) lines.push('✔ Quests: ' + game.questsCompletedThisRun.map(q => q.name).join(', '));
+  if (game._newlyUnlocked && game._newlyUnlocked.length) lines.push('🧬 New cell line unlocked: ' + game._newlyUnlocked.map(c => c.icon + ' ' + c.name).join(', '));
+  $('go-quests').innerHTML = lines.join('<br/>');
   setHud(false); showOverlay('gameover-modal');
 }
 function quitRun() { finalizeRun(); game.state = 'menu'; setHud(false); backToMenu(); }
 function fmtTime(s) { const m = Math.floor(s / 60), ss = Math.floor(s % 60); return m + ':' + String(ss).padStart(2, '0'); }
 
+/* ---- Mid-run suspend / resume ("Continue Run") -------------------------- *
+ * The live swarm (enemies / projectiles / hazards) is procedural and          *
+ * ephemeral, and the transient entities hold sprite & callback references     *
+ * that don't serialize. So a snapshot stores only what the player EARNED —    *
+ * build, level, position, resources, Director cadence and any active boss —   *
+ * and the Director simply repopulates the field on resume. Tiny + robust.     */
+let _autosaveT = 0;
+function runInProgress() {
+  return game.player && game.player.hp > 0 &&
+         (game.state === 'running' || game.state === 'paused' || game.state === 'levelup');
+}
+function serializeRun() {
+  const p = game.player; if (!p) return null;
+  const d = game.director || {};
+  return {
+    v: 2, mode: game.mode, character: game.character, time: game.time,
+    kills: game.kills, killsByType: Object.assign({}, game.killsByType),
+    coinsThisRun: game.coinsThisRun, pendingLevelUps: game.pendingLevelUps, rerolls: game.rerolls,
+    apexOffered: Object.assign({}, game.apexOffered),
+    quest: { cloneStreak: game.quest ? game.quest.cloneStreak : 0, shieldBroke: game.quest ? game.quest.shieldBroke : false },
+    questsDone: (game.questsCompletedThisRun || []).map(q => q.id),
+    boosts: Object.assign({}, game.boosts || defaultBoosts()),
+    boostLog: (game.boostLog || []).slice(),
+    mutations: Object.assign({}, game.mutations || {}),
+    win: game.win,
+    director: {
+      weight: d.weight || 0, spawnTimer: d.spawnTimer || 0, eliteIdx: d.eliteIdx || 0, bossDone: !!d.bossDone,
+      endlessEliteT: d.endlessEliteT != null ? d.endlessEliteT : 90,
+      endlessBossT: d.endlessBossT != null ? d.endlessBossT : 300, endlessWave: d.endlessWave || 0,
+    },
+    boss: (game.boss && !game.boss.dead) ? { hp: game.boss.hp, maxHp: game.boss.maxHp, state: game.boss.bossState || 1 } : null,
+    player: {
+      x: p.x, y: p.y, angle: p.angle,
+      baseMaxHp: p.baseMaxHp, maxShield: p.maxShield, shieldHp: p.shieldHp, hp: p.hp, armor: p.armor,
+      level: p.level, xp: p.xp, xpNext: p.xpNext,
+      weapons: p.weapons.map(w => ({ id: w.id, level: w.level, apex: !!w.apex, apexId: w.apexId || null })),
+      passives: Object.assign({}, p.passives),
+      adaptations: Object.assign({}, p.adaptations || {}),
+    },
+    savedAt: Date.now(),
+  };
+}
+function saveRunSnapshot() {
+  if (!runInProgress()) return;
+  const snap = serializeRun(); if (!snap) return;
+  SAVE.suspended = snap; commitSave();
+}
+function clearSuspended() { if (SAVE.suspended) { SAVE.suspended = null; commitSave(); } }
+
+function resumeSavedRun() {
+  const snap = SAVE.suspended;
+  if (!snap || !snap.player) { backToMenu(); return; }
+  RNG = makeRNG((Math.random() * 1e9) | 0);
+  game.mode = snap.mode; game.state = 'running'; game.time = snap.time || 0;
+  game.character = snap.character && CHAR_BY_ID[snap.character] ? snap.character : (SAVE.lastChar || 'paramecium');
+  game.enemies = []; game.projectiles = []; game.pickups = []; game.hazards = [];
+  game.particles = []; game.floaters = []; game.clones = []; game.effects = [];
+  game.env = []; game.objective = null; game._finalized = false;
+  // restore run-permanent boosts + mutations BEFORE recomputeStats folds them in
+  game.pads = []; game.boosts = Object.assign(defaultBoosts(), snap.boosts || {});
+  game.boostLog = (snap.boostLog || []).slice();
+  game.mutations = Object.assign({}, snap.mutations || {});
+  game.kills = snap.kills || 0; game.killsByType = Object.assign({}, snap.killsByType || {});
+  game.coinsThisRun = snap.coinsThisRun || 0; game.xpOrbsAlive = 0;
+  game.pendingLevelUps = snap.pendingLevelUps || 0; game.apexOffered = Object.assign({}, snap.apexOffered || {});
+  game.win = !!snap.win; game.bossSpawned = !!snap.boss;
+  game.rerolls = snap.rerolls != null ? snap.rerolls : metaTier('UPG_RER');
+  game.quest = { cloneStreak: snap.quest ? snap.quest.cloneStreak : 0, shieldBroke: snap.quest ? snap.quest.shieldBroke : false };
+  game.questsCompletedThisRun = (snap.questsDone || []).map(id => QUESTS.find(q => q.id === id)).filter(Boolean);
+
+  const p = createPlayer(), ps = snap.player;
+  p.x = ps.x; p.y = ps.y; p.angle = ps.angle || 0;
+  p.baseMaxHp = ps.baseMaxHp; p.armor = ps.armor || 0; p.maxShield = ps.maxShield || 30;
+  p.level = ps.level; p.xp = ps.xp; p.xpNext = ps.xpNext || xpForLevel(p.level);
+  p.weapons = (ps.weapons || []).map(w => ({ id: w.id, level: w.level, timer: 0, apex: !!w.apex, apexId: w.apexId || null }));
+  p.passives = Object.assign({}, ps.passives || {});
+  p.adaptations = Object.assign({}, ps.adaptations || {});
+  game.player = p;
+  recomputeStats();                                  // rebuild derived multipliers + maxHp from baseMaxHp + passives
+  p.hp = clamp(ps.hp != null ? ps.hp : p.maxHp, 1, p.maxHp);
+  p.shieldHp = clamp(ps.shieldHp != null ? ps.shieldHp : p.maxShield, 0, p.maxShield);
+  game.camera.x = p.x; game.camera.y = p.y;
+
+  game.director = createDirector();
+  Object.assign(game.director, snap.director || {});
+  game.boss = null;
+  if (snap.boss) {                                   // an Extinction boss was mid-fight: re-engage at saved HP
+    game.director.weight = 0;
+    const b = spawnEnemy('macrophage', p.x, p.y - camHalfDiag() - 120, {});
+    b.maxHp = snap.boss.maxHp || b.maxHp; b.hp = clamp(snap.boss.hp || b.hp, 1, b.maxHp);
+    game.boss = b;
+  }
+
+  refreshTray();
+  hideAllOverlays(); $('banner').innerHTML = ''; setHud(true);
+  _autosaveT = 0;
+  bigBanner('RUN RESUMED — ' + fmtTime(game.time) + ' · LEVEL ' + p.level, 2.4);
+  if (snap.boss) toast('Macrophage Sentinel re-engaged', 2.2);
+  Music.setIntensity(snap.boss ? 1 : 0); Music.start();
+  if (game.pendingLevelUps > 0) setTimeout(openLevelUp, 220);
+}
+
+/* Pause-menu "Save & Quit": snapshot now, return to the menu (coins are NOT  *
+ * banked — the run lives on and can be continued later).                     */
+function saveAndExit() {
+  saveRunSnapshot();
+  toast('Run saved — pick it back up from “Continue Run”.', 2.6);
+  backToMenu();
+}
+
 /* ---- Menu navigation ---- */
-function backToMenu() { hideAllOverlays(); setHud(false); game.state = 'menu'; showOverlay('menu-main'); }
+function backToMenu() {
+  hideAllOverlays(); setHud(false); game.state = 'menu'; Music.stop();
+  const cont = $('btn-continue');
+  if (cont) {
+    const s = SAVE.suspended;
+    if (s && s.player) {
+      cont.style.display = '';
+      cont.textContent = `▶ CONTINUE RUN — ${fmtTime(s.time)} · Lv ${s.player.level} · ${s.mode === 'endless' ? 'Endless' : 'Extinction'}`;
+    } else { cont.style.display = 'none'; }
+  }
+  showOverlay('menu-main');
+}
 function openModeSelect() {
   const wrap = $('mode-cards'); wrap.innerHTML = '';
   const modes = [
@@ -2732,21 +4418,220 @@ function buildCodex() {
   else for (const c of CONCEPTS) add(c.icon, c.name, c.meta, c.fact, '', true);
 }
 
+/* ---- Character (cell line) select ---- */
+function openCharSelect() {
+  evaluateUnlocks();
+  hideAllOverlays();
+  const wrap = $('char-cards'); wrap.innerHTML = '';
+  CHARACTERS.forEach((c, i) => {
+    const unlocked = charUnlocked(c), w = WEAPON_BY_ID[c.weapon], m = c.mods || {};
+    const card = document.createElement('div');
+    card.className = 'card weapon' + (unlocked ? '' : ' locked') + (game.character === c.id ? ' sel' : '');
+    card.style.animationDelay = (i * 0.04) + 's';
+    const bits = [];
+    if (m.maxHp) bits.push((m.maxHp >= 1 ? '+' : '') + Math.round((m.maxHp - 1) * 100) + '% HP');
+    if (m.speed) bits.push((m.speed >= 1 ? '+' : '') + Math.round((m.speed - 1) * 100) + '% Speed');
+    if (m.damage) bits.push('+' + Math.round((m.damage - 1) * 100) + '% DMG');
+    if (m.area) bits.push('+' + Math.round((m.area - 1) * 100) + '% Area');
+    if (m.pickup) bits.push('+' + Math.round((m.pickup - 1) * 100) + '% Pickup');
+    if (c.passiveStart) bits.push('starts: ' + PASSIVE_BY_ID[c.passiveStart.id].name);
+    card.innerHTML = `<div class="corner">${i + 1}</div>
+      <div class="ic-big" style="color:${c.color}">${unlocked ? c.icon : '🔒'}</div>
+      <div class="ctype">${unlocked ? c.cell : 'Locked cell line'}</div>
+      <div class="cname">${unlocked ? c.name : '???'}</div>
+      <div class="clevel">${unlocked ? (w.icon + ' ' + w.name) : ''}</div>
+      <div class="cdesc">${unlocked ? c.desc : '🔒 ' + c.unlock.hint}</div>
+      ${unlocked && bits.length ? '<div style="margin-top:6px">' + bits.map(b => `<span class="dev-pill">${b}</span>`).join('') + '</div>' : ''}
+      <div class="cfact">🔬 ${unlocked ? c.fact : 'Keep playing to splice this genome.'}</div>`;
+    if (unlocked) card.onclick = () => { game.character = c.id; SAVE.lastChar = c.id; commitSave(); openModeSelect(); };
+    wrap.appendChild(card);
+  });
+  showOverlay('char-modal');
+}
+
+/* ---- Dev asset inspector ---- */
+const DEV_TABS = [
+  { id: 'enemies', label: '🦠 Enemies' }, { id: 'bosses', label: '👑 Elites & Bosses' },
+  { id: 'weapons', label: '🧬 Weapons' }, { id: 'passives', label: '🔬 Organelles' },
+  { id: 'apex', label: '⚛ Apex' }, { id: 'chars', label: '🧫 Cells' },
+  { id: 'objectives', label: '🎯 Objectives' }, { id: 'env', label: '🌋 Hazards' },
+  { id: 'boosts', label: '⬆ Boosts' }, { id: 'muts', label: '🧬 Mutations' }, { id: 'formulas', label: '📐 Formulas' },
+];
+let devTab = 'enemies';
+function openDev() { hideAllOverlays(); buildDevTabs(); buildDev(); showOverlay('dev-modal'); }
+function buildDevTabs() {
+  const wrap = $('dev-tabs'); wrap.innerHTML = '';
+  for (const t of DEV_TABS) { const el = document.createElement('div'); el.className = 'codex-tab' + (t.id === devTab ? ' active' : '');
+    el.textContent = t.label; el.onclick = () => { devTab = t.id; buildDevTabs(); buildDev(); }; wrap.appendChild(el); }
+}
+function devWindow(d) {
+  if (d.spawnAt) return 'at ' + d.spawnAt.map(fmtTime).join(' & ');
+  if (d.window && d.window[0] >= 0) return fmtTime(d.window[0]) + ' – ' + fmtTime(d.window[1]);
+  return '—';
+}
+function devScale(d, t) {
+  return { hp: Math.round(d.hp * Math.pow(1 + 0.015 * t, 1.1)), dmg: Math.round(d.damage * (1 + 0.005 * t)), spd: Math.round(Math.min(d.speed * (1 + 0.0014 * t), d.speed * 1.35)) };
+}
+function buildDev() {
+  const body = $('dev-body'); let h = '';
+  if (devTab === 'enemies' || devTab === 'bosses') {
+    const ids = Object.keys(ENEMIES).filter(id => { const e = ENEMIES[id], boss = e.boss || e.elite; return devTab === 'bosses' ? boss : !boss; });
+    h += `<table class="dev-table"><tr><th>Cell</th><th>Weight</th><th>Spawn window</th><th>HP base→@10m</th><th>DMG→@10m</th><th>Speed→@10m</th><th>Radius</th><th>XP</th><th>Behaviour</th><th>Special</th></tr>`;
+    for (const id of ids) { const e = ENEMIES[id], s = devScale(e, 600);
+      h += `<tr><td>${e.icon} <b>${e.name}</b></td><td class="num">${e.weight}</td><td class="num">${devWindow(e)}</td>
+        <td class="num">${e.hp} → ${s.hp}</td><td class="num">${e.damage} → ${s.dmg}</td><td class="num">${e.speed} → ${s.spd}</td>
+        <td class="num">${e.radius}px</td><td class="num">${e.xp}</td><td>${e.behavior}</td><td class="dev-note">${e.special || ''}</td></tr>`; }
+    h += `</table>`;
+    if (devTab === 'bosses') h += `<p class="dev-note" style="margin-top:10px">The <b>Macrophage Sentinel</b> runs a 3-phase script: <code>100–75%</code> spiral bullet-hell → <code>74–35%</code> invulnerable cocoon spawning 2 division-clones (20% HP each) → <code>34–0%</code> phagocytic frenzy (+100% speed, gravity vortex). Its weight of 500 wipes the field on spawn to free the engine.</p>`;
+    else h += `<p class="dev-note" style="margin-top:10px">Director weight cap <code>500</code>. Spawn cadence <code>clamp(0.55 − t·0.00035, 0.07, 0.55)s</code>, burst <code>1 + floor(t/240)</code> per tick. Scaled column shown @ <code>t = 10:00</code>.</p>`;
+  } else if (devTab === 'weapons') {
+    for (const w of WEAPONS) {
+      h += `<div class="dev-sect"><h3>${w.icon} ${w.name} <span class="dev-pill">${APEX_BY_BASE[w.id] ? 'apex → ' + APEX_BY_BASE[w.id].name : 'no apex · starter'}</span></h3>
+        <table class="dev-table"><tr><th>Lv</th><th>Upgrade</th><th>Computed stats</th></tr>`;
+      for (let L = 1; L <= w.maxLevel; L++) { const s = w.getStats(L);
+        const keys = Object.keys(s).filter(k => typeof s[k] === 'number').map(k => `${k}:${Math.round(s[k] * 100) / 100}`).join('  ');
+        h += `<tr><td class="num">${L}</td><td>${w.levelText[L - 1]}</td><td class="dev-note num">${keys}</td></tr>`; }
+      h += `</table></div>`;
+    }
+  } else if (devTab === 'passives') {
+    h += `<table class="dev-table"><tr><th>Organelle</th><th>Modulates</th><th>Tier values</th></tr>`;
+    for (const p of PASSIVES) h += `<tr><td>${p.icon} <b>${p.name}</b></td><td>${p.target}</td><td class="num">${p.values.map((v, i) => 'T' + (i + 1) + ':' + v).join('   ')}</td></tr>`;
+    h += `</table>`;
+  } else if (devTab === 'apex') {
+    h += `<table class="dev-table"><tr><th>Apex Mutation</th><th>Recipe</th><th>Effect</th></tr>`;
+    for (const a of APEX) h += `<tr><td>${a.icon} <b>${a.name}</b></td><td>${WEAPON_BY_ID[a.base].name} (Lv8) + ${PASSIVE_BY_ID[a.passive].name} (≥1)</td><td class="dev-note">${a.desc}</td></tr>`;
+    h += `</table>`;
+  } else if (devTab === 'chars') {
+    h += `<table class="dev-table"><tr><th>Cell line</th><th>Starter weapon</th><th>Stat mods</th><th>Unlock</th><th>Status</th></tr>`;
+    for (const c of CHARACTERS) { const m = c.mods || {}, mods = Object.keys(m).map(k => k + ' ×' + m[k]).join(', ') + (c.passiveStart ? ' + ' + PASSIVE_BY_ID[c.passiveStart.id].name : '');
+      h += `<tr><td>${c.icon} <b>${c.name}</b></td><td>${WEAPON_BY_ID[c.weapon].name}</td><td class="dev-note">${mods || '—'}</td><td class="dev-note">${c.unlock.hint}</td><td>${charUnlocked(c) ? '<span style="color:var(--bio-green)">✓ unlocked</span>' : '🔒 locked'}</td></tr>`; }
+    h += `</table>`;
+  } else if (devTab === 'objectives') {
+    const rows = [['🎯 Stabilize the Membrane', 'Stay in the zone for 8 cumulative seconds', '30s'],
+      ['☣️ Sterilize the Colony', 'Destroy 12+ microbes inside the ring (scales with time)', '35s'],
+      ['🧪 Harvest Nutrients', 'Collect all 6 nutrient spores on the map', '35s'],
+      ['⭐ Hunt the Golden Plasmid', 'Catch & destroy the fleeing golden cell', '30s'],
+      ['🌊 Immune Surge', 'Survive a 28-second onslaught', '28s']];
+    h += `<table class="dev-table"><tr><th>Objective</th><th>Goal</th><th>Timer</th></tr>`;
+    for (const r of rows) h += `<tr><td><b>${r[0]}</b></td><td class="dev-note">${r[1]}</td><td class="num">${r[2]}</td></tr>`;
+    h += `</table><p class="dev-note" style="margin-top:10px">First objective ≈ <code>1:30</code>, then every <code>clamp(150 − count·6, 80, 150)s</code>. Reward: <code>120 + count·20</code> coins + 10 XP orbs + a heal + 50% loot chest. Suppressed during boss fights.</p>`;
+  } else if (devTab === 'env') {
+    h += `<table class="dev-table"><tr><th>Hazard</th><th>Effect on the cell</th><th>Effect on the swarm</th></tr>
+      <tr><td>🟢 <b>Caustic Pool</b></td><td class="dev-note">7 damage every 0.5s while inside</td><td class="dev-note">slows enemies 20%</td></tr>
+      <tr><td>🟠 <b>Thermal Vent</b></td><td class="dev-note">16 burst damage on eruption (cycle 2.2–3.6s)</td><td class="dev-note">40 damage to enemies in the blast</td></tr>
+      <tr><td>🔵 <b>Riptide Current</b></td><td class="dev-note">shoves you 70px/s along the flow</td><td class="dev-note">shoves enemies 55px/s — kite them!</td></tr></table>
+      <p class="dev-note" style="margin-top:10px">Hazards stream in around the player (target density <code>5 + min(5, floor(t/180))</code>) and are culled once far off-screen. They show on the sensor map.</p>`;
+  } else if (devTab === 'boosts') {
+    h += `<table class="dev-table"><tr><th>Stat</th>`;
+    for (const r of BOOST_RARITIES) h += `<th style="color:${r.color}">${r.dot} ${r.name} (${r.weight}%)</th>`;
+    h += `</tr>`;
+    for (const s of BOOST_STATS) {
+      h += `<tr><td>${s.icon} <b>${s.name}</b></td>`;
+      for (let i = 0; i < BOOST_RARITIES.length; i++) h += `<td class="num" style="color:${BOOST_RARITIES[i].color}">${s.fmt(s.values[i])}</td>`;
+      h += `</tr>`;
+    }
+    h += `</table><p class="dev-note" style="margin-top:10px">Channel circles spawn near the player — first at <code>0:30</code>, then every <code>40–60s</code> (max 2 in the world, 45s lifetime). Stand inside for <code>${BOOST_RARITIES.map(r => r.channel + 's').join(' / ')}</code> (green→orange) to claim; stepping out drains progress at <code>0.8×</code>. Gains are permanent for the run, stack multiplicatively, and are kept by Save &amp; Quit.</p>`;
+  } else if (devTab === 'muts') {
+    h += `<div class="dev-sect"><h3>Run Mutations — objective rewards (stackable)</h3>
+      <table class="dev-table"><tr><th>Mutation</th><th>Max stacks</th><th>Effect per stack</th></tr>`;
+    for (const m of MUTATIONS) h += `<tr><td>${m.icon} <b>${m.name}</b></td><td class="num">×${m.max}</td><td class="dev-note">${m.desc}</td></tr>`;
+    h += `</table><p class="dev-note" style="margin-top:8px">Granted as a 3-card choice each time you complete an in-run objective. They stack and persist through Save &amp; Quit.</p></div>
+      <div class="dev-sect"><h3>Secondary passives — "Adaptations" (level-up pool)</h3>
+      <table class="dev-table"><tr><th>Adaptation</th><th>Max tier</th><th>Per tier</th></tr>`;
+    for (const a of ADAPTATIONS) h += `<tr><td>${a.icon} <b>${a.name}</b></td><td class="num">T${a.max}</td><td class="dev-note">${a.tierText(1)}</td></tr>`;
+    h += `</table></div>
+      <div class="dev-sect"><h3>Status synergies — combine debuffs from different weapons</h3>
+      <table class="dev-table"><tr><th>Reaction</th><th>Recipe</th><th>Effect</th></tr>
+      <tr><td>🧪 <b>Necrosis</b></td><td class="dev-note">Corroded (Acidic Vacuoles) + Paralysed (Phage Darts)</td><td class="dev-note">Ruptures: ~18% max-HP AoE blast + spreads corrosion to neighbours.</td></tr>
+      <tr><td>❄️ <b>Cytolysis (Shatter)</b></td><td class="dev-note">Slowed (acid pools / slime / freeze) + a Critical hit</td><td class="dev-note">+60% damage on that hit; the cell wall shatters.</td></tr>
+      <tr><td>🩸 <b>Hemorrhage</b></td><td class="dev-note">Bleeding (Cilia Whips Lv8) cell dies</td><td class="dev-note">Bursts and spreads the bleed to nearby cells — chains through packs.</td></tr>
+      </table></div>`;
+  } else {
+    h += `<div class="dev-sect"><h3>Core formulas</h3><table class="dev-table"><tr><th>System</th><th>Formula</th></tr>
+      <tr><td>XP to next level</td><td class="num">round(10·N^1.6 + 25)</td></tr>
+      <tr><td>Damage pipeline</td><td class="num">((Base+Flat)·(1+Ribosome)·CharDmg) ±5%, ×CritMult on crit</td></tr>
+      <tr><td>Enemy HP @ t</td><td class="num">Base·(1 + 0.015·t)^1.1</td></tr>
+      <tr><td>Enemy DMG @ t</td><td class="num">Base·(1 + 0.008·t)</td></tr>
+      <tr><td>Enemy Speed @ t</td><td class="num">min(Base·(1+0.002·t), Base·1.5)</td></tr></table></div>
+      <div class="dev-sect"><h3>Meta-upgrade costs</h3><table class="dev-table"><tr><th>Upgrade</th><th>Cost / tier</th><th>Max</th></tr>`;
+    for (const u of META_UPGRADES) h += `<tr><td>${u.icon} ${u.name}</td><td class="num">${u.id === 'UPG_HP' ? '250·t²' : u.id === 'UPG_ARM' ? '500·t^2.5' : u.id === 'UPG_SPD' ? '150·t^1.8' : u.id === 'UPG_ECO' ? '300·t²' : '2000·t³'}</td><td class="num">${u.max}</td></tr>`;
+    h += `</table></div>`;
+  }
+  body.innerHTML = h;
+}
+
 function resetSave() {
-  if (!confirm('Erase all Genetic Code, meta-upgrades, quests and codex unlocks? This cannot be undone.')) return;
+  if (!confirm('Erase ALL progress — Genetic Code, meta-upgrades, quests, codex unlocks AND any suspended run? This cannot be undone.')) return;
   SAVE = DEFAULT_SAVE(); commitSave(); toast('Save data reset.');
+  if ($('save-modal').classList.contains('show')) openSaveModal();
+  else backToMenu();
+}
+
+/* ---- Save / Backup / Transfer modal ---- */
+function openSaveModal() {
+  hideAllOverlays();
+  $('save-export').value = encodeSave(SAVE);
+  $('save-import').value = '';
+  $('save-stats').innerHTML = statRows([
+    ['Genetic Code', SAVE.coins.toLocaleString()],
+    ['Meta Upgrades', Object.values(SAVE.upgrades).reduce((a, b) => a + b, 0) + ' tiers'],
+    ['Best Survival', fmtTime(SAVE.best.time || 0)],
+    ['Suspended Run', SAVE.suspended && SAVE.suspended.player ? (fmtTime(SAVE.suspended.time) + ' · Lv ' + SAVE.suspended.player.level) : 'none'],
+  ]);
+  $('save-msg').textContent = '';
+  showOverlay('save-modal');
+}
+function setupSaveModal() {
+  $('save-copy').onclick = () => {
+    const ta = $('save-export'); ta.focus(); ta.select(); ta.setSelectionRange(0, 99999);
+    const ok = () => { $('save-msg').style.color = 'var(--bio-green)'; $('save-msg').textContent = 'Copied to clipboard ✓  — paste it somewhere safe.'; };
+    if (navigator.clipboard && navigator.clipboard.writeText)
+      navigator.clipboard.writeText(ta.value).then(ok, () => { try { document.execCommand('copy'); ok(); } catch (e) {} });
+    else { try { document.execCommand('copy'); ok(); } catch (e) {} }
+  };
+  $('save-load').onclick = () => {
+    const raw = $('save-import').value.trim();
+    if (!raw) { $('save-msg').style.color = 'var(--ink-dim)'; $('save-msg').textContent = 'Paste a save code first.'; return; }
+    try {
+      const obj = decodeSave(raw);
+      if (!obj || typeof obj.coins !== 'number' || !obj.upgrades) throw new Error('shape');
+      SAVE = Object.assign(DEFAULT_SAVE(), obj);
+      SAVE.upgrades = Object.assign(DEFAULT_SAVE().upgrades, obj.upgrades || {});
+      SAVE.best = Object.assign(DEFAULT_SAVE().best, obj.best || {});
+      commitSave();
+      openSaveModal();
+      $('save-msg').style.color = 'var(--bio-green)';
+      $('save-msg').textContent = 'Save imported ✓ — all progress loaded into this browser.';
+    } catch (e) {
+      $('save-msg').style.color = 'var(--bio-red)';
+      $('save-msg').textContent = 'Invalid save code — make sure you copied the whole string.';
+    }
+  };
+  $('save-reset').onclick = resetSave;
 }
 
 /* Delegated menu/button handling. */
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-act]'); if (!btn) return;
   const act = btn.getAttribute('data-act');
+  sfx('ui');
   ({
-    play: openModeSelect, shop: openShop, codex: openCodex, reset: resetSave,
+    play: openCharSelect, shop: openShop, codex: openCodex, reset: resetSave, dev: openDev,
+    continue: resumeSavedRun, savedata: openSaveModal, savequit: saveAndExit,
     'back-main': backToMenu, resume: () => resumeRun(), quit: quitRun,
     retry: () => startRun(game.mode), 'to-shop': openShop, 'to-menu': backToMenu,
+    sound: toggleSound, music: toggleMusic,
   })[act]?.();
 });
+/* Menu sound toggle (mute / unmute) — updates its own label. */
+function toggleSound() {
+  const on = Sound.toggle();
+  const b = $('btn-sound'); if (b) b.textContent = on ? '🔊 Sound: On' : '🔇 Sound: Off';
+}
+function toggleMusic() {
+  const on = Music.toggle();
+  const b = $('btn-music'); if (b) b.textContent = on ? '🎵 Music: On' : '🎵 Music: Off';
+}
 
 /* ======================================================================== *
  *  SECTION 21 — SPATIAL REBUILD, THE GAME LOOP & BOOTSTRAP                   *
@@ -2772,6 +4657,9 @@ function stepGame(dt) {
   game.time += dt;
   buildQuadtree();
   updateDirector(dt);
+  updateEnvironment(dt);
+  updateBoostPads(dt);
+  updateObjective(dt);
   updateWeapons(dt);
   updateClones(dt);
   updateProjectiles(dt);
@@ -2781,25 +4669,54 @@ function stepGame(dt) {
   updateEffects(dt);
   updatePlayer(dt);
   updateParticles(dt);
+  // Autosave the run every few seconds so "Continue Run" is always current.
+  _autosaveT += dt;
+  if (_autosaveT >= 5) { _autosaveT = 0; saveRunSnapshot(); }
 }
 
 let lastTime = 0;
 function frame(now) {
+  // Schedule the next frame FIRST: an exception below then costs one frame's
+  // work, not the entire game (a dead rAF chain looks like a total freeze).
+  requestAnimationFrame(frame);
+  pollGamepad();
   if (!lastTime) lastTime = now;
   let dt = (now - lastTime) / 1000; lastTime = now;
   if (dt > 0.05) dt = 0.05;                            // clamp big tab-switch gaps
   game.dt = dt;
   if (game.state === 'running') stepGame(dt);
   render(now);
-  if (game.state !== 'menu' && game.player) updateHUD();
-  requestAnimationFrame(frame);
+  if (game.state !== 'menu' && game.player) { updateHUD(); updateObjectiveHUD(); }
 }
+
+/* Surface unexpected runtime errors as a visible banner — a silent failure  *
+ * (frozen sim, dead weapon, missing layer) is undebuggable from a player's   *
+ * report, so at least say WHAT broke and WHERE.                              */
+window.addEventListener('error', (ev) => {
+  try {
+    const el = document.createElement('div');
+    el.className = 'toast big'; el.style.borderColor = '#ff5a5a'; el.style.color = '#ff8a8a';
+    el.textContent = '⚠ BUG: ' + (ev.message || 'unknown error') + (ev.lineno ? ' @ line ' + ev.lineno : '');
+    $('banner').appendChild(el);
+    setTimeout(() => el.remove(), 9000);
+  } catch (e) { /* never let the reporter itself throw */ }
+});
 
 function init() {
   loadSave();
+  Sound.init();
+  Music.init();
   buildSprites();
   setupCanvas();
   setupInput();
+  setupSaveModal();
+  // Sound settings UI: reflect saved prefs, wire the volume slider.
+  const sb = $('btn-sound'); if (sb) sb.textContent = Sound.on ? '🔊 Sound: On' : '🔇 Sound: Off';
+  const mb = $('btn-music'); if (mb) mb.textContent = Music.on ? '🎵 Music: On' : '🎵 Music: Off';
+  const vs = $('vol-slider'); if (vs) { vs.value = Math.round(Sound.vol * 100); vs.addEventListener('input', () => Sound.setVol(vs.value / 100)); }
+  // Persist the run if the player tabs away or closes the page mid-fight.
+  document.addEventListener('visibilitychange', () => { if (document.hidden) saveRunSnapshot(); });
+  window.addEventListener('beforeunload', () => { saveRunSnapshot(); });
   setHud(false);
   backToMenu();
   requestAnimationFrame(frame);

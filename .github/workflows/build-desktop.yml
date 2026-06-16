@@ -1,0 +1,57 @@
+name: Build desktop app
+
+# Builds the installable Windows .exe (NSIS setup + a portable single-file exe)
+# automatically. Grab them from the run's Artifacts, or push a `v*` tag to cut
+# a GitHub Release with the .exe files attached.
+on:
+  push:
+    branches: [main, "claude/**"]
+    tags: ["v*"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write          # needed to attach binaries to a Release on tags
+
+jobs:
+  windows:
+    name: Windows (.exe)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Windows installer + portable exe
+        # --publish never: just build the files; this workflow's own steps
+        # below handle the artifact upload and the tagged Release.
+        run: npm run dist:win -- --publish never
+
+      - name: Upload .exe artifacts (per-run, ephemeral)
+        uses: actions/upload-artifact@v4
+        with:
+          name: BIOEVOLUTION-windows
+          path: |
+            dist/*.exe
+          if-no-files-found: error
+
+      # Permanent download page: create/refresh the v1.0.0 Release and attach
+      # the .exe files. softprops creates the git tag + release server-side
+      # (uses GITHUB_TOKEN), so no local tag push is required. Re-runs just
+      # update the assets in place.
+      - name: Publish / refresh the v1.0.0 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: BIOEVOLUTION — Desktop (v1.0.0)
+          body: |
+            Windows build of BIOEVOLUTION, rebuilt automatically from the latest commit.
+
+            - **BIOEVOLUTION-Setup-1.0.0.exe** — installer (Start-menu + desktop shortcut)
+            - **BIOEVOLUTION-Portable-1.0.0.exe** — single-file portable, no install
+          files: dist/*.exe
+          fail_on_unmatched_files: true
