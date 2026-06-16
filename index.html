@@ -957,6 +957,9 @@ const ADAPTATIONS = [
     desc: 'Raise LUCK — better level-up choices, rarer boost pads, and bigger loot chests.',
     tierText: t => '+' + (t * 12) + '% luck',
     fact: 'Most mutations are neutral or harmful; the rare beneficial ones are the lucky rolls that natural selection keeps and amplifies.' },
+  { id: 'dodge', name: 'Cilia Reflex', icon: '🌀', color: '#9fe0ff', max: 5, type: 'adapt',
+    desc: 'A chance to completely evade incoming damage.', tierText: t => '+' + (t * 6) + '% dodge chance',
+    fact: 'Paramecia execute an "avoidance reaction": touch an obstacle and they instantly reverse their cilia and back away.' },
 ];
 const ADAPT_BY_ID = Object.fromEntries(ADAPTATIONS.map(a => [a.id, a]));
 
@@ -988,6 +991,27 @@ const MUTATIONS = [
   { id: 'giant', name: 'Macromolecular Bloom', icon: '🔬', color: '#2ff6ff', max: 5,
     desc: '+20% weapon area, range and projectile size.',
     fact: 'The biggest cell you can see unaided is an ostrich-egg yolk — a single cell several centimetres across.' },
+  { id: 'entrench', name: 'Sessile Stance', icon: '🪨', color: '#ff9d3a', max: 4,
+    desc: 'While standing still, deal +30% damage (stacks). Hold your ground to hit harder.',
+    fact: 'Sessile organisms like coral and barnacles anchor in place and pour all their energy into filtering and striking, not moving.' },
+  { id: 'overclock', name: 'Anchored Metabolism', icon: '⏱️', color: '#ffd166', max: 3,
+    desc: 'While standing still, fire ~17% faster (stacks).',
+    fact: 'A resting cell spends far less ATP on movement, freeing energy for other machinery to run flat-out.' },
+  { id: 'plating', name: 'Reactive Armor', icon: '🛡️', color: '#7fa8b8', max: 4,
+    desc: 'Convert defense to offense: +2% damage for every point of Armor (stacks).',
+    fact: 'Some bacteria sheath themselves in mineral armor; diatoms turn silica plating into both shield and structure.' },
+  { id: 'vampirism', name: 'Phagocytic Hunger', icon: '🩸', color: '#ff5a5a', max: 3,
+    desc: 'Critical hits heal you for 4% of the damage they deal (stacks).',
+    fact: 'Phagocytes literally eat their targets — engulfing and digesting them to fuel and repair themselves.' },
+  { id: 'dodgeHeal', name: 'Regenerative Reflex', icon: '💧', color: '#6dff8a', max: 3,
+    desc: 'Each time you DODGE an attack, heal 3% of max HP (stacks). Pairs with Cilia Reflex.',
+    fact: 'Many cells reseal and patch a membrane breach within seconds — dodging a blow even mends old damage.' },
+  { id: 'evolution', name: 'Directed Evolution', icon: '🧬', color: '#b07bff', max: 1,
+    desc: 'Adaptive surge: gain +3% Luck on every level-up for the next 10 levels.',
+    fact: 'Directed evolution applies selection pressure round after round, compounding tiny improvements into dramatic gains.' },
+  { id: 'execute', name: 'Apoptosis Trigger', icon: '☠️', color: '#c79bff', max: 3,
+    desc: 'Instantly destroy any non-boss enemy that drops below 8% HP (stacks: +4% threshold).',
+    fact: 'Apoptosis is programmed cell death — a built-in self-destruct that fires once a cell is too damaged to continue.' },
 ];
 const MUT_BY_ID = Object.fromEntries(MUTATIONS.map(m => [m.id, m]));
 function mut(id) { return (game.mutations && game.mutations[id]) || 0; }
@@ -1238,8 +1262,8 @@ const ENEMIES = {
   },
   spore: {
     id: 'spore', name: 'Toxic Fungal Spore', icon: '🟤', color: '#d8a85f', glow: '#ffb84d',
-    weight: 12, window: [480, 1080], freq: 0.32,
-    hp: 120, damage: 12, speed: 60, radius: 22, xp: 10, coinChance: 0.06, coin: 3,
+    weight: 12, window: [120, 1080], freq: 0.32,
+    hp: 60, damage: 12, speed: 60, radius: 22, xp: 10, coinChance: 0.06, coin: 3,
     behavior: 'mortar', standoff: 250,
     fact: 'Fungal spores are airborne reproductive cells with tough protective coats. Some trigger allergies; others, like ergot, produce powerful neuroactive toxins.',
     special: 'Anchors at 250px and lobs toxic globs. Stepping in a glob inverts your controls for 2.5s.'
@@ -1841,13 +1865,13 @@ function createPlayer() {
     // Derived multipliers (recomputed on any change) — fed into the pipelines
     mult: {
       ribosome: 0, cooldown: 1, area: 1, projSpeed: 1, projDur: 1,
-      pickup: 1, flatReduce: 0, ecoGain: 1, crit: 0.05, critMult: 2.0, damageMul: 1, luck: 0
+      pickup: 1, flatReduce: 0, ecoGain: 1, crit: 0.05, critMult: 2.0, damageMul: 1, luck: 0, dodge: 0, execute: 0
     },
     pickupRadius: 120,
     // Transient buffs
     surge: 0, invulnTrail: 0, invertCtrl: 0, slowT: 0, powerSpeed: 0, frenzy: 0,
     // misc
-    cloneTimer: 0,
+    cloneTimer: 0, stillT: 0, evoLevel: -1,   // stationary timer; level Directed Evolution was taken (-1 = not)
   };
   return p;
 }
@@ -1913,10 +1937,17 @@ function recomputeStats() {
   p.mult.crit      += adapt('lethality') * 0.03;
   p.mult.critMult  += adapt('lethality') * 0.15;
   p.mult.luck       = adapt('luck') * 0.12;
+  p.mult.dodge      = Math.min(0.75, adapt('dodge') * 0.06);   // Cilia Reflex
   // Run mutations (objective rewards) stack on top.
   p.mult.damageMul *= (1 + 0.20 * mut('power'));
   p.mult.cooldown  *= Math.pow(0.88, mut('haste'));
   p.mult.area      *= (1 + 0.20 * mut('giant'));
+  // Directed Evolution: +3% luck per level for 10 levels after it was spliced.
+  if (mut('evolution') && p.evoLevel >= 0) p.mult.luck += Math.min(10, Math.max(0, p.level - p.evoLevel)) * 0.03;
+  // Reactive Armor: convert armor into +2%/point damage (computed after flatReduce above).
+  p.mult.damageMul *= (1 + 0.02 * mut('plating') * p.mult.flatReduce);
+  // Apoptosis execute threshold (0 if not taken).
+  p.mult.execute = mut('execute') ? (0.08 + (mut('execute') - 1) * 0.04) : 0;
   // Pickup radius in world units.
   p.pickupRadius = 120 * p.mult.pickup;
 }
@@ -1937,7 +1968,8 @@ const META_DAMAGE_BONUS = 1.0;
  */
 function computeDamage(base, flat = 0, forceCrit = null) {
   const p = game.player;
-  let dmg = (base + flat) * (1 + p.mult.ribosome) * META_DAMAGE_BONUS * (p.mult.damageMul || 1) * (p.frenzy > 0 ? 1.5 : 1);
+  const still = (p.stillT > 0.3 ? (1 + 0.30 * mut('entrench')) : 1);   // Sessile Stance: hit harder when planted
+  let dmg = (base + flat) * (1 + p.mult.ribosome) * META_DAMAGE_BONUS * (p.mult.damageMul || 1) * (p.frenzy > 0 ? 1.5 : 1) * still;
   dmg += rand(-0.05, 0.05) * dmg;                       // ±5% variance
   if (!isFinite(dmg)) dmg = 1;                          // never poison an enemy's hp with NaN
   const crit = forceCrit == null ? chance(p.mult.crit) : forceCrit;
@@ -1984,6 +2016,16 @@ function damageEnemy(e, amount, opts = {}) {
     spawnFloater(e.x, e.y - e.r, Math.round(amt).toString(), shatter ? '#9fe0ff' : (opts.crit ? '#ffd166' : '#ffffff'), opts.crit || shatter);
     if (shatter) { spawnFloater(e.x, e.y - e.r - 16, 'SHATTER', '#9fe0ff', true); spawnRing(e.x, e.y, '#9fe0ff', e.r * 2.4, 0.3); }
     sfx('hit');
+  }
+  // MUTATION · Phagocytic Hunger: critical strikes feed health back to you.
+  if (opts.crit && mut('vampirism') > 0) {
+    const pl = game.player, heal = amt * 0.04 * mut('vampirism');
+    if (heal > 0 && pl.hp < pl.maxHp) { pl.hp = Math.min(pl.maxHp, pl.hp + heal); spawnFloater(pl.x, pl.y - pl.r - 8, '+' + Math.round(heal), '#ff5a5a'); }
+  }
+  // MUTATION · Apoptosis Trigger: cull any non-boss cell that drops past the threshold.
+  if (!e.dead && e.hp > 0 && game.player.mult.execute > 0 && !e.boss && (e.hp / (e.maxHp || 1)) < game.player.mult.execute) {
+    if (!opts.silent) spawnFloater(e.x, e.y - e.r - 16, 'APOPTOSIS', '#c79bff', true);
+    e.hp = 0;
   }
   // Knockback (juggernaut & boss are immune).
   if (opts.knockback && !e.kbImmune) {
@@ -2079,6 +2121,12 @@ function killEnemy(e, opts = {}) {
 function damagePlayer(raw, fromX, fromY) {
   const p = game.player;
   if (p.invuln > 0 || p.invulnTrail > 0 || game.state !== 'running') return;
+  // DODGE (Cilia Reflex): a chance to completely evade the hit.
+  if (p.mult.dodge > 0 && chance(p.mult.dodge)) {
+    p.invuln = 0.25; spawnFloater(p.x, p.y - p.r - 8, 'DODGE', '#9fe0ff');
+    if (mut('dodgeHeal') > 0) { const h = p.maxHp * 0.03 * mut('dodgeHeal'); p.hp = Math.min(p.maxHp, p.hp + h); spawnFloater(p.x, p.y - p.r - 20, '+' + Math.round(h), '#6dff8a'); }
+    return;
+  }
   let dmg = raw - p.mult.flatReduce;
   if (dmg <= 0) return;                               // fully mitigated
   // Cell-wall shield soaks first.
@@ -2227,8 +2275,8 @@ function createDirector() {
  * the last wave repeats if the run somehow runs long (endless caps here too).  */
 const WAVES = [
   { name: 'Lysogenic Bloom',    mix: { virus: 1.0 } },                              // 0–2:00
-  { name: 'Flagellate Surge',   mix: { virus: 0.7, bacterium: 0.5 } },              // 2–4
-  { name: 'Chemotactic Swarm',  mix: { bacterium: 0.8, virus: 0.4 } },              // 4–6
+  { name: 'Flagellate Surge',   mix: { virus: 0.7, bacterium: 0.5, spore: 0.25 } }, // 2–4
+  { name: 'Chemotactic Swarm',  mix: { bacterium: 0.8, virus: 0.4, spore: 0.3 } },  // 4–6
   { name: 'Spore Drift',        mix: { virus: 0.5, bacterium: 0.5, spore: 0.4 } },  // 6–8
   { name: 'Toxic Tide',         mix: { bacterium: 0.6, spore: 0.7, virus: 0.3 } },  // 8–10
   { name: 'Viral Resurgence',   mix: { virus: 1.1, spore: 0.4 } },                  // 10–12
@@ -2523,6 +2571,7 @@ function updateWeapons(dt) {
                         apexId === 'wake' ? 'wake' : apexId === 'fungal' ? 'spore' : w.id];
     let cd = s.cooldown * p.mult.cooldown;
     if (p.frenzy > 0) cd *= 0.6;                          // Mitotic Frenzy power-up
+    if (p.stillT > 0.3 && mut('overclock')) cd *= Math.pow(0.83, mut('overclock')); // Anchored Metabolism: fire faster when planted
     if (apexId === 'vortex') cd = 0.1;                    // buzz-saw ticks
     w.timer -= dt;
     if (w.timer <= 0) {
@@ -2913,7 +2962,7 @@ function lobToxicGlob(e, p) {
   const tx = p.x, ty = p.y, fly = 0.9;
   fireProjectile({ kind: 'toxglob', x: e.x, y: e.y, dx: (tx - e.x) / fly, dy: (ty - e.y) / fly, r: 8, life: fly,
     spr: SPR.toxglob, color: '#c08bff', inert: true,
-    onExpire: (b) => makeHazard({ kind: 'invert', x: b.x, y: b.y, r: 36, life: 6, color: 'rgba(180,120,255,0.16)' }) });
+    onExpire: (b) => makeHazard({ kind: 'invert', x: b.x, y: b.y, r: 36, life: 3.5, color: 'rgba(180,120,255,0.16)' }) });
 }
 
 /* Amoeboid plasma tendril life-leech: drains the player, heals the elite. */
@@ -3089,6 +3138,10 @@ function updatePlayer(dt) {
   p.dx = lerp(p.dx, ix * spd, 0.25); p.dy = lerp(p.dy, iy * spd, 0.25);
   p.x += p.dx * dt; p.y += p.dy * dt;
   if (il > 0.01) p.angle = Math.atan2(iy, ix);
+
+  // Stationary timer — feeds the "while standing still" mutations (Sessile Stance, Anchored Metabolism).
+  const movingNow = il > 0.05 || lenOf(p.dx, p.dy) > 12;
+  p.stillT = movingNow ? 0 : (p.stillT || 0) + dt;
 
   // ---- timers ----
   if (p.invuln > 0) p.invuln -= dt;
@@ -4108,6 +4161,7 @@ const STAT_ROWS = [
   { k: 'pck',  ic: '🧲', lbl: 'Pickup Radius',   get: p => String(Math.round(p.pickupRadius)),                     rat: p => p.mult.pickup },
   { k: 'eco',  ic: '🪙', lbl: 'XP & Coins',      get: p => statPct(p.mult.ecoGain),                                rat: p => p.mult.ecoGain },
   { k: 'lck',  ic: '🍀', lbl: 'Luck',            get: p => '+' + Math.round((p.mult.luck || 0) * 100) + '%',       rat: p => 1 + (p.mult.luck || 0) },
+  { k: 'ddg',  ic: '🌀', lbl: 'Dodge',           get: p => Math.round((p.mult.dodge || 0) * 100) + '%',            rat: p => 1 + (p.mult.dodge || 0) },
 ];
 /* ---- Quick stats overlay: a Spell-Brigade-style stat peek you can flick on  *
  * mid-fight (Tab / left bumper) WITHOUT pausing — the swarm keeps coming. The *
@@ -4363,6 +4417,7 @@ function buildMutationCard(m, i) {
 }
 function chooseMutation(m) {
   game.mutations[m.id] = (game.mutations[m.id] || 0) + 1;
+  if (m.id === 'evolution') game.player.evoLevel = game.player.level;   // start the 10-level Luck surge from here
   recomputeStats(); refreshTray();
   hideOverlay('mutation-modal');
   bigBanner('🧬 MUTATION: ' + m.name + (mut(m.id) > 1 ? '  ×' + mut(m.id) : ''), 3);
@@ -4560,6 +4615,7 @@ function serializeRun() {
       weapons: p.weapons.map(w => ({ id: w.id, level: w.level, apex: !!w.apex, apexId: w.apexId || null })),
       passives: Object.assign({}, p.passives),
       adaptations: Object.assign({}, p.adaptations || {}),
+      evoLevel: p.evoLevel,
     },
     savedAt: Date.now(),
   };
@@ -4599,6 +4655,7 @@ function resumeSavedRun() {
   p.weapons = (ps.weapons || []).map(w => ({ id: w.id, level: w.level, timer: 0, apex: !!w.apex, apexId: w.apexId || null }));
   p.passives = Object.assign({}, ps.passives || {});
   p.adaptations = Object.assign({}, ps.adaptations || {});
+  p.evoLevel = ps.evoLevel != null ? ps.evoLevel : -1;   // Directed Evolution surge anchor
   game.player = p;
   recomputeStats();                                  // rebuild derived multipliers + maxHp from baseMaxHp + passives
   p.hp = clamp(ps.hp != null ? ps.hp : p.maxHp, 1, p.maxHp);
