@@ -428,6 +428,7 @@
       <button class="btn" data-act="play">▶ BEGIN INCUBATION</button>
       <button class="btn" data-act="shop">🧪 Genome Lab (Meta-Upgrades)</button>
       <button class="btn" data-act="codex">📖 Bio-Codex</button>
+      <button class="btn" data-act="soundtrack">🎵 Soundtrack</button>
       <button class="btn" data-act="dev">🔧 Asset Inspector (Dev)</button>
       <button class="btn ghost small" data-act="savedata">💾 Save · Backup &amp; Transfer</button>
       <div class="row" style="margin-top:8px; gap:12px;">
@@ -552,6 +553,16 @@
         <p>Every entity in BIOEVOLUTION is rooted in real cell &amp; microbiology. Learn the science behind the swarm.</p></div>
       <div class="codex-tabs" id="codex-tabs"></div>
       <div class="codex-list" id="codex-list"></div>
+      <div class="row" style="margin-top:18px;"><button class="btn" data-act="back-main">← Back to Menu</button></div>
+    </div>
+  </div>
+
+  <!-- ===== Soundtrack jukebox ===== -->
+  <div class="overlay" id="music-modal">
+    <div class="panel">
+      <div class="modal-head"><h2>🎵 SOUNDTRACK</h2>
+        <p>Procedurally-generated chiptune loops. Tap one to play it now and pin it for your runs, or pick <b>Shuffle</b> for a fresh track each run. Boss fights always cut to <b>Apex Bloom</b>. (In-run, press <span class="kbd">N</span> to cycle.)</p></div>
+      <div class="ps-grid" id="music-list" style="max-height:48vh; overflow:auto"></div>
       <div class="row" style="margin-top:18px;"><button class="btn" data-act="back-main">← Back to Menu</button></div>
     </div>
   </div>
@@ -1466,7 +1477,7 @@ const DEFAULT_SAVE = () => ({
   weapons: {},                                      // achievement-unlocked weapons (id -> true)
   passives: {},                                     // achievement-unlocked organelles (id -> true)
   lastChar: 'paramecium',                           // last picked cell
-  sound: { on: true, vol: 0.6, music: true },       // audio preferences
+  sound: { on: true, vol: 0.6, music: true, track: null },  // audio prefs (track: pinned soundtrack index, null = shuffle)
   suspended: null           // snapshot of an in-progress run (for "Continue Run")
 });
 let SAVE = DEFAULT_SAVE();
@@ -1723,10 +1734,16 @@ const Music = {
   on: true, vol: 0.5, gain: null, lp: null, timer: null, playing: false,
   step: 0, nextTime: 0, bpm: 134, schedAhead: 0.18, intensity: 0, _leadAt: null,
   tracks: MUSIC_TRACKS, trackIndex: 0, _restoreTrack: null,
+  pinnedTrack: null,                                          // null = shuffle a fresh track per run; index = always this one
   get cur() { return this.tracks[this.trackIndex] || this.tracks[0]; },
   get bossTrack() { const i = this.tracks.findIndex(t => t.name === 'Apex Bloom'); return i < 0 ? this.tracks.length - 1 : i; },
-  init() { if (SAVE.sound && typeof SAVE.sound.music === 'boolean') this.on = SAVE.sound.music; },
-  _save() { SAVE.sound = Object.assign({ on: Sound.on, vol: Sound.vol }, SAVE.sound, { music: this.on }); commitSave(); },
+  init() {
+    if (SAVE.sound && typeof SAVE.sound.music === 'boolean') this.on = SAVE.sound.music;
+    if (SAVE.sound && typeof SAVE.sound.track === 'number') this.pinnedTrack = SAVE.sound.track;
+  },
+  _save() { SAVE.sound = Object.assign({ on: Sound.on, vol: Sound.vol }, SAVE.sound, { music: this.on, track: this.pinnedTrack }); commitSave(); },
+  pin(i) { this.pinnedTrack = ((i % this.tracks.length) + this.tracks.length) % this.tracks.length; this.setTrack(this.pinnedTrack); this._save(); },
+  shuffle() { this.pinnedTrack = null; this._save(); this.randomTrack(); },
   _bus() {
     const c = Sound.ctx; if (!c || this.gain) return;
     this.lp = c.createBiquadFilter(); this.lp.type = 'lowpass'; this.lp.frequency.value = 3600; this.lp.Q.value = 0.4;
@@ -1814,8 +1831,10 @@ const Music = {
     const t = this.cur; this.bpm = t.bpm;
     this._leadAt = {}; for (const e of t.lead) this._leadAt[e[0]] = [e[1], e[2]];
   },
-  /* Pick a fresh track for a new run (avoids repeating the last one). */
+  /* Pick the track for a new run: the pinned choice if set, else a fresh
+   * random one (never repeating the last). */
   randomTrack() {
+    if (this.pinnedTrack != null) { this.setTrack(this.pinnedTrack); return; }
     if (this.tracks.length < 2) { this.setTrack(0); return; }
     let i = this.trackIndex; while (i === this.trackIndex) i = (Math.random() * this.tracks.length) | 0;
     this.setTrack(i);
@@ -4780,27 +4799,53 @@ function renderPause() {
   $('pause-body').innerHTML = pauseTab === 'arsenal' ? pauseArsenalHTML(p)
     : pauseTab === 'music' ? pauseMusicHTML(p) : pauseStatsHTML(p);
 }
-/* Pause-menu soundtrack picker — tap any track to play it immediately. */
-function pauseMusicHTML() {
-  let rows = '';
+/* Shared soundtrack-picker rows (used by the pause-menu Music tab AND the
+ * title-screen Soundtrack jukebox). A 🔀 Shuffle row + one row per track:
+ * ▶ = now playing · 📌 = pinned for every run · tap to play + pin. */
+function trackRowsHTML() {
+  let rows = `<div class="ps-cell" style="cursor:pointer;${Music.pinnedTrack == null ? 'outline:2px solid #6dffb0;background:rgba(109,255,176,0.08);' : ''}" onclick="musicShuffle()">`
+    + `<span class="ps-ic">🔀</span><span class="ps-lbl">Shuffle each run</span><span class="ps-val">random</span></div>`;
   Music.tracks.forEach((t, i) => {
-    const active = i === Music.trackIndex, boss = i === Music.bossTrack;
-    rows += `<div class="ps-cell" style="cursor:pointer;${active ? 'outline:2px solid #6dffb0;background:rgba(109,255,176,0.08);' : ''}" onclick="selectTrack(${i})">
-      <span class="ps-ic">${active ? '▶' : '🎵'}</span>
+    const active = i === Music.trackIndex, pinned = i === Music.pinnedTrack, boss = i === Music.bossTrack;
+    const hl = pinned ? 'outline:2px solid #6dffb0;background:rgba(109,255,176,0.08);' : (active ? 'outline:1px solid rgba(109,255,176,0.35);' : '');
+    rows += `<div class="ps-cell" style="cursor:pointer;${hl}" onclick="selectTrack(${i})">
+      <span class="ps-ic">${active ? '▶' : (pinned ? '📌' : '🎵')}</span>
       <span class="ps-lbl">${t.name}${boss ? ' <span style="opacity:.55;font-size:11px">boss</span>' : ''}</span>
       <span class="ps-val">${t.bpm} bpm</span></div>`;
   });
+  return rows;
+}
+function pauseMusicHTML() {
   const onLabel = Music.on ? '🎵 Music: On' : '🔇 Music: Off';
-  return `<div class="ps-section"><h3>Soundtrack — tap a track to play it · <span onclick="toggleMusicPause()" style="cursor:pointer;color:#6dffb0">${onLabel}</span></h3>`
-    + `<div class="ps-grid">${rows}</div>`
+  return `<div class="ps-section"><h3>Soundtrack — tap a track to play it · <span onclick="musicToggle()" style="cursor:pointer;color:#6dffb0">${onLabel}</span></h3>`
+    + `<div class="ps-grid">${trackRowsHTML()}</div>`
     + `<div class="ps-buffs" style="margin-top:8px">Now playing: <b>${Music.cur.name}</b> · ${Music.cur.bpm} bpm · ${Music.cur.feel} groove · cycle live anytime with the <b>N</b> key</div></div>`;
 }
-function selectTrack(i) {
-  Music.setTrack(i);
-  if (Music.on && !Music.playing) Music.start();   // make the pick audible right away
-  if (game.state === 'paused') renderPause();
+/* Title-screen jukebox modal. */
+function openMusicModal() { hideAllOverlays(); Sound.ensure(); buildMusicModal(); showOverlay('music-modal'); }
+function buildMusicModal() {
+  const el = $('music-list'); if (!el) return;
+  const onLabel = Music.on ? '🎵 Music: On' : '🔇 Music: Off';
+  el.innerHTML = `<div class="ps-buffs" style="margin-bottom:10px">Now playing: <b>${Music.cur.name}</b> · ${Music.cur.bpm} bpm · ${Music.cur.feel} groove · <span onclick="musicToggle()" style="cursor:pointer;color:#6dffb0">${onLabel}</span></div>`
+    + `<div class="ps-grid">${trackRowsHTML()}</div>`;
 }
-function toggleMusicPause() { Music.toggle(); if (game.state === 'paused') renderPause(); }
+/* Re-render whichever picker is currently visible. */
+function refreshMusicUI() {
+  if (game.state === 'paused') renderPause();
+  const mm = $('music-modal'); if (mm && mm.classList.contains('show')) buildMusicModal();
+}
+/* Pick + pin a track and play it now (the click unlocks audio, so this works
+ * on the title screen too). */
+function selectTrack(i) { Music.pin(i); if (Music.on) Music.start(); refreshMusicUI(); }
+function musicShuffle() { Music.shuffle(); if (Music.on) Music.start(); refreshMusicUI(); }
+/* Unified music on/off — also starts playback immediately (menu jukebox / pause). */
+function musicToggle() {
+  const on = Music.toggle();
+  if (on && !Music.playing) Music.start();
+  const b = $('btn-music'); if (b) b.textContent = on ? '🎵 Music: On' : '🎵 Music: Off';
+  refreshMusicUI();
+  return on;
+}
 function pauseStatsHTML(p) {
   let stats = '';
   for (const r of STAT_ROWS) {
@@ -5322,17 +5367,13 @@ document.addEventListener('click', (e) => {
     continue: resumeSavedRun, savedata: openSaveModal, savequit: saveAndExit,
     'back-main': backToMenu, resume: () => resumeRun(), quit: quitRun,
     retry: () => startRun(game.mode), 'to-shop': openShop, 'to-menu': backToMenu,
-    sound: toggleSound, music: toggleMusic,
+    sound: toggleSound, music: musicToggle, soundtrack: openMusicModal,
   })[act]?.();
 });
 /* Menu sound toggle (mute / unmute) — updates its own label. */
 function toggleSound() {
   const on = Sound.toggle();
   const b = $('btn-sound'); if (b) b.textContent = on ? '🔊 Sound: On' : '🔇 Sound: Off';
-}
-function toggleMusic() {
-  const on = Music.toggle();
-  const b = $('btn-music'); if (b) b.textContent = on ? '🎵 Music: On' : '🎵 Music: Off';
 }
 
 /* ======================================================================== *
