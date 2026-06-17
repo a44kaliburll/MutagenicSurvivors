@@ -2,7 +2,7 @@
   "name": "bioevolution",
   "productName": "BIOEVOLUTION",
   "version": "1.0.0",
-  "description": "BIOEVOLUTION — an educational microbial survivors roguelite",
+  "description": "BIOEVOLUTION — an educational microbial survivors roguelite in a single self-contained index.html (Canvas2D). Achievement-gated armory, Apex mutations, a 12-track procedural soundtrack, and desktop (.exe) + Android (.apk) builds.",
   "main": "main.js",
   "author": "PlutonianSurvivors",
   "license": "MIT",
