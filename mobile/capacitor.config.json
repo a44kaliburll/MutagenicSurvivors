@@ -1,0 +1,11 @@
+{
+  "appId": "com.plutoniansurvivors.bioevolution",
+  "appName": "BIOEVOLUTION",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#05070d"
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

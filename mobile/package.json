@@ -1,0 +1,23 @@
+{
+  "name": "bioevolution-mobile",
+  "productName": "BIOEVOLUTION",
+  "version": "1.0.0",
+  "description": "Capacitor Android wrapper for BIOEVOLUTION (the single-file Canvas game lives in ../index.html and is staged into www/ at build time).",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "stage": "node -e \"const fs=require('fs');fs.mkdirSync('www',{recursive:true});fs.mkdirSync('assets',{recursive:true});fs.copyFileSync('../index.html','www/index.html');fs.copyFileSync('../build/icon.png','assets/icon.png')\"",
+    "icons": "capacitor-assets generate --android --iconBackgroundColor #05070d --iconBackgroundColorDark #05070d",
+    "add": "cap add android",
+    "sync": "cap sync android",
+    "apk": "cd android && ./gradlew assembleDebug --no-daemon"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/core": "^6.2.1"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^6.2.1"
+  }
+}

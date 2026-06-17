@@ -1,0 +1,82 @@
+name: Build Android app
+
+# Wraps the self-contained index.html in a Capacitor WebView shell and builds an
+# installable Android .apk. Grab it from the run's Artifacts, or it is attached to
+# the v1.0.0 GitHub Release automatically (alongside the desktop builds).
+on:
+  push:
+    branches: [main, "claude/**"]
+    tags: ["v*"]
+    paths:
+      - "index.html"
+      - "build/icon.png"
+      - "mobile/**"
+      - ".github/workflows/build-android.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write          # needed to attach the .apk to a Release
+
+jobs:
+  android:
+    name: Android (.apk)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Stage the game + icon into the Capacitor project
+        # The game is one self-contained file; copy it in as the WebView's index,
+        # and reuse the existing 1024x1024 icon as the app icon source.
+        run: |
+          mkdir -p mobile/www mobile/assets
+          cp index.html mobile/www/index.html
+          cp build/icon.png mobile/assets/icon.png
+
+      - name: Install Capacitor
+        working-directory: mobile
+        run: npm install
+
+      - name: Generate Android app icons (best-effort)
+        working-directory: mobile
+        run: npx capacitor-assets generate --android --iconBackgroundColor '#05070d' --iconBackgroundColorDark '#05070d' || echo "icon generation skipped — falling back to default Capacitor icon"
+
+      - name: Add / sync the Android platform
+        working-directory: mobile
+        run: |
+          if [ ! -d android ]; then npx cap add android; else npx cap sync android; fi
+
+      - name: Build the debug APK
+        working-directory: mobile/android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Stage the APK with a friendly name
+        run: cp mobile/android/app/build/outputs/apk/debug/app-debug.apk BIOEVOLUTION-1.0.0.apk
+
+      - name: Upload .apk artifact (per-run, ephemeral)
+        uses: actions/upload-artifact@v4
+        with:
+          name: BIOEVOLUTION-android
+          path: BIOEVOLUTION-1.0.0.apk
+          if-no-files-found: error
+
+      # Attach the .apk to the same v1.0.0 Release the desktop workflow maintains.
+      # We intentionally do NOT set name/body here so the desktop job owns the
+      # release text; this step only upserts the .apk asset.
+      - name: Attach .apk to the v1.0.0 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          files: BIOEVOLUTION-1.0.0.apk
+          fail_on_unmatched_files: true

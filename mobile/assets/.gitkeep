@@ -1,0 +1,2 @@
+# @capacitor/assets source. The 1024x1024 ../../build/icon.png is copied in here
+# as icon.png at build time, then expanded into all Android density buckets.

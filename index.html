@@ -982,36 +982,44 @@ const PASSIVES = [
 const PASSIVE_BY_ID = Object.fromEntries(PASSIVES.map(p => [p.id, p]));
 
 /* ======================================================================== *
- *  SECTION 3a — ARMORY: S–D POWER TIERS + ACHIEVEMENT UNLOCKS                *
- *  Every weapon & organelle carries a power tier (S best → D filler) and an  *
- *  unlock milestone. Basics are { always:true }; the rest are earned through  *
- *  lifetime play. Playing a cell line also permanently unlocks the gear it    *
- *  wields (handled in startRun), so the headline locks are the advanced kit.  *
+ *  SECTION 3a — ARMORY: ACHIEVEMENT-GATED UNLOCKS (TIER = UNLOCK ORDER)       *
+ *  EVERYTHING starts locked. The tier letter is the unlock ORDER, not a power *
+ *  grade: D unlocks first (trivial goals) → S unlocks last (the hard goals).  *
+ *  You earn each weapon/organelle by hitting its milestone; playing a cell    *
+ *  line also permanently unlocks the gear it wields (handled in startRun), so *
+ *  your signature weapon is always usable while you chase the rest.           *
  * ======================================================================== */
-const TIER_COLORS = { S: '#ff6db3', A: '#ffd166', B: '#6dff8a', C: '#5fc8ff', D: '#9aa7b3' };
+const TIER_COLORS = { D: '#9aa7b3', C: '#5fc8ff', B: '#6dff8a', A: '#ffd166', S: '#ff6db3' };
+const TIER_ORDER = ['D', 'C', 'B', 'A', 'S'];               // unlock progression: first → last
+function tierRank(t) { const i = TIER_ORDER.indexOf(t); return i < 0 ? 1 : i; }
 function tierBadge(t) {
   const c = TIER_COLORS[t] || '#9aa7b3';
   return `<span style="display:inline-block;min-width:16px;text-align:center;padding:1px 5px;border-radius:5px;background:${c}22;color:${c};border:1px solid ${c}66;font-weight:800;font-size:11px;letter-spacing:.5px;margin-left:6px">${t}</span>`;
 }
 const WEAPON_META = {
-  trichocyst: { tier: 'C', unlock: { always: true } },
-  cilia:      { tier: 'B', unlock: { always: true } },
-  phage:      { tier: 'A', unlock: { stat: 'totalKills', value: 400,  hint: 'Defeat 400 microbes (lifetime).' } },
-  vacuole:    { tier: 'A', unlock: { stat: 'bestLevel',  value: 8,    hint: 'Reach Level 8 in a single run.' } },
-  spore:      { tier: 'B', unlock: { stat: 'totalKills', value: 1000, hint: 'Defeat 1,000 microbes (lifetime).' } },
+  // D — first unlocks (easy)
+  trichocyst: { tier: 'D', unlock: { stat: 'bestLevel',  value: 2,    hint: 'Reach Level 2 in a single run.' } },
+  cilia:      { tier: 'D', unlock: { stat: 'totalKills', value: 60,   hint: 'Defeat 60 microbes (lifetime).' } },
+  // C
   flagella:   { tier: 'C', unlock: { stat: 'bestTime',   value: 180,  hint: 'Survive 3:00 in a single run.' } },
-  field:      { tier: 'B', unlock: { stat: 'bestTime',   value: 600,  hint: 'Survive 10:00 in a single run.' } },
-  mitosis:    { tier: 'A', unlock: { stat: 'bossKills',  value: 1,    hint: 'Defeat the Macrophage Sentinel.' } },
-  mucus:      { tier: 'B', unlock: { stat: 'bestTime',   value: 420,  hint: 'Survive 7:00 in a single run.' } },
-  evodart:    { tier: 'S', unlock: { stat: 'bestLevel',  value: 12,   hint: 'Reach Level 12 in a single run.' } },
+  spore:      { tier: 'C', unlock: { stat: 'totalKills', value: 300,  hint: 'Defeat 300 microbes (lifetime).' } },
+  // B
+  field:      { tier: 'B', unlock: { stat: 'bestTime',   value: 300,  hint: 'Survive 5:00 in a single run.' } },
+  mucus:      { tier: 'B', unlock: { stat: 'bestLevel',  value: 8,    hint: 'Reach Level 8 in a single run.' } },
+  // A
+  phage:      { tier: 'A', unlock: { stat: 'totalKills', value: 1500, hint: 'Defeat 1,500 microbes (lifetime).' } },
+  vacuole:    { tier: 'A', unlock: { stat: 'bestTime',   value: 600,  hint: 'Survive 10:00 in a single run.' } },
+  // S — last unlocks (hard)
+  mitosis:    { tier: 'S', unlock: { stat: 'bossKills',  value: 1,    hint: 'Defeat the Macrophage Sentinel.' } },
+  evodart:    { tier: 'S', unlock: { stat: 'bestLevel',  value: 16,   hint: 'Reach Level 16 in a single run.' } },
 };
 const PASSIVE_META = {
-  atp:   { tier: 'S', unlock: { always: true } },
-  mito:  { tier: 'A', unlock: { always: true } },
-  phyto: { tier: 'D', unlock: { always: true } },
-  ribo:  { tier: 'S', unlock: { stat: 'totalKills', value: 500, hint: 'Defeat 500 microbes (lifetime).' } },
-  cyto:  { tier: 'A', unlock: { stat: 'bestLevel',  value: 6,   hint: 'Reach Level 6 in a single run.' } },
-  golgi: { tier: 'C', unlock: { stat: 'bestTime',   value: 120, hint: 'Survive 2:00 in a single run.' } },
+  phyto: { tier: 'D', unlock: { stat: 'bestLevel',  value: 3,    hint: 'Reach Level 3 in a single run.' } },
+  mito:  { tier: 'D', unlock: { stat: 'totalKills', value: 100,  hint: 'Defeat 100 microbes (lifetime).' } },
+  golgi: { tier: 'C', unlock: { stat: 'bestTime',   value: 150,  hint: 'Survive 2:30 in a single run.' } },
+  cyto:  { tier: 'B', unlock: { stat: 'bestLevel',  value: 7,    hint: 'Reach Level 7 in a single run.' } },
+  ribo:  { tier: 'A', unlock: { stat: 'totalKills', value: 1200, hint: 'Defeat 1,200 microbes (lifetime).' } },
+  atp:   { tier: 'S', unlock: { stat: 'bestTime',   value: 720,  hint: 'Survive 12:00 in a single run.' } },
 };
 function weaponTier(id)  { return (WEAPON_META[id]  || {}).tier || 'C'; }
 function passiveTier(id) { return (PASSIVE_META[id] || {}).tier || 'C'; }
@@ -1656,12 +1664,67 @@ const MUSIC_TRACKS = [
       [32, 76, 1], [33, 74, 1], [34, 72, 2], [36, 74, 1], [37, 76, 1], [38, 77, 2], [40, 80, 2], [43, 81, 1], [44, 83, 2],
       [48, 81, 2], [50, 80, 1], [51, 77, 1], [52, 76, 3], [56, 80, 2], [59, 77, 1], [60, 69, 4],
     ] },
+  { name: 'Membrane Tide', bpm: 120, feel: 'half', bassWave: 'triangle', arpWave: 'sine', leadWave: 'triangle',
+    roots: [45, 40, 41, 43],                                   // Am Em F G — calm A-minor drift
+    triads: [[57, 60, 64], [52, 55, 59], [53, 57, 60], [55, 59, 62]],
+    lead: [
+      [0, 76, 4], [4, 72, 4], [8, 74, 4], [12, 69, 3],
+      [16, 72, 4], [20, 69, 4], [24, 67, 3], [27, 69, 1], [28, 72, 2],
+      [32, 74, 4], [36, 72, 4], [40, 69, 4], [44, 72, 2], [46, 74, 2],
+      [48, 76, 6], [56, 72, 4], [60, 69, 4],
+    ] },
+  { name: 'Flagellar Sprint', bpm: 156, feel: 'drive', bassWave: 'square', arpWave: 'triangle', leadWave: 'square',
+    roots: [47, 43, 50, 45],                                   // Bm G D A — fast and tense
+    triads: [[47, 50, 54], [43, 47, 50], [50, 54, 57], [45, 49, 52]],
+    lead: [
+      [0, 83, 1], [1, 81, 1], [2, 78, 2], [4, 81, 1], [5, 83, 1], [6, 81, 2], [8, 78, 2], [10, 76, 1], [11, 74, 1], [12, 71, 2], [14, 74, 2],
+      [16, 76, 1], [17, 78, 1], [18, 81, 2], [20, 78, 1], [21, 76, 1], [22, 74, 2], [24, 71, 2], [27, 74, 1], [28, 76, 2],
+      [32, 78, 1], [33, 81, 1], [34, 83, 2], [36, 81, 1], [37, 78, 1], [38, 76, 2], [40, 74, 2], [43, 78, 1], [44, 81, 2],
+      [48, 81, 2], [50, 78, 1], [51, 76, 1], [52, 74, 3], [56, 78, 2], [59, 74, 1], [60, 71, 4],
+    ] },
+  { name: 'Osmotic Calm', bpm: 108, feel: 'half', bassWave: 'triangle', arpWave: 'sine', leadWave: 'triangle',
+    roots: [48, 43, 45, 41],                                   // C G Am F — bright, gentle (C major)
+    triads: [[48, 52, 55], [55, 59, 62], [57, 60, 64], [53, 57, 60]],
+    lead: [
+      [0, 79, 4], [4, 76, 4], [8, 72, 4], [12, 74, 2], [14, 76, 2],
+      [16, 81, 4], [20, 79, 4], [24, 76, 3], [28, 72, 3],
+      [32, 74, 4], [36, 72, 4], [40, 69, 4], [44, 72, 2], [46, 74, 2],
+      [48, 76, 6], [56, 74, 4], [60, 72, 4],
+    ] },
+  { name: 'Endosymbiont Groove', bpm: 128, feel: 'funk', bassWave: 'square', arpWave: 'triangle', leadWave: 'square',
+    roots: [45, 41, 43, 40],                                   // Am F G Em — slinky groove
+    triads: [[57, 60, 64], [53, 57, 60], [55, 59, 62], [52, 55, 59]],
+    lead: [
+      [0, 81, 1], [2, 79, 1], [3, 76, 2], [6, 79, 1], [7, 81, 1], [8, 76, 2], [11, 74, 1], [12, 72, 2], [15, 76, 1],
+      [16, 76, 1], [18, 74, 1], [19, 72, 2], [22, 74, 1], [23, 76, 1], [24, 79, 2], [27, 76, 1], [28, 74, 2],
+      [32, 84, 1], [34, 81, 1], [35, 79, 2], [38, 81, 1], [39, 84, 1], [40, 81, 2], [43, 79, 1], [44, 76, 2],
+      [48, 79, 1], [50, 76, 1], [51, 74, 2], [54, 76, 1], [55, 79, 1], [56, 81, 3], [60, 76, 4],
+    ] },
+  { name: 'Nucleus Pulse', bpm: 140, feel: 'drive', bassWave: 'square', arpWave: 'triangle', leadWave: 'square',
+    roots: [38, 45, 46, 41],                                   // Dm A Bb F — energetic
+    triads: [[50, 53, 57], [45, 49, 52], [46, 50, 53], [53, 57, 60]],
+    lead: [
+      [0, 74, 1], [1, 72, 1], [2, 69, 2], [4, 72, 1], [5, 74, 1], [6, 77, 2], [8, 79, 2], [10, 77, 1], [11, 74, 1], [12, 72, 2], [14, 69, 2],
+      [16, 77, 1], [17, 74, 1], [18, 72, 2], [20, 74, 1], [21, 77, 1], [22, 79, 2], [24, 77, 2], [27, 74, 1], [28, 72, 2],
+      [32, 81, 1], [33, 79, 1], [34, 77, 2], [36, 79, 1], [37, 81, 1], [38, 84, 2], [40, 81, 2], [43, 77, 1], [44, 79, 2],
+      [48, 79, 2], [50, 77, 1], [51, 74, 1], [52, 72, 3], [56, 77, 2], [59, 74, 1], [60, 69, 4],
+    ] },
+  { name: 'Abyssal Bloom', bpm: 96, feel: 'half', bassWave: 'triangle', arpWave: 'sine', leadWave: 'triangle',
+    roots: [40, 48, 45, 47],                                   // Em C Am Bm — slow and dark
+    triads: [[52, 55, 59], [48, 52, 55], [57, 60, 64], [47, 50, 54]],
+    lead: [
+      [0, 71, 4], [4, 67, 4], [8, 69, 4], [12, 64, 3],
+      [16, 72, 4], [20, 71, 4], [24, 67, 4], [28, 64, 2], [30, 67, 2],
+      [32, 69, 4], [36, 67, 4], [40, 64, 4], [44, 67, 2], [46, 69, 2],
+      [48, 71, 6], [56, 67, 4], [60, 64, 4],
+    ] },
 ];
 const Music = {
   on: true, vol: 0.5, gain: null, lp: null, timer: null, playing: false,
   step: 0, nextTime: 0, bpm: 134, schedAhead: 0.18, intensity: 0, _leadAt: null,
-  tracks: MUSIC_TRACKS, trackIndex: 0, bossTrack: 5, _restoreTrack: null,
+  tracks: MUSIC_TRACKS, trackIndex: 0, _restoreTrack: null,
   get cur() { return this.tracks[this.trackIndex] || this.tracks[0]; },
+  get bossTrack() { const i = this.tracks.findIndex(t => t.name === 'Apex Bloom'); return i < 0 ? this.tracks.length - 1 : i; },
   init() { if (SAVE.sound && typeof SAVE.sound.music === 'boolean') this.on = SAVE.sound.music; },
   _save() { SAVE.sound = Object.assign({ on: Sound.on, vol: Sound.vol }, SAVE.sound, { music: this.on }); commitSave(); },
   _bus() {
@@ -4693,7 +4756,7 @@ function startRun(mode) {
   setTimeout(() => { if (game.state === 'running') toast('🎵 ' + Music.cur.name, 2.2); }, 2900);
 }
 function resumeRun() { if (game.player && game.player.hp > 0) { game.state = 'running'; hideOverlay('pause-modal'); } }
-const PAUSE_TABS = [{ id: 'stats', label: '📊 Stats' }, { id: 'arsenal', label: '🧬 Arsenal' }];
+const PAUSE_TABS = [{ id: 'stats', label: '📊 Stats' }, { id: 'arsenal', label: '🧬 Arsenal' }, { id: 'music', label: '🎵 Music' }];
 let pauseTab = 'stats';
 function togglePause() {
   if (game.state === 'running') {
@@ -4714,8 +4777,30 @@ function renderPause() {
   const p = game.player; if (!p) return;
   const mm = Math.floor(game.time / 60), ss = Math.floor(game.time % 60), ch = CHAR_BY_ID[game.character];
   $('pause-sub').textContent = (ch ? ch.icon + ' ' + ch.name : 'Cell') + '  ·  ' + mm + ':' + String(ss).padStart(2, '0') + '  ·  Level ' + p.level;
-  $('pause-body').innerHTML = pauseTab === 'arsenal' ? pauseArsenalHTML(p) : pauseStatsHTML(p);
+  $('pause-body').innerHTML = pauseTab === 'arsenal' ? pauseArsenalHTML(p)
+    : pauseTab === 'music' ? pauseMusicHTML(p) : pauseStatsHTML(p);
 }
+/* Pause-menu soundtrack picker — tap any track to play it immediately. */
+function pauseMusicHTML() {
+  let rows = '';
+  Music.tracks.forEach((t, i) => {
+    const active = i === Music.trackIndex, boss = i === Music.bossTrack;
+    rows += `<div class="ps-cell" style="cursor:pointer;${active ? 'outline:2px solid #6dffb0;background:rgba(109,255,176,0.08);' : ''}" onclick="selectTrack(${i})">
+      <span class="ps-ic">${active ? '▶' : '🎵'}</span>
+      <span class="ps-lbl">${t.name}${boss ? ' <span style="opacity:.55;font-size:11px">boss</span>' : ''}</span>
+      <span class="ps-val">${t.bpm} bpm</span></div>`;
+  });
+  const onLabel = Music.on ? '🎵 Music: On' : '🔇 Music: Off';
+  return `<div class="ps-section"><h3>Soundtrack — tap a track to play it · <span onclick="toggleMusicPause()" style="cursor:pointer;color:#6dffb0">${onLabel}</span></h3>`
+    + `<div class="ps-grid">${rows}</div>`
+    + `<div class="ps-buffs" style="margin-top:8px">Now playing: <b>${Music.cur.name}</b> · ${Music.cur.bpm} bpm · ${Music.cur.feel} groove · cycle live anytime with the <b>N</b> key</div></div>`;
+}
+function selectTrack(i) {
+  Music.setTrack(i);
+  if (Music.on && !Music.playing) Music.start();   // make the pick audible right away
+  if (game.state === 'paused') renderPause();
+}
+function toggleMusicPause() { Music.toggle(); if (game.state === 'paused') renderPause(); }
 function pauseStatsHTML(p) {
   let stats = '';
   for (const r of STAT_ROWS) {
@@ -5014,8 +5099,8 @@ function buildCodex() {
     list.appendChild(el);
   };
   const hintFor = (meta) => (meta && meta.unlock && meta.unlock.hint) || 'Keep playing to unlock.';
-  if (codexTab === 'weapons') for (const w of WEAPONS) addGear(w, weaponTier(w.id), weaponUnlocked(w.id), 'Active Weapon · ' + w.maxLevel + ' levels', hintFor(WEAPON_META[w.id]));
-  else if (codexTab === 'passives') for (const p of PASSIVES) addGear(p, passiveTier(p.id), passiveUnlocked(p.id), 'Organelle · ' + p.target, hintFor(PASSIVE_META[p.id]));
+  if (codexTab === 'weapons') for (const w of [...WEAPONS].sort((a, b) => tierRank(weaponTier(a.id)) - tierRank(weaponTier(b.id)))) addGear(w, weaponTier(w.id), weaponUnlocked(w.id), 'Active Weapon · ' + w.maxLevel + ' levels', hintFor(WEAPON_META[w.id]));
+  else if (codexTab === 'passives') for (const p of [...PASSIVES].sort((a, b) => tierRank(passiveTier(a.id)) - tierRank(passiveTier(b.id)))) addGear(p, passiveTier(p.id), passiveUnlocked(p.id), 'Organelle · ' + p.target, hintFor(PASSIVE_META[p.id]));
   else if (codexTab === 'apex') for (const a of APEX) add(a.icon, a.name, 'Apex: ' + WEAPON_BY_ID[a.base].name + ' + ' + PASSIVE_BY_ID[a.passive].name, a.desc, a.fact, !!SAVE.codex['apex_' + a.id]);
   else if (codexTab === 'bestiary') for (const id in ENEMIES) { const e = ENEMIES[id]; add(e.icon, e.name, `Weight ${e.weight} · HP ${e.hp} · DMG ${e.damage}`, e.special, e.fact, !!SAVE.codex[id]); }
   else for (const c of CONCEPTS) add(c.icon, c.name, c.meta, c.fact, '', true);
@@ -5058,7 +5143,8 @@ const DEV_TABS = [
   { id: 'weapons', label: '🧬 Weapons' }, { id: 'passives', label: '🔬 Organelles' },
   { id: 'apex', label: '⚛ Apex' }, { id: 'chars', label: '🧫 Cells' },
   { id: 'objectives', label: '🎯 Objectives' }, { id: 'env', label: '🌋 Hazards' },
-  { id: 'boosts', label: '⬆ Boosts' }, { id: 'muts', label: '🧬 Mutations' }, { id: 'formulas', label: '📐 Formulas' },
+  { id: 'boosts', label: '⬆ Boosts' }, { id: 'muts', label: '🧬 Mutations' },
+  { id: 'music', label: '🎵 Tracks' }, { id: 'formulas', label: '📐 Formulas' },
 ];
 let devTab = 'enemies';
 function openDev() { hideAllOverlays(); buildDevTabs(); buildDev(); showOverlay('dev-modal'); }
@@ -5150,6 +5236,16 @@ function buildDev() {
       <tr><td>❄️ <b>Cytolysis (Shatter)</b></td><td class="dev-note">Slowed (acid pools / slime / freeze) + a Critical hit</td><td class="dev-note">+60% damage on that hit; the cell wall shatters.</td></tr>
       <tr><td>🩸 <b>Hemorrhage</b></td><td class="dev-note">Bleeding (Cilia Whips Lv8) cell dies</td><td class="dev-note">Bursts and spreads the bleed to nearby cells — chains through packs.</td></tr>
       </table></div>`;
+  } else if (devTab === 'music') {
+    h += `<div class="dev-sect"><h3>Soundtrack — ${MUSIC_TRACKS.length} procedural loops, rendered live by the synth engine</h3>
+      <table class="dev-table"><tr><th>#</th><th>Track</th><th>BPM</th><th>Drum feel</th><th>Bass / Arp / Lead</th><th>Lead notes</th><th>Role</th></tr>`;
+    MUSIC_TRACKS.forEach((t, i) => {
+      const role = i === Music.bossTrack ? '👑 Boss theme' : 'Run rotation';
+      h += `<tr><td class="num">${i + 1}</td><td>🎵 <b>${t.name}</b></td><td class="num">${t.bpm}</td><td>${t.feel || 'four'}</td>
+        <td class="dev-note">${t.bassWave || 'square'} / ${t.arpWave || 'triangle'} / ${t.leadWave || 'square'}</td>
+        <td class="num">${t.lead.length}</td><td class="dev-note">${role}</td></tr>`;
+    });
+    h += `</table><p class="dev-note" style="margin-top:8px">Each is a 64-step (4-bar) loop — bass + bubbly arp + drum groove + a pentatonic lead. A fresh track is auto-picked every run (never repeating the last); press <b>N</b> mid-run or use the pause menu's Music tab to switch. <b>Apex Bloom</b> hot-swaps in for boss fights and restores the prior track on victory.</p></div>`;
   } else {
     h += `<div class="dev-sect"><h3>Core formulas</h3><table class="dev-table"><tr><th>System</th><th>Formula</th></tr>
       <tr><td>XP to next level</td><td class="num">round(10·N^1.6 + 25)</td></tr>

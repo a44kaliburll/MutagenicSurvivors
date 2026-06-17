@@ -1,0 +1,2 @@
+# Capacitor webDir. The game (../../index.html) is copied in here as index.html
+# at build time by the Android CI workflow (and by `npm run stage` locally).
