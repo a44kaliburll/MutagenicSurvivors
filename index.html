@@ -439,7 +439,7 @@
     <div class="hint">
       Move: <span class="kbd">W</span><span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>
       / <span class="kbd">Arrows</span> / Mouse-hold · Weapons fire automatically<br/>
-      Pause: <span class="kbd">Esc</span> (full stats &amp; arsenal) · Quick stats peek: <span class="kbd">Tab</span> · Reroll: <span class="kbd">R</span> · Map: <span class="kbd">M</span><br/>
+      Pause: <span class="kbd">Esc</span> (full stats &amp; arsenal) · Quick stats peek: <span class="kbd">Tab</span> · Reroll: <span class="kbd">R</span> · Map: <span class="kbd">M</span> · Music track: <span class="kbd">N</span><br/>
       🎮 Controller: Left stick / D-pad move · <span class="kbd">A</span> select · <span class="kbd">B</span> back · <span class="kbd">X</span> reroll · <span class="kbd">LB</span> stats · <span class="kbd">Start</span> pause
     </div>
     <div class="credit">Educational survivors prototype · Canvas2D · single-file</div>
@@ -1591,17 +1591,77 @@ function sfx(name) { Sound.play(name); }
  *  the square waves never get harsh. Zero audio files — all synthesised.     *
  * ======================================================================== */
 function mtof(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+/* ======================================================================== *
+ *  SECTION 8b — PROCEDURAL MUSIC LIBRARY                                     *
+ *  Each track is a 64-step (4-bar × 16th) loop the synth engine renders live:*
+ *    roots  — bass note per bar (MIDI, oct 2-3)                              *
+ *    triads — 3 chord tones per bar feeding the bubbly arp (oct 3-4)         *
+ *    lead   — [stepInLoop, midi, dur16ths] melody events                     *
+ *    feel   — drum groove ('four' classic · 'drive' busy · 'half' mellow ·   *
+ *             'funk' syncopated) · waves tint the timbre per track.          *
+ *  All leads stay in their key's pentatonic so any track sounds consonant.   *
+ * ======================================================================== */
+const MUSIC_TRACKS = [
+  { name: 'Primordial Soup', bpm: 134, feel: 'four', bassWave: 'square', arpWave: 'triangle', leadWave: 'square',
+    roots: [45, 41, 48, 43],                                   // Am F C G
+    triads: [[57, 60, 64], [53, 57, 60], [60, 64, 67], [55, 59, 62]],
+    lead: [
+      [0, 69, 2], [2, 72, 1], [3, 71, 1], [4, 69, 2], [8, 67, 2], [11, 69, 1], [12, 72, 2], [14, 74, 2],
+      [16, 65, 2], [19, 69, 1], [20, 72, 2], [24, 71, 2], [27, 69, 1], [28, 65, 2],
+      [32, 72, 2], [35, 76, 1], [36, 79, 2], [40, 76, 2], [43, 72, 1], [44, 74, 2],
+      [48, 67, 2], [50, 71, 1], [51, 74, 1], [52, 79, 3], [56, 74, 2], [59, 71, 1], [60, 69, 4],
+    ] },
+  { name: 'Mitotic Drive', bpm: 150, feel: 'drive', bassWave: 'square', arpWave: 'triangle', leadWave: 'square',
+    roots: [40, 48, 43, 50],                                   // Em C G D — driving
+    triads: [[52, 55, 59], [48, 52, 55], [55, 59, 62], [50, 54, 57]],
+    lead: [
+      [0, 76, 2], [2, 74, 2], [4, 71, 2], [6, 74, 1], [7, 76, 1], [8, 79, 2], [11, 76, 1], [12, 74, 2], [14, 71, 2],
+      [16, 74, 2], [18, 76, 1], [19, 79, 1], [20, 81, 2], [24, 79, 2], [27, 76, 1], [28, 74, 2],
+      [32, 79, 2], [34, 76, 2], [36, 74, 2], [40, 71, 2], [43, 74, 1], [44, 76, 2],
+      [48, 74, 2], [50, 71, 1], [51, 69, 1], [52, 67, 3], [56, 71, 2], [59, 74, 1], [60, 76, 4],
+    ] },
+  { name: 'Deep Vesicle', bpm: 110, feel: 'half', bassWave: 'triangle', arpWave: 'sine', leadWave: 'triangle',
+    roots: [38, 46, 41, 48],                                   // Dm Bb F C — mellow / hypnotic
+    triads: [[50, 53, 57], [46, 50, 53], [53, 57, 60], [48, 52, 55]],
+    lead: [
+      [0, 74, 4], [4, 72, 4], [8, 69, 4], [12, 72, 2], [14, 74, 2],
+      [16, 77, 4], [20, 74, 4], [24, 72, 3], [28, 69, 3],
+      [32, 72, 4], [36, 69, 4], [40, 67, 4], [44, 69, 2], [46, 72, 2],
+      [48, 74, 6], [56, 72, 4], [60, 69, 4],
+    ] },
+  { name: 'Cytoplasmic Rush', bpm: 142, feel: 'drive', bassWave: 'square', arpWave: 'triangle', leadWave: 'square',
+    roots: [36, 44, 39, 46],                                   // Cm Ab Eb Bb — energetic arp
+    triads: [[48, 51, 55], [44, 48, 51], [51, 55, 58], [46, 50, 53]],
+    lead: [
+      [0, 79, 1], [1, 75, 1], [2, 72, 2], [4, 75, 1], [5, 77, 1], [6, 79, 2], [8, 82, 2], [10, 79, 1], [11, 77, 1], [12, 75, 2], [14, 72, 2],
+      [16, 77, 1], [17, 75, 1], [18, 72, 2], [20, 75, 1], [21, 77, 1], [22, 79, 2], [24, 75, 2], [27, 72, 1], [28, 70, 2],
+      [32, 79, 1], [33, 82, 1], [34, 84, 2], [36, 82, 1], [37, 79, 1], [38, 77, 2], [40, 75, 2], [43, 79, 1], [44, 82, 2],
+      [48, 82, 2], [50, 79, 1], [51, 77, 1], [52, 75, 3], [56, 77, 2], [59, 75, 1], [60, 72, 4],
+    ] },
+  { name: 'Plasmid Funk', bpm: 124, feel: 'funk', bassWave: 'square', arpWave: 'triangle', leadWave: 'square',
+    roots: [43, 39, 46, 41],                                   // Gm Eb Bb F — groovy
+    triads: [[55, 58, 62], [51, 55, 58], [46, 50, 53], [53, 57, 60]],
+    lead: [
+      [0, 79, 1], [2, 77, 1], [3, 74, 2], [6, 77, 1], [7, 79, 1], [8, 74, 2], [11, 72, 1], [12, 70, 2], [15, 74, 1],
+      [16, 74, 1], [18, 72, 1], [19, 70, 2], [22, 72, 1], [23, 74, 1], [24, 77, 2], [27, 74, 1], [28, 72, 2],
+      [32, 82, 1], [34, 79, 1], [35, 77, 2], [38, 79, 1], [39, 82, 1], [40, 79, 2], [43, 77, 1], [44, 74, 2],
+      [48, 77, 1], [50, 74, 1], [51, 72, 2], [54, 74, 1], [55, 77, 1], [56, 79, 3], [60, 74, 4],
+    ] },
+  { name: 'Apex Bloom', bpm: 158, feel: 'drive', bassWave: 'square', arpWave: 'square', leadWave: 'square',
+    roots: [45, 41, 38, 40],                                   // Am F Dm E — intense (boss theme)
+    triads: [[57, 60, 64], [53, 57, 60], [50, 53, 57], [52, 56, 59]],
+    lead: [
+      [0, 81, 1], [1, 80, 1], [2, 77, 1], [3, 76, 2], [6, 77, 1], [7, 80, 1], [8, 81, 2], [11, 76, 1], [12, 74, 2], [14, 72, 2],
+      [16, 77, 1], [17, 76, 1], [18, 72, 2], [20, 74, 1], [21, 77, 1], [22, 81, 2], [24, 80, 2], [27, 77, 1], [28, 76, 2],
+      [32, 76, 1], [33, 74, 1], [34, 72, 2], [36, 74, 1], [37, 76, 1], [38, 77, 2], [40, 80, 2], [43, 81, 1], [44, 83, 2],
+      [48, 81, 2], [50, 80, 1], [51, 77, 1], [52, 76, 3], [56, 80, 2], [59, 77, 1], [60, 69, 4],
+    ] },
+];
 const Music = {
   on: true, vol: 0.5, gain: null, lp: null, timer: null, playing: false,
   step: 0, nextTime: 0, bpm: 134, schedAhead: 0.18, intensity: 0, _leadAt: null,
-  roots: [45, 41, 48, 43],                                   // Am F C G bass roots (oct 2-3)
-  triads: [[57, 60, 64], [53, 57, 60], [60, 64, 67], [55, 59, 62]],   // chord tones (oct 4)
-  lead: [                                                     // [stepInLoop, midi, dur16ths] — A-minor pentatonic riff
-    [0, 69, 2], [2, 72, 1], [3, 71, 1], [4, 69, 2], [8, 67, 2], [11, 69, 1], [12, 72, 2], [14, 74, 2],
-    [16, 65, 2], [19, 69, 1], [20, 72, 2], [24, 71, 2], [27, 69, 1], [28, 65, 2],
-    [32, 72, 2], [35, 76, 1], [36, 79, 2], [40, 76, 2], [43, 72, 1], [44, 74, 2],
-    [48, 67, 2], [50, 71, 1], [51, 74, 1], [52, 79, 3], [56, 74, 2], [59, 71, 1], [60, 69, 4],
-  ],
+  tracks: MUSIC_TRACKS, trackIndex: 0, bossTrack: 5, _restoreTrack: null,
+  get cur() { return this.tracks[this.trackIndex] || this.tracks[0]; },
   init() { if (SAVE.sound && typeof SAVE.sound.music === 'boolean') this.on = SAVE.sound.music; },
   _save() { SAVE.sound = Object.assign({ on: Sound.on, vol: Sound.vol }, SAVE.sound, { music: this.on }); commitSave(); },
   _bus() {
@@ -1609,7 +1669,7 @@ const Music = {
     this.lp = c.createBiquadFilter(); this.lp.type = 'lowpass'; this.lp.frequency.value = 3600; this.lp.Q.value = 0.4;
     this.gain = c.createGain(); this.gain.gain.value = this.vol;
     this.gain.connect(this.lp); this.lp.connect(Sound.master);
-    this._leadAt = {}; for (const e of this.lead) this._leadAt[e[0]] = [e[1], e[2]];
+    this.setTrack(this.trackIndex);
   },
   voice(midi, dur, type, peak, time, detune) {
     const c = Sound.ctx; if (!c) return;
@@ -1635,23 +1695,39 @@ const Music = {
     }
   },
   _tick(s, time) {
-    const bar = (s / 16) | 0, b = s % 16, six = (60 / this.bpm) / 4;
-    const root = this.roots[bar], triad = this.triads[bar];
+    const t = this.cur, bar = (s / 16) | 0, b = s % 16, six = (60 / this.bpm) / 4;
+    const root = t.roots[bar], triad = t.triads[bar], feel = t.feel || 'four';
+    const bassW = t.bassWave || 'square', arpW = t.arpWave || 'triangle', leadW = t.leadWave || 'square';
+    const bassW2 = bassW === 'square' ? 'triangle' : bassW;
     // bass — syncopated root/fifth
-    if (b === 0 || b === 6) this.voice(root, six * 2.2, 'square', 0.16, time, 4);
-    else if (b === 8) this.voice(root + 7, six * 1.6, 'square', 0.14, time);
-    else if (b === 10 || b === 14) this.voice(root + (b === 14 ? 12 : 0), six * 1.4, 'triangle', 0.12, time);
-    // arp — bubbly triangle every 16th
-    this.voice(triad[b % 3] + (b % 6 < 3 ? 0 : 12), six * 0.9, 'triangle', 0.05, time);
-    // drums
-    if (b === 0 || b === 8) this.drum('kick', time);
-    if (b === 4 || b === 12) this.drum('snare', time);
-    if (b % 2 === 0) this.drum('hat', time);
+    if (b === 0 || b === 6) this.voice(root, six * 2.2, bassW, 0.16, time, 4);
+    else if (b === 8) this.voice(root + 7, six * 1.6, bassW, 0.14, time);
+    else if (b === 10 || b === 14) this.voice(root + (b === 14 ? 12 : 0), six * 1.4, bassW2, 0.12, time);
+    // arp — bubbly every 16th
+    this.voice(triad[b % 3] + (b % 6 < 3 ? 0 : 12), six * 0.9, arpW, 0.05, time);
+    // drums — per-track groove
+    if (feel === 'half') {
+      if (b === 0) this.drum('kick', time);
+      if (b === 8) this.drum('snare', time);
+      if (b % 4 === 2) this.drum('hat', time);
+    } else if (feel === 'drive') {
+      if (b % 4 === 0) this.drum('kick', time);
+      if (b === 4 || b === 12) this.drum('snare', time);
+      this.drum('hat', time);                              // hats on every 16th
+    } else if (feel === 'funk') {
+      if (b === 0 || b === 6 || b === 10) this.drum('kick', time);
+      if (b === 4 || b === 12) this.drum('snare', time);
+      if (b % 2 === 0 || b === 7 || b === 15) this.drum('hat', time);
+    } else {                                                // 'four' — the classic groove
+      if (b === 0 || b === 8) this.drum('kick', time);
+      if (b === 4 || b === 12) this.drum('snare', time);
+      if (b % 2 === 0) this.drum('hat', time);
+    }
     if (this.intensity > 0) { if (b % 2 === 1) this.drum('hat', time); if (b === 4 || b === 12) this.drum('kick', time); }
     // lead melody
     const ld = this._leadAt[s];
-    if (ld) { this.voice(ld[0], six * ld[1] * 0.95, 'square', this.intensity > 0 ? 0.15 : 0.1, time, 6);
-      if (this.intensity > 0) this.voice(ld[0] + 12, six * ld[1] * 0.9, 'square', 0.05, time, -6); }
+    if (ld) { this.voice(ld[0], six * ld[1] * 0.95, leadW, this.intensity > 0 ? 0.15 : 0.1, time, 6);
+      if (this.intensity > 0) this.voice(ld[0] + 12, six * ld[1] * 0.9, leadW, 0.05, time, -6); }
   },
   _scheduler() {
     const c = Sound.ctx; if (!c || !this.playing) return;
@@ -1669,6 +1745,22 @@ const Music = {
   },
   stop() { this.playing = false; if (this.timer) { clearInterval(this.timer); this.timer = null; } },
   setIntensity(n) { this.intensity = n; },
+  /* Swap the active loop. _leadAt is rebuilt and the tempo follows the track. */
+  setTrack(i) {
+    this.trackIndex = ((i % this.tracks.length) + this.tracks.length) % this.tracks.length;
+    const t = this.cur; this.bpm = t.bpm;
+    this._leadAt = {}; for (const e of t.lead) this._leadAt[e[0]] = [e[1], e[2]];
+  },
+  /* Pick a fresh track for a new run (avoids repeating the last one). */
+  randomTrack() {
+    if (this.tracks.length < 2) { this.setTrack(0); return; }
+    let i = this.trackIndex; while (i === this.trackIndex) i = (Math.random() * this.tracks.length) | 0;
+    this.setTrack(i);
+  },
+  nextTrack() { this.setTrack(this.trackIndex + 1); return this.cur.name; },
+  /* Boss theme: hot-swap to Apex Bloom for the fight, restore on victory. */
+  beginBoss() { this.setIntensity(1); if (this._restoreTrack == null && this.trackIndex !== this.bossTrack) { this._restoreTrack = this.trackIndex; this.setTrack(this.bossTrack); } },
+  endBoss() { this.setIntensity(0); if (this._restoreTrack != null) { this.setTrack(this._restoreTrack); this._restoreTrack = null; } },
   toggle() {
     this.on = !this.on; this._save();
     if (!this.on) this.stop();
@@ -2449,7 +2541,7 @@ function triggerExtinctionEvent(endless = false) {
   game.director.weight = 0;
   const hpMul = endless ? (1 + game.director.endlessWave * 0.6) : 1;
   const boss = spawnEnemy('macrophage', game.player.x, game.player.y - camHalfDiag() - 120, { hpMul });
-  game.boss = boss; game.bossSpawned = true; Music.setIntensity(1);
+  game.boss = boss; game.bossSpawned = true; Music.beginBoss();
   bigBanner(endless ? `WAVE ${game.director.endlessWave} · MACROPHAGE SENTINEL` : 'EXTINCTION EVENT — MACROPHAGE SENTINEL');
   game.shake = 24; game.flash = 0.4; game.flashColor = 'rgba(255,40,40,'; sfx('boss');
 }
@@ -2472,7 +2564,7 @@ function onBossDefeated(e) {
   for (let i = 0; i < 6; i++) spawnPickup('coin', e.x + rand(-40, 40), e.y + rand(-40, 40), 30);
   spawnPickup('chest', e.x, e.y, 1);
   for (let i = 0; i < 3; i++) spawnPickup('power', e.x + rand(-60, 60), e.y + rand(-40, 40), pickPowerType());
-  game.boss = null; Music.setIntensity(0);
+  game.boss = null; Music.endBoss();
   if (game.mode === 'timed') { game.win = true; setTimeout(() => endRun(true), 1400); }
   else { bigBanner('SENTINEL PURGED — THE SWARM RETURNS'); }
 }
@@ -4190,6 +4282,7 @@ function setupInput() {
     if (game.state === 'chest' && (k === ' ' || k === 'enter' || k === 'escape' || k === 'spacebar')) { e.preventDefault(); closeChest(); return; }
     if (k === 'escape') togglePause();
     if (k === 'm') game.showMinimap = !game.showMinimap;
+    if (k === 'n' && game.state === 'running') toast('🎵 ' + Music.nextTrack(), 1.8);   // cycle music track
     if (k === 'tab') { e.preventDefault(); toggleStatsOverlay(); }
     if (k === 'r' && game.state === 'levelup') doReroll();
     if (game.state === 'levelup' && k >= '1' && k <= '4') { const idx = +k - 1; const cards = document.querySelectorAll('#levelup-cards .card'); if (cards[idx]) cards[idx].click(); }
@@ -4596,7 +4689,8 @@ function startRun(mode) {
   hideAllOverlays(); $('banner').innerHTML = ''; setHud(true);
   bigBanner(mode === 'timed' ? 'INCUBATION BEGINS — SURVIVE 20:00' : 'ENDLESS INCUBATION — HOW LONG CAN YOU LAST?', 2.6);
   toast(ch.icon + ' ' + ch.name + ' · opens with ' + WEAPON_BY_ID[ch.weapon].name, 2.6);
-  Music.setIntensity(0); Music.start();
+  Music.setIntensity(0); Music.randomTrack(); Music.start();
+  setTimeout(() => { if (game.state === 'running') toast('🎵 ' + Music.cur.name, 2.2); }, 2900);
 }
 function resumeRun() { if (game.player && game.player.hp > 0) { game.state = 'running'; hideOverlay('pause-modal'); } }
 const PAUSE_TABS = [{ id: 'stats', label: '📊 Stats' }, { id: 'arsenal', label: '🧬 Arsenal' }];
@@ -4816,7 +4910,8 @@ function resumeSavedRun() {
   _autosaveT = 0;
   bigBanner('RUN RESUMED — ' + fmtTime(game.time) + ' · LEVEL ' + p.level, 2.4);
   if (snap.boss) toast('Macrophage Sentinel re-engaged', 2.2);
-  Music.setIntensity(snap.boss ? 1 : 0); Music.start();
+  Music.randomTrack(); if (snap.boss) Music.beginBoss(); else Music.setIntensity(0);
+  Music.start();
   if (game.pendingLevelUps > 0) setTimeout(openLevelUp, 220);
 }
 
