@@ -886,6 +886,60 @@ const WEAPONS = [
       if (L >= 8) { s.radius += 40; s.slow = 0.50; s.knockback = 90; }
       return s;
     }
+  },
+  {
+    id: 'evodart', name: 'Evo Darts', icon: '🧬', color: '#9dff5f', type: 'weapon',
+    maxLevel: 8, evoPassive: null,            // self-evolving venom darts
+    desc: 'Fires self-improving venom darts at the nearest microbes. Each evolution sharpens the toxin — bleed, pierce, then a crippling slow.',
+    fact: 'Evolution is relentless tinkering: tiny heritable changes, filtered by survival, compound over generations into ever-deadlier adaptations.',
+    levelText: [
+      '2 darts · 14 dmg · homing · venom (bleed) · 1.0s cd',
+      '+1 dart',
+      '+5 damage · pierce 1',
+      'venom evolves: stronger bleed · sharper homing',
+      '+2 darts (5 total)',
+      'pierce 2 · −0.2s cooldown',
+      '+8 damage',
+      'apex venom: deep bleed + 30% slow on hit'
+    ],
+    getStats(L) {
+      const s = { count: 2, damage: 14, cooldown: 1.0, speed: 560, pierce: 0, homing: 0.06, bleedPct: 0.25, bleedDur: 2.0, slow: 0 };
+      if (L >= 2) { s.count += 1; }
+      if (L >= 3) { s.damage += 5; s.pierce = 1; }
+      if (L >= 4) { s.bleedPct = 0.35; s.bleedDur = 2.5; s.homing = 0.10; }
+      if (L >= 5) { s.count += 2; }
+      if (L >= 6) { s.pierce = 2; s.cooldown -= 0.2; }
+      if (L >= 7) { s.damage += 8; }
+      if (L >= 8) { s.bleedPct = 0.50; s.bleedDur = 3.5; s.slow = 0.30; }
+      return s;
+    }
+  },
+  {
+    id: 'mucus', name: 'Mucilage Aura', icon: '🕸️', color: '#b07bff', type: 'weapon',
+    maxLevel: 8, evoPassive: null,            // sustained crowd-control slow — no Apex
+    desc: 'Secretes a halo of sticky biofilm. Enemies caught inside are heavily slowed and slowly dissolve — pure crowd control.',
+    fact: 'Microbes build biofilms from extracellular slime (EPS) — sticky polymer matrices that trap, shield, and bog down everything that enters.',
+    levelText: [
+      '110px halo · slows 35% · light damage',
+      '+30px radius',
+      'slow 45%',
+      '+damage',
+      '+35px radius',
+      'slow 55%',
+      '+damage',
+      'huge radius · slow 70%'
+    ],
+    getStats(L) {
+      const s = { radius: 110, slow: 0.35, damage: 2, cooldown: 0.3 };
+      if (L >= 2) { s.radius += 30; }
+      if (L >= 3) { s.slow = 0.45; }
+      if (L >= 4) { s.damage += 2; }
+      if (L >= 5) { s.radius += 35; }
+      if (L >= 6) { s.slow = 0.55; }
+      if (L >= 7) { s.damage += 3; }
+      if (L >= 8) { s.radius += 45; s.slow = 0.70; }
+      return s;
+    }
   }
 ];
 const WEAPON_BY_ID = Object.fromEntries(WEAPONS.map(w => [w.id, w]));
@@ -926,6 +980,41 @@ const PASSIVES = [
     tierText: t => `+${(t * 20)}% pickup radius` }
 ];
 const PASSIVE_BY_ID = Object.fromEntries(PASSIVES.map(p => [p.id, p]));
+
+/* ======================================================================== *
+ *  SECTION 3a — ARMORY: S–D POWER TIERS + ACHIEVEMENT UNLOCKS                *
+ *  Every weapon & organelle carries a power tier (S best → D filler) and an  *
+ *  unlock milestone. Basics are { always:true }; the rest are earned through  *
+ *  lifetime play. Playing a cell line also permanently unlocks the gear it    *
+ *  wields (handled in startRun), so the headline locks are the advanced kit.  *
+ * ======================================================================== */
+const TIER_COLORS = { S: '#ff6db3', A: '#ffd166', B: '#6dff8a', C: '#5fc8ff', D: '#9aa7b3' };
+function tierBadge(t) {
+  const c = TIER_COLORS[t] || '#9aa7b3';
+  return `<span style="display:inline-block;min-width:16px;text-align:center;padding:1px 5px;border-radius:5px;background:${c}22;color:${c};border:1px solid ${c}66;font-weight:800;font-size:11px;letter-spacing:.5px;margin-left:6px">${t}</span>`;
+}
+const WEAPON_META = {
+  trichocyst: { tier: 'C', unlock: { always: true } },
+  cilia:      { tier: 'B', unlock: { always: true } },
+  phage:      { tier: 'A', unlock: { stat: 'totalKills', value: 400,  hint: 'Defeat 400 microbes (lifetime).' } },
+  vacuole:    { tier: 'A', unlock: { stat: 'bestLevel',  value: 8,    hint: 'Reach Level 8 in a single run.' } },
+  spore:      { tier: 'B', unlock: { stat: 'totalKills', value: 1000, hint: 'Defeat 1,000 microbes (lifetime).' } },
+  flagella:   { tier: 'C', unlock: { stat: 'bestTime',   value: 180,  hint: 'Survive 3:00 in a single run.' } },
+  field:      { tier: 'B', unlock: { stat: 'bestTime',   value: 600,  hint: 'Survive 10:00 in a single run.' } },
+  mitosis:    { tier: 'A', unlock: { stat: 'bossKills',  value: 1,    hint: 'Defeat the Macrophage Sentinel.' } },
+  mucus:      { tier: 'B', unlock: { stat: 'bestTime',   value: 420,  hint: 'Survive 7:00 in a single run.' } },
+  evodart:    { tier: 'S', unlock: { stat: 'bestLevel',  value: 12,   hint: 'Reach Level 12 in a single run.' } },
+};
+const PASSIVE_META = {
+  atp:   { tier: 'S', unlock: { always: true } },
+  mito:  { tier: 'A', unlock: { always: true } },
+  phyto: { tier: 'D', unlock: { always: true } },
+  ribo:  { tier: 'S', unlock: { stat: 'totalKills', value: 500, hint: 'Defeat 500 microbes (lifetime).' } },
+  cyto:  { tier: 'A', unlock: { stat: 'bestLevel',  value: 6,   hint: 'Reach Level 6 in a single run.' } },
+  golgi: { tier: 'C', unlock: { stat: 'bestTime',   value: 120, hint: 'Survive 2:00 in a single run.' } },
+};
+function weaponTier(id)  { return (WEAPON_META[id]  || {}).tier || 'C'; }
+function passiveTier(id) { return (PASSIVE_META[id] || {}).tier || 'C'; }
 
 /* ======================================================================== *
  *  SECTION 3b — SECONDARY PASSIVES ("ADAPTATIONS")                           *
@@ -1122,23 +1211,31 @@ const CHAR_VIZ = {
 };
 function charViz() { return CHAR_VIZ[game.character] || CHAR_VIZ.paramecium; }
 
-/* A cell line is playable once its milestone is met (or already recorded). */
-function charUnlocked(c) {
-  if (!c) return false;
-  if (SAVE.chars[c.id]) return true;
-  const u = c.unlock || {};
-  if (u.always) return true;
-  if (u.stat === 'bestTime')   return (SAVE.best.time || 0) >= u.value;
+/* Has a lifetime/best-run milestone been reached? Shared by every unlock. */
+function milestoneMet(u) {
+  if (!u || u.always) return true;
+  if (u.stat === 'bestTime')    return (SAVE.best.time || 0) >= u.value;
   if (u.stat === 'bestEndless') return (SAVE.best.endless || 0) >= u.value;
-  if (u.stat === 'bestLevel')  return (SAVE.best.level || 0) >= u.value;
-  if (u.stat === 'totalKills') return (SAVE.stats.totalKills || 0) >= u.value;
-  if (u.stat === 'bossKills')  return (SAVE.stats.bossKills || 0) >= u.value;
+  if (u.stat === 'bestLevel')   return (SAVE.best.level || 0) >= u.value;
+  if (u.stat === 'totalKills')  return (SAVE.stats.totalKills || 0) >= u.value;
+  if (u.stat === 'bossKills')   return (SAVE.stats.bossKills || 0) >= u.value;
+  if (u.stat === 'runs')        return (SAVE.stats.runs || 0) >= u.value;
   return false;
 }
-/* Promote any freshly-earned cell lines into the save; return the new ones. */
+/* A cell line is playable once its milestone is met (or already recorded). */
+function charUnlocked(c) { return !!c && (!!SAVE.chars[c.id] || milestoneMet(c.unlock)); }
+/* Weapons & organelles unlock the same way; playing their cell line also frees  *
+ * them (recorded into SAVE.weapons/passives by startRun).                       */
+function weaponUnlocked(id)  { return !!(SAVE.weapons  && SAVE.weapons[id])  || milestoneMet((WEAPON_META[id]  || {}).unlock); }
+function passiveUnlocked(id) { return !!(SAVE.passives && SAVE.passives[id]) || milestoneMet((PASSIVE_META[id] || {}).unlock); }
+/* Promote any freshly-earned cell lines / gear into the save; return the new    *
+ * ones as {kind, icon, name} so the game-over screen can announce them.         */
 function evaluateUnlocks() {
   const newly = [];
-  for (const c of CHARACTERS) if (!SAVE.chars[c.id] && charUnlocked(c)) { SAVE.chars[c.id] = true; newly.push(c); }
+  SAVE.weapons = SAVE.weapons || {}; SAVE.passives = SAVE.passives || {};
+  for (const c of CHARACTERS) if (!SAVE.chars[c.id] && charUnlocked(c)) { SAVE.chars[c.id] = true; newly.push({ id: c.id, kind: 'cell line', icon: c.icon, name: c.name }); }
+  for (const w of WEAPONS)  if (!SAVE.weapons[w.id]  && weaponUnlocked(w.id))  { SAVE.weapons[w.id]  = true; newly.push({ id: w.id, kind: 'weapon',    icon: w.icon, name: w.name }); }
+  for (const pa of PASSIVES) if (!SAVE.passives[pa.id] && passiveUnlocked(pa.id)) { SAVE.passives[pa.id] = true; newly.push({ id: pa.id, kind: 'organelle', icon: pa.icon, name: pa.name }); }
   if (newly.length) commitSave();
   return newly;
 }
@@ -1358,6 +1455,8 @@ const DEFAULT_SAVE = () => ({
   best: { time: 0, kills: 0, level: 0, endless: 0 },
   stats: { totalKills: 0, runs: 0, bossKills: 0 },  // lifetime metrics (drive char unlocks)
   chars: { paramecium: true },                      // unlocked cell lines
+  weapons: {},                                      // achievement-unlocked weapons (id -> true)
+  passives: {},                                     // achievement-unlocked organelles (id -> true)
   lastChar: 'paramecium',                           // last picked cell
   sound: { on: true, vol: 0.6, music: true },       // audio preferences
   suspended: null           // snapshot of an in-progress run (for "Continue Run")
@@ -2555,6 +2654,28 @@ const FIRE = {
     const radius = s.radius * p.mult.area;
     p._fieldR = radius; p._fieldSlow = s.slow;              // stash for the renderer
     dealRadius(p.x, p.y, radius, s.damage, { slow: s.slow, knockback: s.knockback, silent: true });
+  },
+  evodart(w, s, p) {                                        // self-evolving venom darts (nearest-target)
+    const count = s.count + mut('multishot');
+    const splitHitN = mut('splitHit'), splitEndN = mut('splitEnd');
+    const rad = 6 * (1 + 0.12 * mut('giant'));
+    for (let i = 0; i < count; i++) {
+      const t = nearestEnemy(p.x, p.y, 1100) || randomEnemyOnScreen();
+      const ang = t ? angTo(p.x, p.y, t.x, t.y) + (i ? rand(-0.18, 0.18) : 0) : rand(0, TAU);
+      const spd = s.speed * p.mult.projSpeed;
+      fireProjectile({
+        kind: 'dart', x: p.x, y: p.y, dx: Math.cos(ang) * spd, dy: Math.sin(ang) * spd,
+        r: rad, life: 1.5 * p.mult.projDur, spr: SPR.dart, color: '#9dff5f',
+        damage: s.damage, pierce: s.pierce, homing: s.homing, speed: spd, hitSet: new Set(),
+        bleedPct: s.bleedPct, bleedDur: s.bleedDur, bleedBase: s.damage, slow: s.slow,
+        canSplit: true, splitHitN, splitEndN
+      });
+    }
+  },
+  mucus(w, s, p) {                                          // sustained crowd-control slow halo
+    const radius = s.radius * p.mult.area;
+    p._mucusR = radius; p._mucusSlow = s.slow;              // stash for the renderer
+    dealRadius(p.x, p.y, radius, s.damage, { slow: s.slow, silent: true });
   }
 };
 
@@ -2590,6 +2711,7 @@ function fireProjectile(o) {
   const b = projPool.obtain();
   Object.assign(b, { kind: 'dart', x: 0, y: 0, dx: 0, dy: 0, r: 6, life: 1.5, spr: null, color: '#fff',
     damage: 0, pierce: 0, homing: 0, speed: 0, drag: 0, paralyze: 0, bounce: 0, charm: 0,
+    bleedPct: 0, bleedDur: 0, bleedBase: 0, slow: 0,
     hostile: false, onHit: null, onExpire: null, hitSet: null, spin: 0, rot: 0,
     canSplit: false, splitHitN: 0, splitEndN: 0, isFragment: false, _reflected: false }, o);
   game.projectiles.push(b);
@@ -2666,7 +2788,8 @@ function updateProjectiles(dt) {
         if (b.onHit) { consumed = b.onHit(b, e); }
         else {
           const { dmg, crit } = computeDamage(b.damage);
-          damageEnemy(e, dmg, { crit, angle: b.rot, knockback: b.knockback || 70, fromX: b.x, fromY: b.y, paralyze: b.paralyze });
+          damageEnemy(e, dmg, { crit, angle: b.rot, knockback: b.knockback || 70, fromX: b.x, fromY: b.y, paralyze: b.paralyze,
+            bleedPct: b.bleedPct, bleedDur: b.bleedDur, bleedBase: b.bleedBase, slow: b.slow });
           if (b.charm) charmEnemy(e, b.charm);
         }
         if (b.hitSet) b.hitSet.add(e);
@@ -3632,6 +3755,17 @@ function drawPlayer(t) {
     ctx.setLineDash([10, 8]); ctx.lineDashOffset = -t * 24; ctx.beginPath(); ctx.arc(0, 0, fr, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
     ctx.restore();
   }
+  // Mucilage Aura — a sticky biofilm halo (slimier, slower-pulsing than the Field)
+  if (p._mucusR && p.weapons.some(w => w.id === 'mucus')) {
+    const mr = p._mucusR * (1 + 0.015 * Math.sin(t * 2.2));
+    ctx.save(); ctx.translate(p.x, p.y);
+    const mg = ctx.createRadialGradient(0, 0, mr * 0.3, 0, 0, mr);
+    mg.addColorStop(0, 'rgba(176,123,255,0.03)'); mg.addColorStop(0.75, 'rgba(150,100,235,0.10)'); mg.addColorStop(1, 'rgba(190,140,255,0.20)');
+    ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(0, 0, mr, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 0.45; ctx.strokeStyle = 'rgba(200,160,255,0.55)'; ctx.lineWidth = 2;
+    ctx.setLineDash([4, 10]); ctx.lineDashOffset = t * 16; ctx.beginPath(); ctx.arc(0, 0, mr, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+    ctx.restore();
+  }
   ctx.save(); ctx.translate(p.x, p.y);
   const lowHp = p.hp / p.maxHp < 0.3;
   const pulse = 1 + 0.05 * Math.sin(t * (lowHp ? 14 : 5));
@@ -4268,10 +4402,10 @@ function getLevelUpChoices() {
   for (const w of p.weapons) { const def = WEAPON_BY_ID[w.id]; if (!w.apex && w.level < def.maxLevel) pool.push({ kind: 'weapon-up', id: w.id, target: w.level + 1, weight: 10 }); }
   // upgrade owned passives
   for (const id in p.passives) { const def = PASSIVE_BY_ID[id]; if (p.passives[id] < def.maxLevel) pool.push({ kind: 'passive-up', id, target: p.passives[id] + 1, weight: 9 }); }
-  // new weapons
-  if (hasWeaponSlot) for (const def of WEAPONS) if (!p.weapons.find(w => w.id === def.id)) pool.push({ kind: 'weapon-new', id: def.id, target: 1, weight: 7 });
-  // new passives
-  if (hasPassiveSlot) for (const def of PASSIVES) if (!(def.id in p.passives)) pool.push({ kind: 'passive-new', id: def.id, target: 1, weight: 6 });
+  // new weapons (only those unlocked via achievements / cell-line play)
+  if (hasWeaponSlot) for (const def of WEAPONS) if (!p.weapons.find(w => w.id === def.id) && weaponUnlocked(def.id)) pool.push({ kind: 'weapon-new', id: def.id, target: 1, weight: 7 });
+  // new passives (likewise gated)
+  if (hasPassiveSlot) for (const def of PASSIVES) if (!(def.id in p.passives) && passiveUnlocked(def.id)) pool.push({ kind: 'passive-new', id: def.id, target: 1, weight: 6 });
   // secondary adaptations (always offerable, stack to max — they don't use a slot)
   for (const def of ADAPTATIONS) { const cur = p.adaptations[def.id] || 0; if (cur < def.max) pool.push({ kind: cur ? 'adapt-up' : 'adapt-new', id: def.id, target: cur + 1, weight: cur ? 6 : 5 }); }
   // fallbacks — LUCK thins out the filler and floats in a "Lucky Mutation" card
@@ -4311,11 +4445,11 @@ function buildChoiceCard(c, i) {
   let icon, type, name, level, desc, fact, cls = 'card';
   if (c.kind === 'weapon-up' || c.kind === 'weapon-new') {
     const def = WEAPON_BY_ID[c.id]; cls += ' weapon';
-    icon = def.icon; type = 'Active Weapon'; name = def.name; level = c.kind === 'weapon-new' ? 'NEW · Lvl 1' : 'Lvl ' + c.target;
+    icon = def.icon; type = 'Active Weapon' + tierBadge(weaponTier(c.id)); name = def.name; level = c.kind === 'weapon-new' ? 'NEW · Lvl 1' : 'Lvl ' + c.target;
     desc = c.kind === 'weapon-new' ? def.desc : def.levelText[c.target - 1]; fact = def.fact;
   } else if (c.kind === 'passive-up' || c.kind === 'passive-new') {
     const def = PASSIVE_BY_ID[c.id]; cls += ' passive';
-    icon = def.icon; type = 'Passive Trait'; name = def.name; level = c.kind === 'passive-new' ? 'NEW · Tier 1' : 'Tier ' + c.target;
+    icon = def.icon; type = 'Passive Trait' + tierBadge(passiveTier(c.id)); name = def.name; level = c.kind === 'passive-new' ? 'NEW · Tier 1' : 'Tier ' + c.target;
     desc = def.tierText(c.target) + ' — ' + def.desc; fact = def.fact;
   } else if (c.kind === 'adapt-up' || c.kind === 'adapt-new') {
     const def = ADAPT_BY_ID[c.id]; cls += ' passive';
@@ -4443,8 +4577,13 @@ function startRun(mode) {
   game.rerolls = metaTier('UPG_RER');
   // Resolve the chosen cell line (fall back to the always-unlocked Paramecium).
   if (!CHAR_BY_ID[game.character] || !charUnlocked(CHAR_BY_ID[game.character])) game.character = 'paramecium';
-  SAVE.lastChar = game.character; commitSave();
+  SAVE.lastChar = game.character;
   const ch = CHAR_BY_ID[game.character];
+  // Playing a cell line permanently unlocks the gear it wields (for the pool).
+  SAVE.weapons = SAVE.weapons || {}; SAVE.passives = SAVE.passives || {};
+  SAVE.weapons[ch.weapon] = true;
+  if (ch.passiveStart) SAVE.passives[ch.passiveStart.id] = true;
+  commitSave();
   game.player = createPlayer();
   // The cell line dictates the opening weapon (and any starting organelle).
   game.player.weapons.push({ id: ch.weapon, level: ch.weaponLevel || 1, timer: 0, apex: false, apexId: null });
@@ -4569,7 +4708,7 @@ function endRun(win) {
   $('go-coins').textContent = '🪙 +' + game.coinsThisRun.toLocaleString() + ' Genetic Code  ·  Bank: ' + SAVE.coins.toLocaleString();
   const lines = [];
   if (game.questsCompletedThisRun.length) lines.push('✔ Quests: ' + game.questsCompletedThisRun.map(q => q.name).join(', '));
-  if (game._newlyUnlocked && game._newlyUnlocked.length) lines.push('🧬 New cell line unlocked: ' + game._newlyUnlocked.map(c => c.icon + ' ' + c.name).join(', '));
+  if (game._newlyUnlocked && game._newlyUnlocked.length) lines.push('🧬 Unlocked: ' + game._newlyUnlocked.map(c => c.icon + ' ' + c.name + ' (' + c.kind + ')').join(', '));
   $('go-quests').innerHTML = lines.join('<br/>');
   setHud(false); showOverlay('gameover-modal');
 }
@@ -4769,8 +4908,19 @@ function buildCodex() {
       ${unlocked && fact ? `<div class="fact">🔬 ${fact}</div>` : ''}`;
     list.appendChild(el);
   };
-  if (codexTab === 'weapons') for (const w of WEAPONS) add(w.icon, w.name, 'Active Weapon · ' + w.maxLevel + ' levels', w.desc, w.fact, !!SAVE.codex[w.id]);
-  else if (codexTab === 'passives') for (const p of PASSIVES) add(p.icon, p.name, 'Passive · ' + p.target, p.desc, p.fact, !!SAVE.codex[p.id]);
+  // Weapons & organelles double as an achievement board: tier + lock state always
+  // visible, with the unlock requirement shown for anything not yet earned.
+  const addGear = (def, tier, unlocked, kindLabel, hint) => {
+    const el = document.createElement('div'); el.className = 'codex-entry' + (unlocked ? '' : ' locked');
+    el.innerHTML = `<h4><span>${unlocked ? def.icon : '🔒'}</span> ${def.name} ${tierBadge(tier)}</h4>
+      <div class="meta">${kindLabel}${unlocked ? '' : ' · 🔒 LOCKED'}</div>
+      <p>${unlocked ? def.desc : '🔒 ' + hint}</p>
+      ${unlocked ? `<div class="fact">🔬 ${def.fact}</div>` : ''}`;
+    list.appendChild(el);
+  };
+  const hintFor = (meta) => (meta && meta.unlock && meta.unlock.hint) || 'Keep playing to unlock.';
+  if (codexTab === 'weapons') for (const w of WEAPONS) addGear(w, weaponTier(w.id), weaponUnlocked(w.id), 'Active Weapon · ' + w.maxLevel + ' levels', hintFor(WEAPON_META[w.id]));
+  else if (codexTab === 'passives') for (const p of PASSIVES) addGear(p, passiveTier(p.id), passiveUnlocked(p.id), 'Organelle · ' + p.target, hintFor(PASSIVE_META[p.id]));
   else if (codexTab === 'apex') for (const a of APEX) add(a.icon, a.name, 'Apex: ' + WEAPON_BY_ID[a.base].name + ' + ' + PASSIVE_BY_ID[a.passive].name, a.desc, a.fact, !!SAVE.codex['apex_' + a.id]);
   else if (codexTab === 'bestiary') for (const id in ENEMIES) { const e = ENEMIES[id]; add(e.icon, e.name, `Weight ${e.weight} · HP ${e.hp} · DMG ${e.damage}`, e.special, e.fact, !!SAVE.codex[id]); }
   else for (const c of CONCEPTS) add(c.icon, c.name, c.meta, c.fact, '', true);
