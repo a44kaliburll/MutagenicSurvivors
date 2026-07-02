@@ -112,6 +112,12 @@
   .xp-bar { height: 100%; width: 0%;
     background: linear-gradient(90deg, var(--bio-cyan), var(--bio-green));
     box-shadow: 0 0 12px var(--bio-cyan); transition: width 0.12s linear; }
+  /* Cellular Swarm: the toxic Mutagen meter (free-radical corruption) */
+  .mutagen-wrap { position: absolute; top: 8px; left: 0; right: 0; height: 5px; background: rgba(0,0,0,0.45); display: none; }
+  .mutagen-wrap.show { display: block; }
+  .mutagen-bar { height: 100%; width: 0%;
+    background: linear-gradient(90deg, #7a3ec8, #b07bff, #9dff5f);
+    box-shadow: 0 0 10px #b07bff; transition: width 0.12s linear; }
   .hud-chip {
     display: flex; align-items: center; gap: 7px;
     background: rgba(6, 18, 26, 0.6); border: 1px solid rgba(74, 226, 255, 0.18);
@@ -460,6 +466,7 @@
   <!-- ===== In-run HUD ===== -->
   <div id="hud">
     <div class="xp-wrap"><div class="xp-bar" id="xp-bar"></div></div>
+    <div class="mutagen-wrap" id="mutagen-wrap"><div class="mutagen-bar" id="mutagen-bar"></div></div>
     <div class="topbar">
       <div class="hud-chip" id="level-chip"><span class="ic">🧬</span><span id="level-val">Lv 1</span></div>
       <div style="flex:1; text-align:center;"><span id="timer">00:00</span></div>
@@ -1476,6 +1483,39 @@ const ENEMIES = {
     fact: 'An amoeba crawls by extending pseudopods — "false feet" of flowing cytoplasm — and engulfs prey whole through phagocytosis, digesting it in a food vacuole.',
     special: 'Immune to knockback. Short-range plasma tendrils (110px) leech 7 HP to heal 40 — out-range it. Drops a loot chest.'
   },
+  // ---- Cellular Swarm invaders ----
+  influenza: {
+    id: 'influenza', name: 'Influenza Virion', icon: '🦠', color: '#ff9d3a', glow: '#ffb84d',
+    weight: 1, window: [0, 9999], freq: 1.0,
+    hp: 5, damage: 4, speed: 152, radius: 8, xp: 2, coinChance: 0.01, coin: 1,
+    behavior: 'boids',
+    fact: 'Influenza spreads explosively — a single sneeze can carry 100,000+ virions to seed a new infection.',
+    special: 'Fast and fragile; swarms in numbers to drain the colony.'
+  },
+  ecoli: {
+    id: 'ecoli', name: 'E. coli', icon: '🧫', color: '#8fd14f', glow: '#b6ff5a',
+    weight: 5, window: [0, 9999], freq: 0.5,
+    hp: 64, damage: 6, speed: 92, radius: 15, xp: 6, coinChance: 0.05, coin: 3,
+    behavior: 'forager',
+    fact: 'E. coli doubles every ~20 minutes when fed — a single cell can bloom into billions overnight.',
+    special: 'Durable, and it DEVOURS Glucose off the floor — hunt it down before it starves your colony.'
+  },
+  parasite: {
+    id: 'parasite', name: 'Toxoplasma Parasite', icon: '🪱', color: '#c98bff', glow: '#b07bff',
+    weight: 14, window: [0, 9999], freq: 0.3,
+    hp: 230, damage: 14, speed: 72, radius: 26, xp: 24, coinChance: 0.3, coin: 12,
+    behavior: 'juggernaut',
+    fact: 'Toxoplasma hijacks host behaviour — infected rodents lose their fear of cats, helping the parasite complete its life cycle.',
+    special: 'Tough outer membrane — needs concentrated fire, or a big swarm, to crack.'
+  },
+  cancer: {
+    id: 'cancer', name: 'Rogue Cancer Cell', icon: '🟣', color: '#ff5fa2', glow: '#ff2f7a',
+    weight: 44, window: [-1, -1], freq: 0, elite: true,
+    hp: 900, damage: 16, speed: 60, radius: 46, xp: 80, coinChance: 1, coin: 40,
+    behavior: 'juggernaut',
+    fact: 'Cancer cells ignore the signals to stop dividing — they are effectively immortal, budding endlessly.',
+    special: 'A relentless tumour that buds off Influenza virions as it advances. Drops a loot chest.'
+  },
   macrophage: {
     id: 'macrophage', name: 'Macrophage Sentinel', icon: '🔴', color: '#ff7a7a', glow: '#ff3a3a',
     weight: 500, window: [-1, -1], freq: 0, spawnAt: [1200], boss: true,
@@ -1675,6 +1715,8 @@ const Sound = {
       case 'coin':   if (!this._ok('coin', 0.03)) return; this.tone(1080, 0.08, 'square', 0.07, 1550); break;
       case 'heal':   this.tone(330, 0.18, 'sine', 0.16, 540); break;
       case 'level':  [523, 659, 784].forEach((f, i) => this.tone(f, 0.16, 'triangle', 0.18, 0, i * 0.08)); break;
+      case 'mitosis': this.noise(0.16, 380, 0.6, 0.14); this.tone(220, 0.18, 'sine', 0.16, 440); this.tone(330, 0.16, 'sine', 0.12, 660, 0.05); break;  // wet cell-division doubling
+
       case 'mutation': this.tone(300, 0.5, 'sawtooth', 0.14, 900); this.tone(303, 0.5, 'sawtooth', 0.12, 905); [523, 784, 1046].forEach((f, i) => this.tone(f, 0.3, 'sine', 0.12, 0, 0.12 + i * 0.09)); break;
       case 'apex':   this.tone(220, 0.7, 'sawtooth', 0.18, 1100); [440, 660, 880, 1320].forEach((f, i) => this.tone(f, 0.4, 'triangle', 0.13, 0, i * 0.07)); break;
       case 'objective': [523, 659, 784, 1046].forEach((f, i) => this.tone(f, 0.22, 'sine', 0.16, 0, i * 0.07)); break;
@@ -2070,6 +2112,27 @@ function buildSprites() {
   SPR.xp2 = xpBlob(28, '#c79bff', '#7a3ec8');    // purple · ×2.0 rare
   SPR.xp3 = xpBlob(32, '#ffce8a', '#d07a1f');    // orange · ×3.0 legendary
   SPR.biomass = SPR.xp0;                           // fallback alias
+  // Cellular Swarm: the same XP reskinned as Glucose molecules (C6H12O6) — the
+  // factual substrate of cellular respiration. A blue/white hexagonal pyranose
+  // ring with atoms at the vertices; tier = brightness so rarity stays legible.
+  const glucoseNode = (size, ring, core) => makeSprite(size, (g, r) => {
+    g.shadowColor = '#bfe6ff'; g.shadowBlur = 12;
+    const grad = g.createRadialGradient(0, 0, 1, 0, 0, r * 0.82);
+    grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.42, core); grad.addColorStop(1, 'rgba(70,130,210,0)');
+    g.fillStyle = grad; g.beginPath(); g.arc(0, 0, r * 0.82, 0, TAU); g.fill();
+    g.shadowBlur = 0;
+    const R = r * 0.5, verts = [];
+    g.strokeStyle = ring; g.lineWidth = Math.max(1.6, r * 0.09); g.beginPath();
+    for (let i = 0; i < 6; i++) { const a = i / 6 * TAU - Math.PI / 2, x = Math.cos(a) * R, y = Math.sin(a) * R; verts.push([x, y]); i ? g.lineTo(x, y) : g.moveTo(x, y); }
+    g.closePath(); g.stroke();
+    g.fillStyle = '#ffffff';
+    for (const [x, y] of verts) { g.beginPath(); g.arc(x, y, r * 0.12, 0, TAU); g.fill(); }        // C/O atoms
+    g.fillStyle = 'rgba(255,255,255,0.9)'; g.beginPath(); g.arc(0, 0, r * 0.15, 0, TAU); g.fill();  // bright core
+  });
+  SPR.gluc0 = glucoseNode(22, 'rgba(165,208,255,0.95)', 'rgba(120,180,255,0.55)');  // pale blue  · common
+  SPR.gluc1 = glucoseNode(25, 'rgba(192,226,255,0.98)', 'rgba(150,205,255,0.60)');  // brighter   · uncommon
+  SPR.gluc2 = glucoseNode(28, 'rgba(216,240,255,1)',    'rgba(180,225,255,0.66)');  // cyan-white · rare
+  SPR.gluc3 = glucoseNode(32, 'rgba(242,252,255,1)',    'rgba(210,240,255,0.72)');  // white-hot  · legendary
   SPR.biomassBig = makeSprite(30, (g, r) => {
     g.shadowColor = '#6dff8a'; g.shadowBlur = 16; g.fillStyle = '#d6ffe0';
     g.beginPath(); g.arc(0, 0, r * 0.5, 0, TAU); g.fill();
@@ -2186,6 +2249,8 @@ const game = {
   flash: 0, flashColor: '#fff',
   player: null,
   enemies: [], projectiles: [], pickups: [], hazards: [], particles: [], floaters: [], clones: [],
+  swarm: [],              // Cellular Swarm mode: follower cells that trail the lead & fight
+  mutagen: { cur: 0, max: 100 }, mutagensApplied: {}, mutagenReady: false,   // free-radical corruption meter
   quadtree: null,
   director: null,
   kills: 0, killsByType: {}, coinsThisRun: 0, xpOrbsAlive: 0,
@@ -2251,6 +2316,14 @@ function recomputeStats() {
   const adapt = id => (p.adaptations && p.adaptations[id]) || 0;   // secondary passives
   const bo = game.boosts || defaultBoosts();     // run-permanent micro-boost gains
 
+  // --- Cellular Swarm mutagens (double-edged) — aggregate multipliers ---
+  let mgDmg = 1, mgArea = 1, mgSpeed = 1, mgCd = 1, mgPickup = 1, mgHp = 1, mgArmor = 0, mgEco = 1, mgCrit = 0;
+  p.mutFragile = 1; p.mutStarve = 0;
+  for (const id in (game.mutagensApplied || {})) { const mg = MUTAGEN_BY_ID[id]; if (!mg) continue;
+    mgDmg *= mg.dmg || 1; mgArea *= mg.area || 1; mgSpeed *= mg.speed || 1; mgCd *= mg.cd || 1; mgPickup *= mg.pickup || 1;
+    mgHp *= mg.hp || 1; mgArmor += mg.armor || 0; mgEco *= mg.eco || 1; mgCrit += mg.crit || 0;
+    p.mutFragile *= mg.fragile || 1; p.mutStarve += mg.starve || 0; }
+
   // Ribosomes -> additive damage multiplier term used by the damage pipeline.
   p.mult.ribosome = tier('ribo') ? PASSIVE_BY_ID.ribo.values[tier('ribo') - 1] : 0;
   // ATP Synthase -> multiplicative cooldown scalar (lower = faster).
@@ -2269,7 +2342,7 @@ function recomputeStats() {
   // +4 max HP per level so durability scales with progression (a leveled cell
   // isn't stuck at its starting ~130 HP while late enemies hit for 4×).
   const levelHp = (p.level - 1) * 4;
-  const newMax = Math.round((p.baseMaxHp + levelHp) * (1 + hpBonus) * bo.hpMul * (1 + adapt('vitality') * 0.08));
+  const newMax = Math.round((p.baseMaxHp + levelHp) * (1 + hpBonus) * bo.hpMul * (1 + adapt('vitality') * 0.08) * mgHp);
   if (newMax !== p.maxHp) { const ratio = p.hp / p.maxHp; p.maxHp = newMax; p.hp = Math.min(p.maxHp, Math.round(p.maxHp * ratio)); }
   // Eco -> coin & XP gain (meta only).
   p.mult.ecoGain = 1 + metaTier('UPG_ECO') * 0.08;
@@ -2309,6 +2382,10 @@ function recomputeStats() {
   p.mult.damageMul *= (1 + 0.02 * mut('plating') * p.mult.flatReduce);
   // Apoptosis execute threshold (0 if not taken).
   p.mult.execute = mut('execute') ? (0.08 + (mut('execute') - 1) * 0.04) : 0;
+  // --- Mutagens fold in last, over everything ---
+  p.mult.damageMul *= mgDmg; p.mult.area *= mgArea; p.speed *= mgSpeed;
+  p.mult.cooldown *= mgCd; p.mult.pickup *= mgPickup; p.mult.ecoGain *= mgEco;
+  p.mult.flatReduce += mgArmor; p.mult.crit += mgCrit;
   // Pickup radius in world units.
   p.pickupRadius = 120 * p.mult.pickup;
 }
@@ -2489,7 +2566,7 @@ function damagePlayer(raw, fromX, fromY) {
     if (mut('dodgeHeal') > 0) { const h = p.maxHp * 0.03 * mut('dodgeHeal'); p.hp = Math.min(p.maxHp, p.hp + h); spawnFloater(p.x, p.y - p.r - 20, '+' + Math.round(h), '#6dff8a'); }
     return;
   }
-  let dmg = raw - p.mult.flatReduce;
+  let dmg = raw * (p.mutFragile || 1) - p.mult.flatReduce;   // mutagen curses can make the membrane fragile
   if (dmg <= 0) return;                               // fully mitigated
   // Cell-wall shield soaks first.
   if (p.shieldHp > 0) {
@@ -2504,7 +2581,7 @@ function damagePlayer(raw, fromX, fromY) {
     game.flash = 0.18; game.flashColor = 'rgba(255,60,60,';
     spawnFloater(p.x, p.y - p.r, '-' + Math.round(dmg), '#ff7a7a');
     sfx(p.hp <= 0 ? 'boss' : 'hurt');
-    if (p.hp <= 0) { p.hp = 0; endRun(false); }
+    if (p.hp <= 0) { p.hp = 0; onLeadDown(); }   // swarm mode promotes a follower; else game over
   }
 }
 
@@ -2621,8 +2698,8 @@ function spawnPickup(kind, x, y, value) {
   const pk = pickupPool.obtain();
   pk.kind = kind; pk.x = x; pk.y = y; pk.value = value; pk.tier = 0;
   pk.dx = rand(-40, 40); pk.dy = rand(-60, -10); pk.magnet = false;
-  pk.r = kind === 'chest' ? 16 : kind === 'power' ? 13 : kind === 'coin' ? 9 : kind === 'heal' ? 10 : kind === 'nutrient' ? 8 : 7;
-  pk.life = (kind === 'chest' || kind === 'nutrient') ? 9999 : (kind === 'power' ? 45 : ((kind === 'xp' || kind === 'coin') ? 60 : 30)); pk.born = game.time; pk.bob = rand(0, TAU);
+  pk.r = kind === 'chest' ? 16 : kind === 'power' ? 13 : kind === 'radical' ? 10 : kind === 'coin' ? 9 : kind === 'heal' ? 10 : kind === 'nutrient' ? 8 : 7;
+  pk.life = (kind === 'chest' || kind === 'nutrient') ? 9999 : (kind === 'radical' ? 26 : (kind === 'power' ? 45 : ((kind === 'xp' || kind === 'coin') ? 60 : 30))); pk.born = game.time; pk.bob = rand(0, TAU);
   game.pickups.push(pk);
   if (kind === 'xp') game.xpOrbsAlive++;
   return pk;
@@ -2639,6 +2716,7 @@ function createDirector() {
     objT: 90, objCount: 0,        // challenge-objective scheduler
     envT: 0,                      // environment-hazard streaming throttle
     padT: 30,                     // first micro-boost pad lands at 0:30
+    radicalT: 10,                 // Cellular Swarm: free-radical drift throttle
   };
 }
 
@@ -2658,7 +2736,20 @@ const WAVES = [
   { name: 'Fungal Mass',        mix: { virus: 0.6, spore: 0.5, bacterium: 0.5, algae: 0.2 } },  // 14–16
   { name: 'Final Bloom',        mix: { virus: 0.9, bacterium: 0.7, spore: 0.4, algae: 0.2 } },  // 16–18
 ];
-function currentWave(t) { return WAVES[Math.min(Math.floor(t / 120), WAVES.length - 1)]; }
+/* Cellular Swarm invasion escalation: the Breach -> Bacterial Colonization -> Full War. */
+const SWARM_WAVES = [
+  { name: 'The Breach',             mix: { influenza: 1.0, algae: 0.25 } },                      // 0–2   fast fragile virions
+  { name: 'Viral Surge',            mix: { influenza: 1.3, algae: 0.25 } },                      // 2–4
+  { name: 'Viral Storm',            mix: { influenza: 1.5 } },                                   // 4–6
+  { name: 'Bacterial Colonization', mix: { influenza: 0.6, ecoli: 0.7, algae: 0.2 } },          // 6–8   E. coli eats glucose
+  { name: 'E. coli Bloom',          mix: { ecoli: 1.0, influenza: 0.5 } },                       // 8–10
+  { name: 'Coinfection',            mix: { influenza: 0.8, ecoli: 0.8, algae: 0.2 } },           // 10–12
+  { name: 'Parasitic Invasion',     mix: { ecoli: 0.7, influenza: 0.7, parasite: 0.22 } },       // 12–14  parasites break in
+  { name: 'Full-Scale War',         mix: { influenza: 1.0, ecoli: 0.9, parasite: 0.32 } },       // 14–16
+  { name: 'Malignant Onslaught',    mix: { influenza: 0.9, ecoli: 0.9, parasite: 0.42 } },       // 16+
+];
+function waveTable() { return game.mode === 'swarm' ? SWARM_WAVES : WAVES; }
+function currentWave(t) { const w = waveTable(); return w[Math.min(Math.floor(t / 120), w.length - 1)]; }
 /* Pick an enemy id from the active wave's weighted mix (or null if empty). */
 function weightedPickType(t) {
   const mix = currentWave(t).mix; let total = 0; for (const k in mix) total += mix[k];
@@ -2673,30 +2764,32 @@ function updateDirector(dt) {
   // --- Recurring mini-boss (Amoeboid Pseudopod): first at 2:30, then ~every  *
   //     2.5 min (faster late), each dropping a loot chest. ---
   dir.eliteT -= dt;
-  if (dir.eliteT <= 0 && t > 60 && (game.mode === 'endless' || t < 1110)) {
-    announceElite();
-    const n = game.mode === 'endless' ? 1 + Math.floor(t / 360) : 1;
-    for (let i = 0; i < n; i++) spawnRingEnemy('amoeboid');
-    dir.eliteT = clamp(165 - t * 0.05, 80, 165);
+  if (dir.eliteT <= 0 && t > 60 && (game.mode !== 'timed' || t < 1110)) {
+    const eliteType = game.mode === 'swarm' ? 'cancer' : 'amoeboid';
+    announceElite(eliteType);
+    const n = game.mode !== 'timed' ? 1 + Math.floor(t / 360) : 1;
+    for (let i = 0; i < n; i++) spawnRingEnemy(eliteType);
+    dir.eliteT = clamp((game.mode === 'swarm' ? 120 : 165) - t * 0.05, game.mode === 'swarm' ? 55 : 80, 165);
   }
-  // --- The big boss: Macrophage Sentinel (20:00 in timed; recurring waves in endless) ---
+  // --- The big boss: Macrophage Sentinel (timed: 20:00; endless: recurring). Swarm mode has no
+  //     macrophage (it's an ALLY there) — its threat is the escalating invasion + cancer elites. ---
   if (game.mode === 'timed') {
     if (!dir.bossDone && t >= ENEMIES.macrophage.spawnAt[0]) { dir.bossDone = true; triggerExtinctionEvent(); }
-  } else {
+  } else if (game.mode === 'endless') {
     dir.endlessBossT -= dt;
     if (dir.endlessBossT <= 0) { dir.endlessWave++; triggerExtinctionEvent(true); dir.endlessBossT = 300; }
   }
 
   // --- Wave announcements: the swarm shifts composition every 2 minutes ---
-  const wIdx = Math.min(Math.floor(t / 120), WAVES.length - 1);
-  if (dir.wave !== wIdx && (game.mode === 'endless' || t < 1110)) {
+  const wt = waveTable(), wIdx = Math.min(Math.floor(t / 120), wt.length - 1);
+  if (dir.wave !== wIdx && (game.mode !== 'timed' || t < 1110)) {
     dir.wave = wIdx;
-    if (t > 1) { bigBanner('🌊 WAVE ' + (wIdx + 1) + ' — ' + WAVES[wIdx].name, 2.6); game.shake = Math.max(game.shake, 6); }
+    if (t > 1) { bigBanner((game.mode === 'swarm' ? '🦠 INVASION ' : '🌊 WAVE ') + (wIdx + 1) + ' — ' + wt[wIdx].name, 2.6); game.shake = Math.max(game.shake, 6); }
   }
 
   // --- Regular swarm spawns under a TIME-RAMPED weight cap. In timed mode the
   //     swarm STOPS at 18:30, clearing the field for the 20:00 boss. ---
-  const spawnsOpen = game.mode === 'endless' || t < 1110;     // 18:30 cutoff
+  const spawnsOpen = game.mode !== 'timed' || t < 1110;     // 18:30 cutoff
   dir.cap = Math.min(500, 130 + t * 0.32);
   // Count living REGULAR (non-elite/boss) enemies. A few tanky high-weight cells
   // (spores, the weight-40 Amoeboid) used to fill the weight budget and starve
@@ -2713,6 +2806,15 @@ function updateDirector(dt) {
     dir.spawnTimer = clamp(0.6 - t * 0.00026, 0.12, 0.6);
   }
 
+  // --- Cellular Swarm: free radicals drift in (rare) to fill the Mutagen meter ---
+  if (game.mode === 'swarm') {
+    dir.radicalT -= dt;
+    if (dir.radicalT <= 0 && t > 6) {
+      const a = rand(0, TAU), rr = rand(160, 520), o = { x: game.player.x + Math.cos(a) * rr, y: game.player.y + Math.sin(a) * rr };
+      dishClamp(o, 30); spawnPickup('radical', o.x, o.y, Math.round(rand(16, 24)));
+      dir.radicalT = clamp(13 - t * 0.0015, 7, 13);
+    }
+  }
   // --- challenge objectives (Spell-Brigade style) — never during a boss ---
   if (!game.objective && (!game.boss || game.boss.dead)) {
     dir.objT -= dt;
@@ -2736,7 +2838,7 @@ function triggerExtinctionEvent(endless = false) {
   bigBanner(endless ? `WAVE ${game.director.endlessWave} · MACROPHAGE SENTINEL` : 'EXTINCTION EVENT — MACROPHAGE SENTINEL');
   game.shake = 24; game.flash = 0.4; game.flashColor = 'rgba(255,40,40,'; sfx('boss');
 }
-function announceElite() { bigBanner('⚠ ELITE: AMOEBOID PSEUDOPOD'); game.shake = 12; sfx('boss'); }
+function announceElite(type) { const d = ENEMIES[type || 'amoeboid']; bigBanner('⚠ ELITE: ' + (d ? d.name.toUpperCase() : 'AMOEBOID PSEUDOPOD')); game.shake = 12; sfx('boss'); }
 
 /* Remove without drops/specials (used by the field-wipe). */
 function killEnemyQuiet(e) {
@@ -3345,6 +3447,11 @@ function updateEnemies(dt) {
       let vx = 0, vy = 0;
       const a2p = angTo(e.x, e.y, p.x, p.y);
       const dToP = dist(e.x, e.y, p.x, p.y);
+      // Cancer cell buds off Influenza virions as it advances.
+      if (e.type === 'cancer' && onScreen(e.x, e.y)) { e.mortarT -= dt;
+        if (e.mortarT <= 0 && game.enemies.length < 680) { e.mortarT = 3.5;
+          for (let s = 0; s < 2; s++) { const aa = rand(0, TAU); spawnEnemy('influenza', e.x + Math.cos(aa) * e.r, e.y + Math.sin(aa) * e.r, {}); }
+          spawnRing(e.x, e.y, '#ff5fa2', e.r * 1.5, 0.3); } }
       switch (e.behavior) {
         case 'boids': {
           vx = Math.cos(a2p) * e.speed; vy = Math.sin(a2p) * e.speed;
@@ -3380,6 +3487,18 @@ function updateEnemies(dt) {
         case 'juggernaut': {
           vx = Math.cos(a2p) * e.speed; vy = Math.sin(a2p) * e.speed;
           if (!e.bossClone) updateAmoeboidTendril(e, p, dt);
+          break;
+        }
+        case 'forager': {                                // E. coli — devour Glucose off the floor, else march on the colony
+          let g = null, gd = 640 * 640;
+          for (let k = 0; k < game.pickups.length; k++) { const pk = game.pickups[k]; if (pk.kind !== 'xp') continue; const dd = dist2(e.x, e.y, pk.x, pk.y); if (dd < gd) { gd = dd; g = pk; } }
+          if (g) {
+            const ga = angTo(e.x, e.y, g.x, g.y); vx = Math.cos(ga) * e.speed; vy = Math.sin(ga) * e.speed;
+            if (gd < (e.r + g.r + 6) * (e.r + g.r + 6)) {   // consume it
+              removeFromArray(game.pickups, g); game.xpOrbsAlive--; pickupPool.release(g);
+              e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.06); spawnParticles(e.x, e.y, '#8fd14f', 6, { life: 0.3 });
+            }
+          } else { vx = Math.cos(a2p) * e.speed; vy = Math.sin(a2p) * e.speed; }
           break;
         }
         case 'flee': {                                   // Golden Plasmid — evasive, jittery sprinter
@@ -3598,6 +3717,160 @@ function pollGamepad() {
 }
 window.addEventListener('gamepadconnected', () => { gpad.connected = true; toast('🎮 Controller connected', 2.4); });
 
+/* ======================================================================== *
+ *  SECTION 14b — CELLULAR SWARM  (mode: 'swarm')                             *
+ *  A lead cell divides by MITOSIS into a colony of follower cells. Followers *
+ *  trail the lead in formation, break off to ram & shoot invaders, carry     *
+ *  their own HP and can die. When the lead falls, a follower is PROMOTED —    *
+ *  the run ends only when the last cell is consumed.                         *
+ * ======================================================================== */
+const SWARM_MAX = 26;
+function swarmCount() { return 1 + game.swarm.length; }
+function followerMaxHp() { return Math.max(12, Math.round((game.player.maxHp || 100) * 0.42)); }
+
+function spawnFollower(atX, atY) {
+  if (game.swarm.length >= SWARM_MAX) return null;
+  const p = game.player, mh = followerMaxHp();
+  const f = { x: atX != null ? atX : p.x + rand(-24, 24), y: atY != null ? atY : p.y + rand(-24, 24),
+    dx: 0, dy: 0, angle: rand(0, TAU), r: 11, hp: mh, maxHp: mh, fireT: rand(0, 0.8), touchCd: 0, hitCd: 0, hitFlash: 0 };
+  game.swarm.push(f); return f;
+}
+/* One mitosis event: the colony divides — add follower cells + top everyone up. */
+function mitosisSplit() {
+  const p = game.player, add = game.swarm.length < 6 ? 2 : 1;
+  for (let i = 0; i < add; i++) { const f = spawnFollower();          // each daughter cell buds off with its own pop
+    if (f) { spawnParticles(f.x, f.y, '#9dffb0', 12, { speed: 160, life: 0.45 }); spawnRing(f.x, f.y, '#9dff5f', f.r * 2.4, 0.3); } }
+  const mh = followerMaxHp();
+  for (const f of game.swarm) { f.maxHp = mh; f.hp = Math.min(mh, f.hp + mh * 0.5); }
+  p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.25);
+  spawnRing(p.x, p.y, '#9dff5f', p.r * 3, 0.4); spawnParticles(p.x, p.y, '#9dff5f', 20, { speed: 220, life: 0.5 });
+  sfx('mitosis');
+}
+/* Lead cell down → hand control to the healthiest follower instead of ending. */
+function onLeadDown() {
+  if (game.mode === 'swarm' && game.swarm.length > 0) {
+    let best = 0; for (let i = 1; i < game.swarm.length; i++) if (game.swarm[i].hp > game.swarm[best].hp) best = i;
+    const f = game.swarm.splice(best, 1)[0], p = game.player;
+    p.x = f.x; p.y = f.y; p.dx = 0; p.dy = 0;
+    p.hp = Math.max(1, Math.round(p.maxHp * 0.5)); p.shieldHp = 0; p.invuln = 1.6; p.hitFlash = 0.3;
+    game.camera.x = p.x; game.camera.y = p.y;
+    spawnRing(p.x, p.y, '#ffd166', p.r * 4, 0.6); spawnParticles(p.x, p.y, '#ffd166', 30, { speed: 300, life: 0.7 });
+    bigBanner('🧫 CELL PROMOTED — THE COLONY HOLDS (' + swarmCount() + ' left)', 1.8); sfx('boss');
+    return true;
+  }
+  endRun(false); return false;
+}
+function updateSwarm(dt) {
+  const p = game.player, arr = game.swarm, n = arr.length;
+  const dmgMul = (1 + p.mult.ribosome) * (p.mult.damageMul || 1);
+  for (let i = n - 1; i >= 0; i--) {
+    const f = arr[i];
+    if (f.touchCd > 0) f.touchCd -= dt; if (f.hitCd > 0) f.hitCd -= dt; if (f.fireT > 0) f.fireT -= dt; if (f.hitFlash > 0) f.hitFlash -= dt;
+    const tgt = nearestEnemy(f.x, f.y, 300);
+    let tx, ty, spd;
+    if (tgt) { tx = tgt.x; ty = tgt.y; spd = p.speed * 0.9; }
+    else { const a = (i / Math.max(1, n)) * TAU + game.time * 0.5, ring = 46 + Math.min(90, n * 4);
+      tx = p.x + Math.cos(a) * ring; ty = p.y + Math.sin(a) * ring; spd = p.speed * 1.1; }
+    const ang = angTo(f.x, f.y, tx, ty), d = dist(f.x, f.y, tx, ty), move = tgt ? spd : Math.min(spd, d * 4);
+    f.dx = lerp(f.dx, Math.cos(ang) * move, 0.2); f.dy = lerp(f.dy, Math.sin(ang) * move, 0.2);
+    f.x += f.dx * dt; f.y += f.dy * dt; dishClamp(f, f.r);
+    if (d > 0.01) f.angle = ang;
+    if (tgt && f.fireT <= 0) { const sp = 520, a2 = angTo(f.x, f.y, tgt.x, tgt.y);
+      fireProjectile({ kind: 'dart', x: f.x, y: f.y, dx: Math.cos(a2) * sp, dy: Math.sin(a2) * sp, r: 5, life: 0.9, spr: SPR.dart, color: '#9dff5f', damage: 8 * dmgMul, pierce: 0, hitSet: new Set() });
+      f.fireT = 0.7; }
+    const list = enemiesInRadius(f.x, f.y, f.r + 18);
+    for (let j = 0; j < list.length; j++) { const e = list[j]; if (e.dead || e.eatable) continue;
+      if (dist2(f.x, f.y, e.x, e.y) < (f.r + e.r) * (f.r + e.r)) {
+        if (f.touchCd <= 0) { const { dmg, crit } = computeDamage(16 * dmgMul); damageEnemy(e, dmg, { crit, knockback: 90, fromX: f.x, fromY: f.y }); f.touchCd = 0.3; }
+        if (f.hitCd <= 0) { f.hp -= e.damage * (e.boss ? 1.5 : 1) * (p.mutFragile || 1); f.hitCd = 0.6; f.hitFlash = 0.25; }
+        break; } }
+    if (f.hitCd <= 0 && f.hp < f.maxHp) f.hp = Math.min(f.maxHp, f.hp + f.maxHp * 0.03 * dt);
+    if (f.hp <= 0) { spawnParticles(f.x, f.y, '#9dff5f', 14, { speed: 180, life: 0.5 }); spawnRing(f.x, f.y, '#ff7a7a', f.r * 2, 0.3); arr[i] = arr[arr.length - 1]; arr.pop(); }
+  }
+}
+function drawSwarm(t) {
+  for (const f of game.swarm) {
+    if (!onScreen(f.x, f.y, f.r + 20)) continue;
+    const wob = 1 + 0.1 * Math.sin(t * 5 + f.angle);
+    ctx.save(); ctx.translate(f.x, f.y);
+    ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createRadialGradient(0, 0, 1, 0, 0, f.r * 2);
+    g.addColorStop(0, 'rgba(157,255,95,0.4)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, f.r * 2, 0, TAU); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = f.hitFlash > 0 ? '#ffffff' : 'rgba(150,235,110,0.95)';
+    ctx.beginPath(); ctx.ellipse(0, 0, f.r * wob, f.r / wob, f.angle, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(205,255,150,0.8)'; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.fillStyle = 'rgba(40,110,30,0.85)'; ctx.beginPath(); ctx.arc(0, 0, f.r * 0.4, 0, TAU); ctx.fill();
+    ctx.restore();
+    if (f.hp < f.maxHp) { const w = f.r * 1.8, hpf = clamp(f.hp / f.maxHp, 0, 1);
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(f.x - w / 2, f.y - f.r - 7, w, 2.5);
+      ctx.fillStyle = '#9dff5f'; ctx.fillRect(f.x - w / 2, f.y - f.r - 7, w * hpf, 2.5); }
+  }
+}
+
+/* ---- Free-radical MUTAGENS (double-edged: big buff + a real curse) ------- *
+ * Declarative multipliers folded into recomputeStats; applied swarm-wide.    */
+const MUTAGENS = [
+  { id: 'hypertrophy', name: 'Malignant Hypertrophy', icon: '🔴', color: '#ff5a5a',
+    buff: '+45% damage · larger cells', curse: '−30% swarm speed', dmg: 1.45, area: 1.25, speed: 0.70 },
+  { id: 'hypermeta', name: 'Hyper-Metabolism', icon: '⚡', color: '#ffd166',
+    buff: 'Mitosis fills +45% faster', curse: 'Cells bleed HP unless feeding', eco: 1.45, starve: 1 },
+  { id: 'permeable', name: 'Permeable Membrane', icon: '🕳️', color: '#b07bff',
+    buff: '+100% pickup radius', curse: '−25% defense (take more damage)', pickup: 2.0, fragile: 1.25 },
+  { id: 'oncogenic', name: 'Oncogenic Frenzy', icon: '🧬', color: '#ff5fa2',
+    buff: '−35% weapon cooldown', curse: '−20% max HP', cd: 0.65, hp: 0.80 },
+  { id: 'toxinvent', name: 'Toxin Venting', icon: '☠️', color: '#9dff5f',
+    buff: '+60% attack damage', curse: 'Cells take +20% damage', dmg: 1.6, fragile: 1.2 },
+  { id: 'calcified', name: 'Calcified Shell', icon: '🛡️', color: '#7fa8b8',
+    buff: '+6 armor · +30% max HP', curse: '−25% speed & pickup', armor: 6, hp: 1.30, speed: 0.75, pickup: 0.75 },
+  { id: 'telomerase', name: 'Lethal Telomerase', icon: '🎯', color: '#5fc8ff',
+    buff: '+20% crit chance', curse: '−15% max HP', crit: 0.20, hp: 0.85 },
+];
+const MUTAGEN_BY_ID = Object.fromEntries(MUTAGENS.map(m => [m.id, m]));
+
+/* A free radical was absorbed: fill the meter + a small oxidative sting. */
+function absorbRadical(amount) {
+  const p = game.player;
+  game.mutagen.cur = Math.min(game.mutagen.max, game.mutagen.cur + amount);
+  const sting = Math.max(2, Math.round(p.maxHp * 0.02));
+  p.hp = Math.max(1, p.hp - sting); p.hitFlash = 0.2;
+  spawnFloater(p.x, p.y - p.r - 6, '☢ ' + sting, '#b07bff');
+  if (game.mutagen.cur >= game.mutagen.max) game.mutagenReady = true;
+}
+/* Forced Mutagenic Event — pick a double-edged mutation (reuses the level-up modal). */
+function openMutagenEvent() {
+  const avail = MUTAGENS.filter(m => !game.mutagensApplied[m.id]);
+  if (!avail.length) { game.mutagen.cur = 0; game.mutagenReady = false; game.player.hp = Math.min(game.player.maxHp, game.player.hp + game.player.maxHp * 0.3); return; }
+  shuffle(avail);
+  const picks = avail.slice(0, 3);
+  game.state = 'levelup'; sfx('mutation');
+  game.flash = 0.3; game.flashColor = 'rgba(176,123,255,';
+  $('levelup-title').textContent = '☢ MUTAGENIC EVENT — FORCED EVOLUTION';
+  $('levelup-sub').textContent = 'Free radicals rewrite the colony’s DNA — choose a mutation. Every one has a price.';
+  const wrap = $('levelup-cards'); wrap.innerHTML = '';
+  picks.forEach((m, i) => {
+    const card = document.createElement('div'); card.className = 'card apex'; card.style.animationDelay = (i * 0.05) + 's';
+    card.innerHTML = `<div class="corner">${i + 1}</div><div class="ic-big" style="color:${m.color}">${m.icon}</div>
+      <div class="ctype" style="color:${m.color}">Mutagen</div><div class="cname">${m.name}</div>
+      <div class="cdesc"><span style="color:#6dff8a">▲ ${m.buff}</span><br/><span style="color:#ff7a7a">▼ ${m.curse}</span></div>
+      <div class="cfact">🔬 Mutagens force evolution: a drastic gene rewrite that gives as much as it takes.</div>`;
+    card.onclick = () => chooseMutagen(m.id);
+    wrap.appendChild(card);
+  });
+  $('reroll-bar').innerHTML = '';
+  showOverlay('levelup-modal');
+}
+function chooseMutagen(id) {
+  game.mutagensApplied[id] = true;
+  game.mutagen.cur = 0; game.mutagenReady = false;
+  recomputeStats();
+  const m = MUTAGEN_BY_ID[id];
+  hideOverlay('levelup-modal');
+  bigBanner('☢ MUTATED: ' + m.name, 2.4); sfx('mutation');
+  resumeRun();
+}
+
 function updatePlayer(dt) {
   const p = game.player;
   // ---- desired movement vector ----
@@ -3646,6 +3919,10 @@ function updatePlayer(dt) {
   if (p.shieldRegenDelay > 0) p.shieldRegenDelay -= dt;
   else if (p.shieldHp < p.maxShield) p.shieldHp = Math.min(p.maxShield, p.shieldHp + p.shieldRegenRate * dt);
   if (p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + p.regen * dt);
+  // Hyper-Metabolism curse: bleed HP unless the colony has fed on Glucose recently.
+  if (p.mutStarve > 0 && game.time - (p.lastAte || -99) > 2.5 && p.hp > 1) {
+    p.hp = Math.max(1, p.hp - p.maxHp * 0.02 * p.mutStarve * dt);
+  }
 
   // ---- camera follow + screen shake decay ----
   game.camera.x = lerp(game.camera.x, p.x, 0.12);
@@ -3662,10 +3939,11 @@ function updatePickups(dt) {
   for (let i = arr.length - 1; i >= 0; i--) {
     const pk = arr[i];
     pk.bob += dt * 4;
-    const decays = (pk.kind === 'heal' || pk.kind === 'power');   // only temporary pickups expire; XP/coins persist forever
+    const decays = (pk.kind === 'heal' || pk.kind === 'power' || pk.kind === 'radical');   // XP/coins persist; radicals dissipate
     if (decays) pk.life -= dt;
     const d2 = dist2(pk.x, pk.y, p.x, p.y);
-    if (!pk.magnet && pk.kind !== 'chest' && pk.kind !== 'power' && d2 < pr2) pk.magnet = true;
+    // free radicals are scattered hazards — they never magnetise; you must weave around (or into) them
+    if (!pk.magnet && pk.kind !== 'chest' && pk.kind !== 'power' && pk.kind !== 'radical' && d2 < pr2) pk.magnet = true;
     if (pk.magnet) {
       const a = angTo(pk.x, pk.y, p.x, p.y), pull = 320 + (1 - Math.min(1, d2 / pr2)) * 440;
       pk.x += Math.cos(a) * pull * dt; pk.y += Math.sin(a) * pull * dt;
@@ -3682,10 +3960,11 @@ function updatePickups(dt) {
 }
 function collectPickup(pk) {
   const p = game.player;
-  if (pk.kind === 'xp') { game.xpOrbsAlive--; gainXP(pk.value); sfx('xp'); if ((pk.tier || 0) >= 2 || pk.value >= 12) spawnFloater(p.x, p.y - p.r - 10, '+' + pk.value + ' XP', XP_TIERS[pk.tier || 0].color); }
+  if (pk.kind === 'xp') { game.xpOrbsAlive--; gainXP(pk.value); sfx('xp'); if ((pk.tier || 0) >= 2 || pk.value >= 12) spawnFloater(p.x, p.y - p.r - 10, '+' + pk.value + (game.mode === 'swarm' ? ' Glucose' : ' XP'), game.mode === 'swarm' ? '#bfe6ff' : XP_TIERS[pk.tier || 0].color); }
   else if (pk.kind === 'coin') { gainCoins(pk.value); spawnFloater(p.x, p.y - p.r - 8, '+' + pk.value + '🪙', '#ffd166'); sfx('coin'); }
   else if (pk.kind === 'heal') { const h = Math.min(p.maxHp - p.hp, pk.value); p.hp += h; spawnFloater(p.x, p.y - p.r, '+' + Math.round(h) + ' HP', '#6dff8a'); sfx('heal'); }
   else if (pk.kind === 'nutrient') { spawnFloater(p.x, p.y - p.r - 8, '🧪 spore', '#9dff5f'); spawnParticles(pk.x, pk.y, '#9dff5f', 6, { life: 0.3 }); sfx('coin'); }
+  else if (pk.kind === 'radical') { absorbRadical(pk.value); spawnParticles(pk.x, pk.y, '#b07bff', 8, { life: 0.4, speed: 130 }); sfx('hurt'); }
   else if (pk.kind === 'power') { applyPower(pk.value); }
   else if (pk.kind === 'chest') { sfx('chest'); openLootChest(); }
   spawnParticles(pk.x, pk.y, '#bff8ff', 4, { life: 0.3, speed: 70 });
@@ -3694,6 +3973,7 @@ function collectPickup(pk) {
 /* XP / level curve. Biomass gained is scaled by the Eco meta-upgrade. */
 function gainXP(amount) {
   const p = game.player;
+  p.lastAte = game.time;                    // Glucose feeds the colony (staves off the Hyper-Metabolism curse)
   p.xp += amount * p.mult.ecoGain;
   let leveled = false;
   while (p.xp >= p.xpNext) { p.xp -= p.xpNext; p.level++; p.xpNext = xpForLevel(p.level); game.pendingLevelUps++; leveled = true; }
@@ -4087,6 +4367,7 @@ function render(time) {
     drawProjectiles();
     drawEnemies(t);
     drawClones(t);
+    drawSwarm(t);
     drawPlayer(t);
     drawEffects();
     drawParticles();
@@ -4293,7 +4574,8 @@ function drawEnemies(t) {
     const e = es[i]; if (e.dead) continue;
     if (!onScreen(e.x, e.y, e.r + 30)) continue;
     if (e.eatable) { drawPrey(e, t); continue; }
-    const spr = SPR[e.type] || SPR.virus;
+    const SWARM_SPR = { influenza: 'virus', ecoli: 'bacterium', parasite: 'spore', cancer: 'amoeboid' };
+    const spr = SPR[e.type] || SPR[SWARM_SPR[e.type]] || SPR.virus;
     const scale = (e.r * 2) / spr.width * (e.boss ? 1 : 1.15);
     ctx.save(); ctx.translate(e.x, e.y);
     if (e.behavior !== 'mortar') ctx.rotate(e.angle + (e.type === 'virus' ? t * 1.5 : 0));
@@ -4364,7 +4646,22 @@ function drawPickups(t) {
       ctx.fillStyle = '#fff'; ctx.fillText(def.icon, 0, 1);
       ctx.restore(); continue;
     }
-    const spr = pk.kind === 'coin' ? SPR.coin : pk.kind === 'heal' ? SPR.biomassBig : pk.kind === 'chest' ? SPR.chest : pk.kind === 'nutrient' ? SPR.nutrient : SPR['xp' + (pk.tier || 0)];
+    if (pk.kind === 'radical') {                            // free radical — a jittery, spiky toxic mote
+      const pulse = 1 + 0.14 * Math.sin(t * 8 + pk.bob);
+      ctx.save(); ctx.translate(pk.x, pk.y + bob);
+      ctx.globalCompositeOperation = 'lighter';
+      const g = ctx.createRadialGradient(0, 0, 1, 0, 0, pk.r * 2.3);
+      g.addColorStop(0, 'rgba(176,123,255,0.6)'); g.addColorStop(0.55, 'rgba(157,255,95,0.22)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, pk.r * 2.3 * pulse, 0, TAU); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = '#c79bff'; ctx.lineWidth = 2;
+      for (let k = 0; k < 6; k++) { const a = k / 6 * TAU + t * 2, o = pk.r * (1.1 + 0.25 * Math.sin(t * 9 + k));
+        ctx.beginPath(); ctx.moveTo(Math.cos(a) * pk.r * 0.4, Math.sin(a) * pk.r * 0.4); ctx.lineTo(Math.cos(a) * o, Math.sin(a) * o); ctx.stroke(); }
+      ctx.fillStyle = 'rgba(120,60,180,0.92)'; ctx.beginPath(); ctx.arc(0, 0, pk.r * 0.5, 0, TAU); ctx.fill();
+      ctx.restore(); continue;
+    }
+    const spr = pk.kind === 'coin' ? SPR.coin : pk.kind === 'heal' ? SPR.biomassBig : pk.kind === 'chest' ? SPR.chest : pk.kind === 'nutrient' ? SPR.nutrient
+      : (pk.kind === 'xp' && game.mode === 'swarm') ? SPR['gluc' + (pk.tier || 0)] : SPR['xp' + (pk.tier || 0)];
     ctx.save(); ctx.translate(pk.x, pk.y + bob);
     if (pk.kind === 'chest') { const s = 1 + 0.08 * Math.sin(t * 5); ctx.scale(s, s); }
     else if (pk.kind === 'xp') { const s = clamp(0.85 + Math.log2(1 + pk.value) * 0.1, 0.85, 1.7); ctx.scale(s, s); }   // merged chunks grow
@@ -4700,10 +4997,12 @@ function updateHUD() {
   const secs = Math.floor(game.time);
   const mm = String(Math.floor(secs / 60)).padStart(2, '0'), ss = String(secs % 60).padStart(2, '0');
   $('timer').textContent = mm + ':' + ss + (game.mode === 'timed' ? ' / 20:00' : '');
-  $('level-val').textContent = 'Lv ' + p.level;
+  $('level-val').textContent = game.mode === 'swarm' ? ('🧫 ' + swarmCount()) : ('Lv ' + p.level);
   $('kills-val').textContent = game.kills.toLocaleString();
   $('coin-val').textContent = (SAVE.coins + game.coinsThisRun).toLocaleString();
   $('xp-bar').style.width = clamp(p.xp / p.xpNext * 100, 0, 100) + '%';
+  const mw = $('mutagen-wrap');
+  if (mw) { if (game.mode === 'swarm') { mw.classList.add('show'); $('mutagen-bar').style.width = clamp(game.mutagen.cur / game.mutagen.max * 100, 0, 100) + '%'; } else mw.classList.remove('show'); }
   const hpPct = clamp(p.hp / p.maxHp, 0, 1) * 100;
   $('hp-fill').style.width = hpPct + '%';
   $('shield-fill').style.width = clamp(p.shieldHp / p.maxHp, 0, 1) * 100 + '%';
@@ -4849,6 +5148,25 @@ function refreshTray() {
 /* ---- Level-up: build a weighted pool of 4 distinct evolution choices ---- */
 function getLevelUpChoices() {
   const p = game.player, pool = [];
+  // Cellular Swarm: mitosis offers exactly 3 choices, each a weapon or passive
+  // (ungated — the swarm's progression is its own track).
+  if (game.mode === 'swarm') {
+    const sp = [];
+    for (const w of p.weapons) { const def = WEAPON_BY_ID[w.id]; if (!w.apex && w.level < def.maxLevel) sp.push({ kind: 'weapon-up', id: w.id, target: w.level + 1, weight: 10 }); }
+    for (const id in p.passives) { const def = PASSIVE_BY_ID[id]; if (p.passives[id] < def.maxLevel) sp.push({ kind: 'passive-up', id, target: p.passives[id] + 1, weight: 8 }); }
+    if (p.weapons.length < 6) for (const def of WEAPONS) if (!p.weapons.find(w => w.id === def.id)) sp.push({ kind: 'weapon-new', id: def.id, target: 1, weight: 7 });
+    if (Object.keys(p.passives).length < 6) for (const def of PASSIVES) if (!(def.id in p.passives)) sp.push({ kind: 'passive-new', id: def.id, target: 1, weight: 6 });
+    const out = [], seen = new Set(); let g2 = 0;
+    while (out.length < 3 && sp.length && g2++ < 200) {
+      let total = 0; for (const o of sp) if (!seen.has(o.kind + o.id)) total += o.weight;
+      if (total <= 0) break;
+      let r = rand(0, total), pick = null;
+      for (const o of sp) { if (seen.has(o.kind + o.id)) continue; r -= o.weight; if (r <= 0) { pick = o; break; } }
+      if (!pick) break; seen.add(pick.kind + pick.id); out.push(pick);
+    }
+    if (!out.length) out.push({ kind: 'heal' });
+    return out;
+  }
   const hasWeaponSlot = p.weapons.length < 6;
   const hasPassiveSlot = Object.keys(p.passives).length < 6;
   // upgrade owned weapons
@@ -4887,8 +5205,11 @@ function openLevelUp() {
   game.state = 'levelup'; sfx('level');
   const choices = getLevelUpChoices();
   const wrap = $('levelup-cards'); wrap.innerHTML = '';
-  $('levelup-title').textContent = 'EVOLUTIONARY PRESSURE';
-  $('levelup-sub').textContent = `Level ${game.player.level} · choose a mutation` + (game.pendingLevelUps > 1 ? ` · ${game.pendingLevelUps - 1} more pending` : '');
+  const isSwarm = game.mode === 'swarm';
+  $('levelup-title').textContent = isSwarm ? 'MITOSIS — THE COLONY DIVIDES' : 'EVOLUTIONARY PRESSURE';
+  $('levelup-sub').textContent = isSwarm
+    ? `${swarmCount()} cells · choose a trait for the new daughter cells` + (game.pendingLevelUps > 1 ? ` · ${game.pendingLevelUps - 1} more` : '')
+    : `Level ${game.player.level} · choose a mutation` + (game.pendingLevelUps > 1 ? ` · ${game.pendingLevelUps - 1} more pending` : '');
   choices.forEach((c, i) => wrap.appendChild(buildChoiceCard(c, i)));
   renderRerollBar();
   showOverlay('levelup-modal');
@@ -4935,6 +5256,7 @@ function chooseUpgrade(c) {
   else if (c.kind === 'lucky-boost') { const rw = grantChestBoost(); recomputeStats(); toast('🍀 ' + rw.rar.dot + ' ' + rw.stat.icon + ' ' + rw.stat.name + ' ' + rw.text, 2.8); }
   else if (c.kind === 'heal') { p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.4); }
   else if (c.kind === 'coins') { game.coinsThisRun += 60; }
+  if (game.mode === 'swarm') mitosisSplit();   // every mitosis divides the colony
   refreshTray();
   game.pendingLevelUps = Math.max(0, game.pendingLevelUps - 1);
   hideOverlay('levelup-modal');
@@ -5020,7 +5342,8 @@ function startRun(mode) {
   RNG = makeRNG((Math.random() * 1e9) | 0);
   game.mode = mode; game.state = 'running'; game.time = 0;
   game.enemies = []; game.projectiles = []; game.pickups = []; game.hazards = [];
-  game.particles = []; game.floaters = []; game.clones = []; game.effects = [];
+  game.particles = []; game.floaters = []; game.clones = []; game.effects = []; game.swarm = [];
+  game.mutagen = { cur: 0, max: 100 }; game.mutagensApplied = {}; game.mutagenReady = false;
   game.env = []; game.objective = null; game._finalized = false;
   game.pads = []; game.boosts = defaultBoosts(); game.boostLog = []; game.mutations = {};
   game.kills = 0; game.killsByType = {}; game.coinsThisRun = 0; game.xpOrbsAlive = 0;
@@ -5047,8 +5370,10 @@ function startRun(mode) {
   game.director = createDirector();
   refreshTray();
   hideAllOverlays(); $('banner').innerHTML = ''; setHud(true);
-  bigBanner(mode === 'timed' ? 'INCUBATION BEGINS — SURVIVE 20:00' : 'ENDLESS INCUBATION — HOW LONG CAN YOU LAST?', 2.6);
-  toast(ch.icon + ' ' + ch.name + ' · opens with ' + WEAPON_BY_ID[ch.weapon].name, 2.6);
+  bigBanner(mode === 'timed' ? 'INCUBATION BEGINS — SURVIVE 20:00'
+    : mode === 'swarm' ? '🧫 CELLULAR SWARM — EAT GLUCOSE · DIVIDE · CONQUER'
+    : 'ENDLESS INCUBATION — HOW LONG CAN YOU LAST?', 2.6);
+  toast(mode === 'swarm' ? '🧫 One cell. Eat Glucose to divide into a colony.' : (ch.icon + ' ' + ch.name + ' · opens with ' + WEAPON_BY_ID[ch.weapon].name), 2.6);
   Music.setIntensity(0); Music.randomTrack(); Music.start();
   setTimeout(() => { if (game.state === 'running') toast('🎵 ' + Music.cur.name, 2.2); }, 2900);
 }
@@ -5294,7 +5619,8 @@ function resumeSavedRun() {
   game.mode = snap.mode; game.state = 'running'; game.time = snap.time || 0;
   game.character = snap.character && CHAR_BY_ID[snap.character] ? snap.character : (SAVE.lastChar || 'paramecium');
   game.enemies = []; game.projectiles = []; game.pickups = []; game.hazards = [];
-  game.particles = []; game.floaters = []; game.clones = []; game.effects = [];
+  game.particles = []; game.floaters = []; game.clones = []; game.effects = []; game.swarm = [];
+  game.mutagen = { cur: 0, max: 100 }; game.mutagensApplied = {}; game.mutagenReady = false;
   game.env = []; game.objective = null; game._finalized = false;
   // restore run-permanent boosts + mutations BEFORE recomputeStats folds them in
   game.pads = []; game.boosts = Object.assign(defaultBoosts(), snap.boosts || {});
@@ -5368,6 +5694,7 @@ function openModeSelect() {
   const modes = [
     { mode: 'timed', icon: '⏱️', name: 'Extinction Run', desc: '20-minute survival. Elite Amoeboids at 10:00 & 15:00, then the Macrophage Sentinel boss. Beat it to win.' },
     { mode: 'endless', icon: '♾️', name: 'Endless Incubation', desc: 'No finish line. Enemies scale forever; elite & boss waves escalate. Chase your best survival time.' },
+    { mode: 'swarm', icon: '🧫', name: 'Cellular Swarm', desc: 'Start as ONE cell. Eat Glucose to trigger MITOSIS — divide into a colony that fights as one. Lose cells to survive; the run ends when your last cell falls.' },
   ];
   for (const m of modes) {
     const card = document.createElement('div'); card.className = 'card mode-card weapon';
@@ -5716,6 +6043,8 @@ function stepGame(dt) {
   updatePickups(dt);
   updateEffects(dt);
   updatePlayer(dt);
+  if (game.mode === 'swarm') updateSwarm(dt);
+  if (game.mode === 'swarm' && game.mutagenReady && game.state === 'running') openMutagenEvent();
   updateParticles(dt);
   // Autosave the run every few seconds so "Continue Run" is always current.
   _autosaveT += dt;
