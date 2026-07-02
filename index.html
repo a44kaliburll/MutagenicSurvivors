@@ -2186,6 +2186,7 @@ const game = {
   flash: 0, flashColor: '#fff',
   player: null,
   enemies: [], projectiles: [], pickups: [], hazards: [], particles: [], floaters: [], clones: [],
+  swarm: [],              // Cellular Swarm mode: follower cells that trail the lead & fight
   quadtree: null,
   director: null,
   kills: 0, killsByType: {}, coinsThisRun: 0, xpOrbsAlive: 0,
@@ -2504,7 +2505,7 @@ function damagePlayer(raw, fromX, fromY) {
     game.flash = 0.18; game.flashColor = 'rgba(255,60,60,';
     spawnFloater(p.x, p.y - p.r, '-' + Math.round(dmg), '#ff7a7a');
     sfx(p.hp <= 0 ? 'boss' : 'hurt');
-    if (p.hp <= 0) { p.hp = 0; endRun(false); }
+    if (p.hp <= 0) { p.hp = 0; onLeadDown(); }   // swarm mode promotes a follower; else game over
   }
 }
 
@@ -2673,7 +2674,7 @@ function updateDirector(dt) {
   // --- Recurring mini-boss (Amoeboid Pseudopod): first at 2:30, then ~every  *
   //     2.5 min (faster late), each dropping a loot chest. ---
   dir.eliteT -= dt;
-  if (dir.eliteT <= 0 && t > 60 && (game.mode === 'endless' || t < 1110)) {
+  if (dir.eliteT <= 0 && t > 60 && (game.mode !== 'timed' || t < 1110)) {
     announceElite();
     const n = game.mode === 'endless' ? 1 + Math.floor(t / 360) : 1;
     for (let i = 0; i < n; i++) spawnRingEnemy('amoeboid');
@@ -2689,14 +2690,14 @@ function updateDirector(dt) {
 
   // --- Wave announcements: the swarm shifts composition every 2 minutes ---
   const wIdx = Math.min(Math.floor(t / 120), WAVES.length - 1);
-  if (dir.wave !== wIdx && (game.mode === 'endless' || t < 1110)) {
+  if (dir.wave !== wIdx && (game.mode !== 'timed' || t < 1110)) {
     dir.wave = wIdx;
     if (t > 1) { bigBanner('🌊 WAVE ' + (wIdx + 1) + ' — ' + WAVES[wIdx].name, 2.6); game.shake = Math.max(game.shake, 6); }
   }
 
   // --- Regular swarm spawns under a TIME-RAMPED weight cap. In timed mode the
   //     swarm STOPS at 18:30, clearing the field for the 20:00 boss. ---
-  const spawnsOpen = game.mode === 'endless' || t < 1110;     // 18:30 cutoff
+  const spawnsOpen = game.mode !== 'timed' || t < 1110;     // 18:30 cutoff
   dir.cap = Math.min(500, 130 + t * 0.32);
   // Count living REGULAR (non-elite/boss) enemies. A few tanky high-weight cells
   // (spores, the weight-40 Amoeboid) used to fill the weight budget and starve
@@ -3598,6 +3599,96 @@ function pollGamepad() {
 }
 window.addEventListener('gamepadconnected', () => { gpad.connected = true; toast('🎮 Controller connected', 2.4); });
 
+/* ======================================================================== *
+ *  SECTION 14b — CELLULAR SWARM  (mode: 'swarm')                             *
+ *  A lead cell divides by MITOSIS into a colony of follower cells. Followers *
+ *  trail the lead in formation, break off to ram & shoot invaders, carry     *
+ *  their own HP and can die. When the lead falls, a follower is PROMOTED —    *
+ *  the run ends only when the last cell is consumed.                         *
+ * ======================================================================== */
+const SWARM_MAX = 26;
+function swarmCount() { return 1 + game.swarm.length; }
+function followerMaxHp() { return Math.max(12, Math.round((game.player.maxHp || 100) * 0.42)); }
+
+function spawnFollower(atX, atY) {
+  if (game.swarm.length >= SWARM_MAX) return null;
+  const p = game.player, mh = followerMaxHp();
+  const f = { x: atX != null ? atX : p.x + rand(-24, 24), y: atY != null ? atY : p.y + rand(-24, 24),
+    dx: 0, dy: 0, angle: rand(0, TAU), r: 11, hp: mh, maxHp: mh, fireT: rand(0, 0.8), touchCd: 0, hitCd: 0, hitFlash: 0 };
+  game.swarm.push(f); return f;
+}
+/* One mitosis event: the colony divides — add follower cells + top everyone up. */
+function mitosisSplit() {
+  const p = game.player, add = game.swarm.length < 6 ? 2 : 1;
+  for (let i = 0; i < add; i++) spawnFollower();
+  const mh = followerMaxHp();
+  for (const f of game.swarm) { f.maxHp = mh; f.hp = Math.min(mh, f.hp + mh * 0.5); }
+  p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.25);
+  spawnRing(p.x, p.y, '#9dff5f', p.r * 3, 0.4); spawnParticles(p.x, p.y, '#9dff5f', 20, { speed: 220, life: 0.5 });
+}
+/* Lead cell down → hand control to the healthiest follower instead of ending. */
+function onLeadDown() {
+  if (game.mode === 'swarm' && game.swarm.length > 0) {
+    let best = 0; for (let i = 1; i < game.swarm.length; i++) if (game.swarm[i].hp > game.swarm[best].hp) best = i;
+    const f = game.swarm.splice(best, 1)[0], p = game.player;
+    p.x = f.x; p.y = f.y; p.dx = 0; p.dy = 0;
+    p.hp = Math.max(1, Math.round(p.maxHp * 0.5)); p.shieldHp = 0; p.invuln = 1.6; p.hitFlash = 0.3;
+    game.camera.x = p.x; game.camera.y = p.y;
+    spawnRing(p.x, p.y, '#ffd166', p.r * 4, 0.6); spawnParticles(p.x, p.y, '#ffd166', 30, { speed: 300, life: 0.7 });
+    bigBanner('🧫 CELL PROMOTED — THE COLONY HOLDS (' + swarmCount() + ' left)', 1.8); sfx('boss');
+    return true;
+  }
+  endRun(false); return false;
+}
+function updateSwarm(dt) {
+  const p = game.player, arr = game.swarm, n = arr.length;
+  const dmgMul = (1 + p.mult.ribosome) * (p.mult.damageMul || 1);
+  for (let i = n - 1; i >= 0; i--) {
+    const f = arr[i];
+    if (f.touchCd > 0) f.touchCd -= dt; if (f.hitCd > 0) f.hitCd -= dt; if (f.fireT > 0) f.fireT -= dt; if (f.hitFlash > 0) f.hitFlash -= dt;
+    const tgt = nearestEnemy(f.x, f.y, 300);
+    let tx, ty, spd;
+    if (tgt) { tx = tgt.x; ty = tgt.y; spd = p.speed * 0.9; }
+    else { const a = (i / Math.max(1, n)) * TAU + game.time * 0.5, ring = 46 + Math.min(90, n * 4);
+      tx = p.x + Math.cos(a) * ring; ty = p.y + Math.sin(a) * ring; spd = p.speed * 1.1; }
+    const ang = angTo(f.x, f.y, tx, ty), d = dist(f.x, f.y, tx, ty), move = tgt ? spd : Math.min(spd, d * 4);
+    f.dx = lerp(f.dx, Math.cos(ang) * move, 0.2); f.dy = lerp(f.dy, Math.sin(ang) * move, 0.2);
+    f.x += f.dx * dt; f.y += f.dy * dt; dishClamp(f, f.r);
+    if (d > 0.01) f.angle = ang;
+    if (tgt && f.fireT <= 0) { const sp = 520, a2 = angTo(f.x, f.y, tgt.x, tgt.y);
+      fireProjectile({ kind: 'dart', x: f.x, y: f.y, dx: Math.cos(a2) * sp, dy: Math.sin(a2) * sp, r: 5, life: 0.9, spr: SPR.dart, color: '#9dff5f', damage: 8 * dmgMul, pierce: 0, hitSet: new Set() });
+      f.fireT = 0.7; }
+    const list = enemiesInRadius(f.x, f.y, f.r + 18);
+    for (let j = 0; j < list.length; j++) { const e = list[j]; if (e.dead || e.eatable) continue;
+      if (dist2(f.x, f.y, e.x, e.y) < (f.r + e.r) * (f.r + e.r)) {
+        if (f.touchCd <= 0) { const { dmg, crit } = computeDamage(16 * dmgMul); damageEnemy(e, dmg, { crit, knockback: 90, fromX: f.x, fromY: f.y }); f.touchCd = 0.3; }
+        if (f.hitCd <= 0) { f.hp -= e.damage * (e.boss ? 1.5 : 1); f.hitCd = 0.6; f.hitFlash = 0.25; }
+        break; } }
+    if (f.hitCd <= 0 && f.hp < f.maxHp) f.hp = Math.min(f.maxHp, f.hp + f.maxHp * 0.03 * dt);
+    if (f.hp <= 0) { spawnParticles(f.x, f.y, '#9dff5f', 14, { speed: 180, life: 0.5 }); spawnRing(f.x, f.y, '#ff7a7a', f.r * 2, 0.3); arr[i] = arr[arr.length - 1]; arr.pop(); }
+  }
+}
+function drawSwarm(t) {
+  for (const f of game.swarm) {
+    if (!onScreen(f.x, f.y, f.r + 20)) continue;
+    const wob = 1 + 0.1 * Math.sin(t * 5 + f.angle);
+    ctx.save(); ctx.translate(f.x, f.y);
+    ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createRadialGradient(0, 0, 1, 0, 0, f.r * 2);
+    g.addColorStop(0, 'rgba(157,255,95,0.4)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, f.r * 2, 0, TAU); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = f.hitFlash > 0 ? '#ffffff' : 'rgba(150,235,110,0.95)';
+    ctx.beginPath(); ctx.ellipse(0, 0, f.r * wob, f.r / wob, f.angle, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(205,255,150,0.8)'; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.fillStyle = 'rgba(40,110,30,0.85)'; ctx.beginPath(); ctx.arc(0, 0, f.r * 0.4, 0, TAU); ctx.fill();
+    ctx.restore();
+    if (f.hp < f.maxHp) { const w = f.r * 1.8, hpf = clamp(f.hp / f.maxHp, 0, 1);
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(f.x - w / 2, f.y - f.r - 7, w, 2.5);
+      ctx.fillStyle = '#9dff5f'; ctx.fillRect(f.x - w / 2, f.y - f.r - 7, w * hpf, 2.5); }
+  }
+}
+
 function updatePlayer(dt) {
   const p = game.player;
   // ---- desired movement vector ----
@@ -4087,6 +4178,7 @@ function render(time) {
     drawProjectiles();
     drawEnemies(t);
     drawClones(t);
+    drawSwarm(t);
     drawPlayer(t);
     drawEffects();
     drawParticles();
@@ -4700,7 +4792,7 @@ function updateHUD() {
   const secs = Math.floor(game.time);
   const mm = String(Math.floor(secs / 60)).padStart(2, '0'), ss = String(secs % 60).padStart(2, '0');
   $('timer').textContent = mm + ':' + ss + (game.mode === 'timed' ? ' / 20:00' : '');
-  $('level-val').textContent = 'Lv ' + p.level;
+  $('level-val').textContent = game.mode === 'swarm' ? ('🧫 ' + swarmCount()) : ('Lv ' + p.level);
   $('kills-val').textContent = game.kills.toLocaleString();
   $('coin-val').textContent = (SAVE.coins + game.coinsThisRun).toLocaleString();
   $('xp-bar').style.width = clamp(p.xp / p.xpNext * 100, 0, 100) + '%';
@@ -4849,6 +4941,25 @@ function refreshTray() {
 /* ---- Level-up: build a weighted pool of 4 distinct evolution choices ---- */
 function getLevelUpChoices() {
   const p = game.player, pool = [];
+  // Cellular Swarm: mitosis offers exactly 3 choices, each a weapon or passive
+  // (ungated — the swarm's progression is its own track).
+  if (game.mode === 'swarm') {
+    const sp = [];
+    for (const w of p.weapons) { const def = WEAPON_BY_ID[w.id]; if (!w.apex && w.level < def.maxLevel) sp.push({ kind: 'weapon-up', id: w.id, target: w.level + 1, weight: 10 }); }
+    for (const id in p.passives) { const def = PASSIVE_BY_ID[id]; if (p.passives[id] < def.maxLevel) sp.push({ kind: 'passive-up', id, target: p.passives[id] + 1, weight: 8 }); }
+    if (p.weapons.length < 6) for (const def of WEAPONS) if (!p.weapons.find(w => w.id === def.id)) sp.push({ kind: 'weapon-new', id: def.id, target: 1, weight: 7 });
+    if (Object.keys(p.passives).length < 6) for (const def of PASSIVES) if (!(def.id in p.passives)) sp.push({ kind: 'passive-new', id: def.id, target: 1, weight: 6 });
+    const out = [], seen = new Set(); let g2 = 0;
+    while (out.length < 3 && sp.length && g2++ < 200) {
+      let total = 0; for (const o of sp) if (!seen.has(o.kind + o.id)) total += o.weight;
+      if (total <= 0) break;
+      let r = rand(0, total), pick = null;
+      for (const o of sp) { if (seen.has(o.kind + o.id)) continue; r -= o.weight; if (r <= 0) { pick = o; break; } }
+      if (!pick) break; seen.add(pick.kind + pick.id); out.push(pick);
+    }
+    if (!out.length) out.push({ kind: 'heal' });
+    return out;
+  }
   const hasWeaponSlot = p.weapons.length < 6;
   const hasPassiveSlot = Object.keys(p.passives).length < 6;
   // upgrade owned weapons
@@ -4887,8 +4998,11 @@ function openLevelUp() {
   game.state = 'levelup'; sfx('level');
   const choices = getLevelUpChoices();
   const wrap = $('levelup-cards'); wrap.innerHTML = '';
-  $('levelup-title').textContent = 'EVOLUTIONARY PRESSURE';
-  $('levelup-sub').textContent = `Level ${game.player.level} · choose a mutation` + (game.pendingLevelUps > 1 ? ` · ${game.pendingLevelUps - 1} more pending` : '');
+  const isSwarm = game.mode === 'swarm';
+  $('levelup-title').textContent = isSwarm ? 'MITOSIS — THE COLONY DIVIDES' : 'EVOLUTIONARY PRESSURE';
+  $('levelup-sub').textContent = isSwarm
+    ? `${swarmCount()} cells · choose a trait for the new daughter cells` + (game.pendingLevelUps > 1 ? ` · ${game.pendingLevelUps - 1} more` : '')
+    : `Level ${game.player.level} · choose a mutation` + (game.pendingLevelUps > 1 ? ` · ${game.pendingLevelUps - 1} more pending` : '');
   choices.forEach((c, i) => wrap.appendChild(buildChoiceCard(c, i)));
   renderRerollBar();
   showOverlay('levelup-modal');
@@ -4935,6 +5049,7 @@ function chooseUpgrade(c) {
   else if (c.kind === 'lucky-boost') { const rw = grantChestBoost(); recomputeStats(); toast('🍀 ' + rw.rar.dot + ' ' + rw.stat.icon + ' ' + rw.stat.name + ' ' + rw.text, 2.8); }
   else if (c.kind === 'heal') { p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.4); }
   else if (c.kind === 'coins') { game.coinsThisRun += 60; }
+  if (game.mode === 'swarm') mitosisSplit();   // every mitosis divides the colony
   refreshTray();
   game.pendingLevelUps = Math.max(0, game.pendingLevelUps - 1);
   hideOverlay('levelup-modal');
@@ -5020,7 +5135,7 @@ function startRun(mode) {
   RNG = makeRNG((Math.random() * 1e9) | 0);
   game.mode = mode; game.state = 'running'; game.time = 0;
   game.enemies = []; game.projectiles = []; game.pickups = []; game.hazards = [];
-  game.particles = []; game.floaters = []; game.clones = []; game.effects = [];
+  game.particles = []; game.floaters = []; game.clones = []; game.effects = []; game.swarm = [];
   game.env = []; game.objective = null; game._finalized = false;
   game.pads = []; game.boosts = defaultBoosts(); game.boostLog = []; game.mutations = {};
   game.kills = 0; game.killsByType = {}; game.coinsThisRun = 0; game.xpOrbsAlive = 0;
@@ -5047,8 +5162,10 @@ function startRun(mode) {
   game.director = createDirector();
   refreshTray();
   hideAllOverlays(); $('banner').innerHTML = ''; setHud(true);
-  bigBanner(mode === 'timed' ? 'INCUBATION BEGINS — SURVIVE 20:00' : 'ENDLESS INCUBATION — HOW LONG CAN YOU LAST?', 2.6);
-  toast(ch.icon + ' ' + ch.name + ' · opens with ' + WEAPON_BY_ID[ch.weapon].name, 2.6);
+  bigBanner(mode === 'timed' ? 'INCUBATION BEGINS — SURVIVE 20:00'
+    : mode === 'swarm' ? '🧫 CELLULAR SWARM — EAT GLUCOSE · DIVIDE · CONQUER'
+    : 'ENDLESS INCUBATION — HOW LONG CAN YOU LAST?', 2.6);
+  toast(mode === 'swarm' ? '🧫 One cell. Eat Glucose to divide into a colony.' : (ch.icon + ' ' + ch.name + ' · opens with ' + WEAPON_BY_ID[ch.weapon].name), 2.6);
   Music.setIntensity(0); Music.randomTrack(); Music.start();
   setTimeout(() => { if (game.state === 'running') toast('🎵 ' + Music.cur.name, 2.2); }, 2900);
 }
@@ -5294,7 +5411,7 @@ function resumeSavedRun() {
   game.mode = snap.mode; game.state = 'running'; game.time = snap.time || 0;
   game.character = snap.character && CHAR_BY_ID[snap.character] ? snap.character : (SAVE.lastChar || 'paramecium');
   game.enemies = []; game.projectiles = []; game.pickups = []; game.hazards = [];
-  game.particles = []; game.floaters = []; game.clones = []; game.effects = [];
+  game.particles = []; game.floaters = []; game.clones = []; game.effects = []; game.swarm = [];
   game.env = []; game.objective = null; game._finalized = false;
   // restore run-permanent boosts + mutations BEFORE recomputeStats folds them in
   game.pads = []; game.boosts = Object.assign(defaultBoosts(), snap.boosts || {});
@@ -5368,6 +5485,7 @@ function openModeSelect() {
   const modes = [
     { mode: 'timed', icon: '⏱️', name: 'Extinction Run', desc: '20-minute survival. Elite Amoeboids at 10:00 & 15:00, then the Macrophage Sentinel boss. Beat it to win.' },
     { mode: 'endless', icon: '♾️', name: 'Endless Incubation', desc: 'No finish line. Enemies scale forever; elite & boss waves escalate. Chase your best survival time.' },
+    { mode: 'swarm', icon: '🧫', name: 'Cellular Swarm', desc: 'Start as ONE cell. Eat Glucose to trigger MITOSIS — divide into a colony that fights as one. Lose cells to survive; the run ends when your last cell falls.' },
   ];
   for (const m of modes) {
     const card = document.createElement('div'); card.className = 'card mode-card weapon';
@@ -5716,6 +5834,7 @@ function stepGame(dt) {
   updatePickups(dt);
   updateEffects(dt);
   updatePlayer(dt);
+  if (game.mode === 'swarm') updateSwarm(dt);
   updateParticles(dt);
   // Autosave the run every few seconds so "Continue Run" is always current.
   _autosaveT += dt;
