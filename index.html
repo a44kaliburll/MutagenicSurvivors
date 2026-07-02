@@ -1483,6 +1483,39 @@ const ENEMIES = {
     fact: 'An amoeba crawls by extending pseudopods — "false feet" of flowing cytoplasm — and engulfs prey whole through phagocytosis, digesting it in a food vacuole.',
     special: 'Immune to knockback. Short-range plasma tendrils (110px) leech 7 HP to heal 40 — out-range it. Drops a loot chest.'
   },
+  // ---- Cellular Swarm invaders ----
+  influenza: {
+    id: 'influenza', name: 'Influenza Virion', icon: '🦠', color: '#ff9d3a', glow: '#ffb84d',
+    weight: 1, window: [0, 9999], freq: 1.0,
+    hp: 5, damage: 4, speed: 152, radius: 8, xp: 2, coinChance: 0.01, coin: 1,
+    behavior: 'boids',
+    fact: 'Influenza spreads explosively — a single sneeze can carry 100,000+ virions to seed a new infection.',
+    special: 'Fast and fragile; swarms in numbers to drain the colony.'
+  },
+  ecoli: {
+    id: 'ecoli', name: 'E. coli', icon: '🧫', color: '#8fd14f', glow: '#b6ff5a',
+    weight: 5, window: [0, 9999], freq: 0.5,
+    hp: 64, damage: 6, speed: 92, radius: 15, xp: 6, coinChance: 0.05, coin: 3,
+    behavior: 'forager',
+    fact: 'E. coli doubles every ~20 minutes when fed — a single cell can bloom into billions overnight.',
+    special: 'Durable, and it DEVOURS Glucose off the floor — hunt it down before it starves your colony.'
+  },
+  parasite: {
+    id: 'parasite', name: 'Toxoplasma Parasite', icon: '🪱', color: '#c98bff', glow: '#b07bff',
+    weight: 14, window: [0, 9999], freq: 0.3,
+    hp: 230, damage: 14, speed: 72, radius: 26, xp: 24, coinChance: 0.3, coin: 12,
+    behavior: 'juggernaut',
+    fact: 'Toxoplasma hijacks host behaviour — infected rodents lose their fear of cats, helping the parasite complete its life cycle.',
+    special: 'Tough outer membrane — needs concentrated fire, or a big swarm, to crack.'
+  },
+  cancer: {
+    id: 'cancer', name: 'Rogue Cancer Cell', icon: '🟣', color: '#ff5fa2', glow: '#ff2f7a',
+    weight: 44, window: [-1, -1], freq: 0, elite: true,
+    hp: 900, damage: 16, speed: 60, radius: 46, xp: 80, coinChance: 1, coin: 40,
+    behavior: 'juggernaut',
+    fact: 'Cancer cells ignore the signals to stop dividing — they are effectively immortal, budding endlessly.',
+    special: 'A relentless tumour that buds off Influenza virions as it advances. Drops a loot chest.'
+  },
   macrophage: {
     id: 'macrophage', name: 'Macrophage Sentinel', icon: '🔴', color: '#ff7a7a', glow: '#ff3a3a',
     weight: 500, window: [-1, -1], freq: 0, spawnAt: [1200], boss: true,
@@ -2680,7 +2713,20 @@ const WAVES = [
   { name: 'Fungal Mass',        mix: { virus: 0.6, spore: 0.5, bacterium: 0.5, algae: 0.2 } },  // 14–16
   { name: 'Final Bloom',        mix: { virus: 0.9, bacterium: 0.7, spore: 0.4, algae: 0.2 } },  // 16–18
 ];
-function currentWave(t) { return WAVES[Math.min(Math.floor(t / 120), WAVES.length - 1)]; }
+/* Cellular Swarm invasion escalation: the Breach -> Bacterial Colonization -> Full War. */
+const SWARM_WAVES = [
+  { name: 'The Breach',             mix: { influenza: 1.0, algae: 0.25 } },                      // 0–2   fast fragile virions
+  { name: 'Viral Surge',            mix: { influenza: 1.3, algae: 0.25 } },                      // 2–4
+  { name: 'Viral Storm',            mix: { influenza: 1.5 } },                                   // 4–6
+  { name: 'Bacterial Colonization', mix: { influenza: 0.6, ecoli: 0.7, algae: 0.2 } },          // 6–8   E. coli eats glucose
+  { name: 'E. coli Bloom',          mix: { ecoli: 1.0, influenza: 0.5 } },                       // 8–10
+  { name: 'Coinfection',            mix: { influenza: 0.8, ecoli: 0.8, algae: 0.2 } },           // 10–12
+  { name: 'Parasitic Invasion',     mix: { ecoli: 0.7, influenza: 0.7, parasite: 0.22 } },       // 12–14  parasites break in
+  { name: 'Full-Scale War',         mix: { influenza: 1.0, ecoli: 0.9, parasite: 0.32 } },       // 14–16
+  { name: 'Malignant Onslaught',    mix: { influenza: 0.9, ecoli: 0.9, parasite: 0.42 } },       // 16+
+];
+function waveTable() { return game.mode === 'swarm' ? SWARM_WAVES : WAVES; }
+function currentWave(t) { const w = waveTable(); return w[Math.min(Math.floor(t / 120), w.length - 1)]; }
 /* Pick an enemy id from the active wave's weighted mix (or null if empty). */
 function weightedPickType(t) {
   const mix = currentWave(t).mix; let total = 0; for (const k in mix) total += mix[k];
@@ -2696,24 +2742,26 @@ function updateDirector(dt) {
   //     2.5 min (faster late), each dropping a loot chest. ---
   dir.eliteT -= dt;
   if (dir.eliteT <= 0 && t > 60 && (game.mode !== 'timed' || t < 1110)) {
-    announceElite();
-    const n = game.mode === 'endless' ? 1 + Math.floor(t / 360) : 1;
-    for (let i = 0; i < n; i++) spawnRingEnemy('amoeboid');
-    dir.eliteT = clamp(165 - t * 0.05, 80, 165);
+    const eliteType = game.mode === 'swarm' ? 'cancer' : 'amoeboid';
+    announceElite(eliteType);
+    const n = game.mode !== 'timed' ? 1 + Math.floor(t / 360) : 1;
+    for (let i = 0; i < n; i++) spawnRingEnemy(eliteType);
+    dir.eliteT = clamp((game.mode === 'swarm' ? 120 : 165) - t * 0.05, game.mode === 'swarm' ? 55 : 80, 165);
   }
-  // --- The big boss: Macrophage Sentinel (20:00 in timed; recurring waves in endless) ---
+  // --- The big boss: Macrophage Sentinel (timed: 20:00; endless: recurring). Swarm mode has no
+  //     macrophage (it's an ALLY there) — its threat is the escalating invasion + cancer elites. ---
   if (game.mode === 'timed') {
     if (!dir.bossDone && t >= ENEMIES.macrophage.spawnAt[0]) { dir.bossDone = true; triggerExtinctionEvent(); }
-  } else {
+  } else if (game.mode === 'endless') {
     dir.endlessBossT -= dt;
     if (dir.endlessBossT <= 0) { dir.endlessWave++; triggerExtinctionEvent(true); dir.endlessBossT = 300; }
   }
 
   // --- Wave announcements: the swarm shifts composition every 2 minutes ---
-  const wIdx = Math.min(Math.floor(t / 120), WAVES.length - 1);
+  const wt = waveTable(), wIdx = Math.min(Math.floor(t / 120), wt.length - 1);
   if (dir.wave !== wIdx && (game.mode !== 'timed' || t < 1110)) {
     dir.wave = wIdx;
-    if (t > 1) { bigBanner('🌊 WAVE ' + (wIdx + 1) + ' — ' + WAVES[wIdx].name, 2.6); game.shake = Math.max(game.shake, 6); }
+    if (t > 1) { bigBanner((game.mode === 'swarm' ? '🦠 INVASION ' : '🌊 WAVE ') + (wIdx + 1) + ' — ' + wt[wIdx].name, 2.6); game.shake = Math.max(game.shake, 6); }
   }
 
   // --- Regular swarm spawns under a TIME-RAMPED weight cap. In timed mode the
@@ -2767,7 +2815,7 @@ function triggerExtinctionEvent(endless = false) {
   bigBanner(endless ? `WAVE ${game.director.endlessWave} · MACROPHAGE SENTINEL` : 'EXTINCTION EVENT — MACROPHAGE SENTINEL');
   game.shake = 24; game.flash = 0.4; game.flashColor = 'rgba(255,40,40,'; sfx('boss');
 }
-function announceElite() { bigBanner('⚠ ELITE: AMOEBOID PSEUDOPOD'); game.shake = 12; sfx('boss'); }
+function announceElite(type) { const d = ENEMIES[type || 'amoeboid']; bigBanner('⚠ ELITE: ' + (d ? d.name.toUpperCase() : 'AMOEBOID PSEUDOPOD')); game.shake = 12; sfx('boss'); }
 
 /* Remove without drops/specials (used by the field-wipe). */
 function killEnemyQuiet(e) {
@@ -3376,6 +3424,11 @@ function updateEnemies(dt) {
       let vx = 0, vy = 0;
       const a2p = angTo(e.x, e.y, p.x, p.y);
       const dToP = dist(e.x, e.y, p.x, p.y);
+      // Cancer cell buds off Influenza virions as it advances.
+      if (e.type === 'cancer' && onScreen(e.x, e.y)) { e.mortarT -= dt;
+        if (e.mortarT <= 0 && game.enemies.length < 680) { e.mortarT = 3.5;
+          for (let s = 0; s < 2; s++) { const aa = rand(0, TAU); spawnEnemy('influenza', e.x + Math.cos(aa) * e.r, e.y + Math.sin(aa) * e.r, {}); }
+          spawnRing(e.x, e.y, '#ff5fa2', e.r * 1.5, 0.3); } }
       switch (e.behavior) {
         case 'boids': {
           vx = Math.cos(a2p) * e.speed; vy = Math.sin(a2p) * e.speed;
@@ -3411,6 +3464,18 @@ function updateEnemies(dt) {
         case 'juggernaut': {
           vx = Math.cos(a2p) * e.speed; vy = Math.sin(a2p) * e.speed;
           if (!e.bossClone) updateAmoeboidTendril(e, p, dt);
+          break;
+        }
+        case 'forager': {                                // E. coli — devour Glucose off the floor, else march on the colony
+          let g = null, gd = 640 * 640;
+          for (let k = 0; k < game.pickups.length; k++) { const pk = game.pickups[k]; if (pk.kind !== 'xp') continue; const dd = dist2(e.x, e.y, pk.x, pk.y); if (dd < gd) { gd = dd; g = pk; } }
+          if (g) {
+            const ga = angTo(e.x, e.y, g.x, g.y); vx = Math.cos(ga) * e.speed; vy = Math.sin(ga) * e.speed;
+            if (gd < (e.r + g.r + 6) * (e.r + g.r + 6)) {   // consume it
+              removeFromArray(game.pickups, g); game.xpOrbsAlive--; pickupPool.release(g);
+              e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.06); spawnParticles(e.x, e.y, '#8fd14f', 6, { life: 0.3 });
+            }
+          } else { vx = Math.cos(a2p) * e.speed; vy = Math.sin(a2p) * e.speed; }
           break;
         }
         case 'flee': {                                   // Golden Plasmid — evasive, jittery sprinter
@@ -4484,7 +4549,8 @@ function drawEnemies(t) {
     const e = es[i]; if (e.dead) continue;
     if (!onScreen(e.x, e.y, e.r + 30)) continue;
     if (e.eatable) { drawPrey(e, t); continue; }
-    const spr = SPR[e.type] || SPR.virus;
+    const SWARM_SPR = { influenza: 'virus', ecoli: 'bacterium', parasite: 'spore', cancer: 'amoeboid' };
+    const spr = SPR[e.type] || SPR[SWARM_SPR[e.type]] || SPR.virus;
     const scale = (e.r * 2) / spr.width * (e.boss ? 1 : 1.15);
     ctx.save(); ctx.translate(e.x, e.y);
     if (e.behavior !== 'mortar') ctx.rotate(e.angle + (e.type === 'virus' ? t * 1.5 : 0));
