@@ -1,6 +1,6 @@
 # 🧬 Mutagenic Survivors
 
-An educational **microbial survivors roguelite**. Pilot a single cell through a rising tide of viruses, bacteria, toxic spores and a macrophage boss — survive, level up, evolve your organelles, and trigger screen-clearing **Apex Mutations**. Every weapon, organelle and enemy is rooted in real cell biology, with the science explained in an in-game codex.
+An educational **microbial survivors roguelite**. Pilot a single cell through a rising tide of viruses, bacteria, toxic spores and a macrophage boss — survive, level up, evolve your organelles, and trigger screen-clearing **Apex Mutations**. Or start as a lone human cell and **mitotically divide into a fighting colony** in the new **Cellular Swarm** mode. Every weapon, organelle and enemy is rooted in real cell biology, with the science explained in an in-game codex.
 
 The entire game is **one self-contained `index.html`** (Canvas2D, zero dependencies, saves to local storage). The same file is packaged into a **Windows `.exe`** (Electron) and an **Android `.apk`** (Capacitor) by CI.
 
@@ -32,8 +32,15 @@ Progress saves locally. Use **💾 Save · Backup & Transfer** in the menu to mo
 
 **Roguelite core**
 - **9 playable cell lines**, each with a signature weapon, stat profile and unique trait (glass-cannon predator, indestructible tardigrade, slime-trail Physarum, reflecting Radiolarian, colonial Volvox…). Unlocked by hitting milestones.
-- **Two modes:** 20-minute Timed (build to the boss) and endless Survival.
+- **Three modes:** 20-minute Timed (build to the boss), endless Survival, and the mitosis-driven **Cellular Swarm** (below).
 - A time-ramped **director** drives 9 themed enemy waves, recurring **Amoeboid** mini-bosses, and the three-phase **Macrophage Sentinel** boss.
+
+**☣️ Cellular Swarm mode — become the colony**
+- Start the run as **one human cell**. Hunt down glowing **Glucose** nodes (literal C₆H₁₂O₆ — the substrate of cellular respiration) to fill the **Mitosis Bar**.
+- Bar full → the cell **divides**: the game pauses and you pick a weapon or passive trait for the new daughter cells, then the colony fights on as a swarm — a lead cell plus up to 25 followers holding formation, hunting enemies, and ramming them down.
+- Lose the lead cell and the healthiest follower is **promoted** to take over — the run only ends when the very last cell is gone.
+- **Free Radicals** (toxic ROS motes — rare, unavoidable, non-magnetizing) sting on contact and fill a second **Mutagen Meter**. Full meter forces a **Mutagenic Event**: choose one of 7 drastic mutations, each a massive buff *and* a severe curse, applied colony-wide — **Malignant Hypertrophy** (+45% damage/size, −30% speed), **Hyper-Metabolism** (mitosis 45% faster, bleed HP unless fed), **Permeable Membrane** (+100% pickup radius, −25% defense), **Oncogenic Frenzy**, **Toxin Venting**, **Calcified Shell**, **Lethal Telomerase**.
+- The invasion **escalates in three acts**: **The Breach** (swarming, fragile **Influenza Virions**) → **Bacterial Colonization** (durable **E. coli** that actively devour Glucose off the ground, forcing you to out-forage them) → **Full-Scale War** (armored **Toxoplasma Parasites** and elite **Rogue Cancer Cells** that bud off new Influenza as they advance). The Macrophage is an ally here, not a boss.
 
 **Achievement-gated armory (tier = unlock order)**
 - **Everything starts locked** and is earned by playing. An item's tier is its place in the unlock ladder: **D unlocks first** (trivial goals) → **S unlocks last** (the hard ones). The Bio-Codex shows each lock's exact goal, sorted as a progression.
