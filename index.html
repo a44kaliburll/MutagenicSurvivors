@@ -4932,10 +4932,16 @@ function drawEffects() {
   for (const f of game.effects) {
     const k = f.life / f.maxLife;
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    if (f.kind === 'whip' && ART.whipArc) {            // hand-drawn cilia sweep
+    if ((f.kind === 'whip' || f.kind === 'wave') && ART.whipArc) {
+      // Hand-drawn sweep. The Flagellar Tail Strike ('wave') borrows the cilia
+      // arc tinted to its own colour and expands as it fades — a stand-in until
+      // it gets dedicated tail artwork, but far better than a flat pie wedge.
       ctx.translate(f.x, f.y); ctx.rotate(f.ang);
-      ctx.globalAlpha = k; const d = f.range * 2;
-      ctx.drawImage(ART.whipArc, -d / 2, -d / 2, d, d);
+      ctx.globalAlpha = k;
+      const grow = f.kind === 'wave' ? (1.4 - k * 0.4) : 1;
+      const d = f.range * 2 * grow;
+      const img = f.kind === 'wave' ? tintedArt(ART.whipArc, f.color, 0.8) : ART.whipArc;
+      ctx.drawImage(img, -d / 2, -d / 2, d, d);
     } else if (f.kind === 'whip' || f.kind === 'wave') {
       ctx.translate(f.x, f.y); ctx.rotate(f.ang);
       ctx.fillStyle = f.kind === 'whip' ? `rgba(125,255,154,${0.5 * k})` : `rgba(255,95,162,${0.55 * k})`;
@@ -6082,9 +6088,23 @@ function buildDevTabs() {
   for (const t of DEV_TABS) { const el = document.createElement('div'); el.className = 'codex-tab' + (t.id === devTab ? ' active' : '');
     el.textContent = t.label; el.onclick = () => { devTab = t.id; buildDevTabs(); buildDev(); }; wrap.appendChild(el); }
 }
+/* When an enemy actually appears, derived from the wave tables the spawner
+ * really reads. The `window` / `freq` fields on the enemy defs are vestigial —
+ * nothing consults them — so reporting those was wrong in both directions:
+ * it claimed the Virus stops at 5:00 (it does not) and implied the Swarm
+ * invaders spawn in every mode for 166 minutes (they are Swarm-exclusive). */
 function devWindow(d) {
-  if (d.spawnAt) return 'at ' + d.spawnAt.map(fmtTime).join(' & ');
-  if (d.window && d.window[0] >= 0) return fmtTime(d.window[0]) + ' – ' + fmtTime(d.window[1]);
+  if (d.boss) return 'boss — scripted';
+  // A wave entry covers 2 minutes; the final entry repeats for the rest of the run.
+  const scan = table => { let first = -1, last = -1;
+    for (let i = 0; i < table.length; i++) if ((table[i].mix || {})[d.id] > 0) { if (first < 0) first = i; last = i; }
+    return first < 0 ? null : { first, last, openEnd: last === table.length - 1 }; };
+  const span = r => fmtTime(r.first * 120) + ' – ' + (r.openEnd ? 'end' : fmtTime((r.last + 1) * 120));
+  const std = scan(WAVES), sw = scan(SWARM_WAVES);
+  if (d.elite) return 'elite — recurring' + (std || sw ? '' : (d.id === 'cancer' ? ' · 🧫 Swarm' : ' · Timed/Endless'));
+  if (std && sw) return span(std) + ' · 🧫 Swarm ' + span(sw);
+  if (std) return span(std) + ' · Timed/Endless';
+  if (sw) return '🧫 Cellular Swarm only · ' + span(sw);
   return '—';
 }
 function devScale(d, t) {
