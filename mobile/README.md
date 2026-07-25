@@ -9,7 +9,7 @@ generated `android/` project are build artifacts (git-ignored), regenerated from
 ## Automated build (CI)
 
 `.github/workflows/build-android.yml` builds the APK on every push and attaches
-`MutagenicSurvivors-1.0.0.apk` to the **v1.0.0** GitHub Release (next to the desktop
+`MutagenicSurvivors-1.1.0.apk` to the **v1.1.0** GitHub Release (next to the desktop
 builds). You can also trigger it manually from the Actions tab, or download it
 from a run's Artifacts.
 

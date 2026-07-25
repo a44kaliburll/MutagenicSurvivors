@@ -81,6 +81,11 @@
     text-shadow: 0 0 40px rgba(47, 246, 255, 0.25);
     text-align: center; line-height: 1;
   }
+  /* Build badge on the title screen: which version you are running, and
+     whether the sprite set actually loaded. Makes a stale install obvious. */
+  .version-tag { text-align: center; color: var(--ink-dim); font-size: 11px;
+    letter-spacing: 2px; margin-top: 8px; opacity: 0.7; font-weight: 700; }
+  .version-tag.art-missing { color: var(--bio-amber); opacity: 1; }
   .subtitle { color: var(--ink-dim); letter-spacing: 4px; text-transform: uppercase;
     font-size: clamp(11px, 1.6vw, 15px); margin-top: 12px; text-align: center; }
 
@@ -509,6 +514,7 @@
   <div class="overlay show" id="menu-main">
     <div class="title">MUTAGENIC SURVIVORS</div>
     <div class="subtitle">Survive the Microbial Apocalypse · Evolve · Mutate</div>
+    <div class="version-tag" id="version-tag">v1.1.0</div>
     <div class="menu-actions">
       <button class="btn primary" id="btn-continue" data-act="continue" style="display:none">▶ CONTINUE RUN</button>
       <button class="btn" data-act="play">▶ BEGIN INCUBATION</button>
@@ -529,7 +535,7 @@
       Pause: <span class="kbd">Esc</span> (full stats &amp; arsenal) · Quick stats peek: <span class="kbd">Tab</span> · Reroll: <span class="kbd">R</span> · Map: <span class="kbd">M</span> · Music track: <span class="kbd">N</span><br/>
       🎮 Controller: Left stick / D-pad move · <span class="kbd">A</span> select · <span class="kbd">B</span> back · <span class="kbd">X</span> reroll · <span class="kbd">LB</span> stats · <span class="kbd">Start</span> pause
     </div>
-    <div class="credit">Educational survivors prototype · Canvas2D · single-file</div>
+    <div class="credit">Educational survivors prototype · Canvas2D · hand-painted sprite set</div>
   </div>
 
   <!-- ===== Mode select ===== -->
@@ -2023,6 +2029,9 @@ const SPR = {}; // sprite atlas, populated in buildSprites()
  *  drawProjectiles scale from `sprite.width`, so artwork of any dimension   *
  *  drops straight in without touching their maths.                         *
  * ======================================================================== */
+/* Keep in step with the "version" field in package.json — it is what the title
+ * screen reports, so a stale install is identifiable at a glance. */
+const GAME_VERSION = '1.1.0';
 const ART = {};
 const ART_BASE = 'assets/';
 /* Keys that collide with an SPR slot replace that procedural sprite;       *
@@ -2090,14 +2099,25 @@ function feather(img, inner) {
   g.fillStyle = grad; g.fillRect(0, 0, c.width, c.height);
   return c;
 }
+/* Title-screen build badge: version plus how much of the sprite set resolved.
+ * If assets/ is missing from a packaged build this is where it shows up. */
+let _artFailed = 0;
+function updateVersionTag() {
+  const el = document.getElementById('version-tag'); if (!el) return;
+  const got = Object.keys(ART).length, want = Object.keys(ART_MANIFEST).length;
+  if (got === want) { el.textContent = 'v' + GAME_VERSION; el.classList.remove('art-missing'); }
+  else if (got + _artFailed >= want) { el.textContent = `v${GAME_VERSION} · artwork ${got}/${want}`; el.classList.add('art-missing'); }
+  else { el.textContent = 'v' + GAME_VERSION; }
+}
 function loadArt() {
   for (const key in ART_MANIFEST) {
     const img = new Image();
     img.onload = () => {
       const use = ART_FEATHER[key] ? feather(img, 0.97) : img;
       ART[key] = use; if (SPR[key]) SPR[key] = use;
+      updateVersionTag();
     };
-    img.onerror = () => { /* missing file → keep the procedural sprite */ };
+    img.onerror = () => { _artFailed++; updateVersionTag(); };   // keep the procedural sprite
     img.src = ART_BASE + ART_MANIFEST[key];
   }
 }
@@ -6271,6 +6291,7 @@ function init() {
   Music.init();
   buildSprites();
   loadArt();            // hand-drawn art swaps in over the procedural sprites
+  updateVersionTag();
   setupCanvas();
   setupInput();
   setupSaveModal();

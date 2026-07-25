@@ -1,7 +1,7 @@
 {
   "name": "mutagenic-survivors-mobile",
   "productName": "Mutagenic Survivors",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Capacitor Android wrapper for Mutagenic Survivors (the single-file Canvas game lives in ../index.html and is staged into www/ at build time).",
   "private": true,
   "license": "MIT",

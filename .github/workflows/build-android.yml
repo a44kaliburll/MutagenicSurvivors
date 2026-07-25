@@ -2,13 +2,14 @@ name: Build Android app
 
 # Wraps the self-contained index.html in a Capacitor WebView shell and builds an
 # installable Android .apk. Grab it from the run's Artifacts, or it is attached to
-# the v1.0.0 GitHub Release automatically (alongside the desktop builds).
+# the v1.1.0 GitHub Release automatically (alongside the desktop builds).
 on:
   push:
     branches: [main, "claude/**"]
     tags: ["v*"]
     paths:
       - "index.html"
+      - "assets/**"          # artwork is staged into www/ — art-only commits must rebuild
       - "build/icon.png"
       - "mobile/**"
       - ".github/workflows/build-android.yml"
@@ -62,21 +63,21 @@ jobs:
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Stage the APK with a friendly name
-        run: cp mobile/android/app/build/outputs/apk/debug/app-debug.apk MutagenicSurvivors-1.0.0.apk
+        run: cp mobile/android/app/build/outputs/apk/debug/app-debug.apk MutagenicSurvivors-1.1.0.apk
 
       - name: Upload .apk artifact (per-run, ephemeral)
         uses: actions/upload-artifact@v4
         with:
           name: MutagenicSurvivors-android
-          path: MutagenicSurvivors-1.0.0.apk
+          path: MutagenicSurvivors-1.1.0.apk
           if-no-files-found: error
 
-      # Attach the .apk to the same v1.0.0 Release the desktop workflow maintains.
+      # Attach the .apk to the same v1.1.0 Release the desktop workflow maintains.
       # We intentionally do NOT set name/body here so the desktop job owns the
       # release text; this step only upserts the .apk asset.
-      - name: Attach .apk to the v1.0.0 Release
+      - name: Attach .apk to the v1.1.0 Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.0
-          files: MutagenicSurvivors-1.0.0.apk
+          tag_name: v1.1.0
+          files: MutagenicSurvivors-1.1.0.apk
           fail_on_unmatched_files: true
