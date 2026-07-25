@@ -199,6 +199,9 @@
     box-shadow: 0 14px 40px rgba(47,246,255,0.25); }
   .card .ic-big { font-size: 46px; text-align: center; filter: drop-shadow(0 0 12px currentColor); }
   .card .ic-big .ic-art { width: 54px; height: 54px; display: block; margin: 0 auto; }
+  .card .crar { position: absolute; top: 8px; left: 10px; font-size: 9.5px; font-weight: 800;
+    letter-spacing: 1px; text-transform: uppercase; padding: 2px 7px; border-radius: 6px;
+    border: 1px solid; }
   .hud-chip .ic-art { width: 17px; height: 17px; display: block; }
   .card .ctype { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; text-align: center;
     margin-top: 6px; }
@@ -1414,6 +1417,28 @@ function luckyIndex(weights, luck) {
 function curLuck() { return (game.player && game.player.mult && game.player.mult.luck) || 0; }
 function rollBoostRarity() { return luckyIndex(BOOST_RARITIES.map(r => r.weight), curLuck()); }
 
+/* ---- Level-up card rarity ------------------------------------------------ *
+ * Every option offered at a level-up rolls its own rarity, and that rarity is
+ * not decoration: it grants extra levels on the spot, so a Legendary Cilia
+ * Whips is worth holding out for over a Common one. Luck steepens the odds via
+ * luckyIndex, the same roller the chests and biomatter use.                   */
+const CARD_RARITIES = [
+  { id: 'common',    name: 'Common',    color: '#9aa7b3', rgb: '154,167,179', weight: 60, bonus: 0 },
+  { id: 'uncommon',  name: 'Uncommon',  color: '#6dff8a', rgb: '109,255,138', weight: 25, bonus: 1 },
+  { id: 'rare',      name: 'Rare',      color: '#5fc8ff', rgb: '95,200,255',  weight: 10, bonus: 2 },
+  { id: 'epic',      name: 'Epic',      color: '#b07bff', rgb: '176,123,255', weight: 4,  bonus: 3 },
+  { id: 'legendary', name: 'LEGENDARY', color: '#ff9d3a', rgb: '255,157,58',  weight: 1,  bonus: 4 },
+];
+function rollCardRarity() { return luckyIndex(CARD_RARITIES.map(r => r.weight), curLuck()); }
+/* Which choice kinds can actually bank extra levels. Heal/coins scale their
+ * value instead; a one-shot like the lucky boost has nothing to scale, so it
+ * always reads Common rather than dangling a meaningless Legendary. */
+function rarityAppliesTo(kind) {
+  return kind === 'weapon-up' || kind === 'weapon-new' || kind === 'passive-up' ||
+         kind === 'passive-new' || kind === 'adapt-up' || kind === 'adapt-new' ||
+         kind === 'heal' || kind === 'coins';
+}
+
 /* ---- Biomatter (XP) rarity tiers ---------------------------------------- *
  * Dropped XP is a blob of biomatter whose COLOUR encodes its richness:       *
  * green ×1.0 (common) · blue ×1.5 (uncommon) · purple ×2.0 (rare) ·          *
@@ -2084,10 +2109,12 @@ const ART_MANIFEST = {
   coin:    'pickups/genetic_coin.png',
   chest:   'pickups/loot_chest.png',
   nutrient:'pickups/nutrient_spore.png',
-  // NB: the XP biomatter and Glucose tier art is deliberately NOT loaded. Those
-  // pickups blanket the screen in their hundreds, and the bright tiered sprites
-  // read as clutter at that density; the procedural orbs from buildSprites()
-  // stay quieter. The files remain in assets/ if that call is ever revisited.
+  gluc0: 'pickups/glucose_tier1.png', gluc1: 'pickups/glucose_tier2.png',
+  gluc2: 'pickups/glucose_tier3.png', gluc3: 'pickups/glucose_tier4.png',
+  // NB: the XP biomatter tier art is deliberately NOT loaded. Enemy drops
+  // blanket the screen in their hundreds and the bright tiered sprites read as
+  // clutter at that density, so the quieter procedural orbs from buildSprites()
+  // stay. Glucose is a sparser, deliberate pickup, so it keeps its artwork.
   // --- Phase 2: art-only, drawn explicitly ---
   grazer:      'highest_impact/chlorella_grazer.png',
   tailSweep:   'highest_impact/flagellar_tail_sweep_4f.png',
@@ -2157,6 +2184,7 @@ const ART_SCALE = {
   biomassBig: 1.66, cloneCell: 1.49, playerCell: 1.36, playerEvo: 1.20,
   // Phase 2 — measured from each file's solid-alpha bounding box
   dart: 1.25, toxglob: 1.35, coin: 1.23, chest: 1.42, nutrient: 1.17,
+  gluc0: 1.52, gluc1: 1.23, gluc2: 1.26, gluc3: 1.41,
   grazer: 1.27, sporeMine: 1.22, sporeBoom: 1.13,
   fieldAura: 1.20, mucusAura: 1.00, causticRing: 1.09, boostPad: 1.22,
 };
@@ -2167,7 +2195,7 @@ const PLAYER_ART_FRAMES = 4;        // player_spritesheet_128x128_4f.png
  * up to 118), which would read as a hard-edged square once scaled onto the dark
  * dish. Feathering the outer few percent removes the box; their solid content
  * only reaches 71–91% of frame, so nothing meaningful is clipped. */
-const ART_FEATHER = { macrophage: 1, coin: 1, boostPad: 1, cryoGlyph: 1 };
+const ART_FEATHER = { macrophage: 1, coin: 1, gluc3: 1, boostPad: 1, cryoGlyph: 1 };
 function feather(img, inner) {
   const c = document.createElement('canvas');
   c.width = img.width; c.height = img.height;
@@ -5562,6 +5590,7 @@ function getLevelUpChoices() {
       if (!pick) break; seen.add(pick.kind + pick.id); out.push(pick);
     }
     if (!out.length) out.push({ kind: 'heal' });
+    out.forEach(assignCardRarity);
     return out;
   }
   const hasWeaponSlot = p.weapons.length < 6;
@@ -5596,7 +5625,23 @@ function getLevelUpChoices() {
     else used.add(sel.kind + Math.random());     // allow only one each typically
     chosen.push(sel);
   }
+  chosen.forEach(assignCardRarity);
   return chosen;
+}
+/* Roll this card's rarity and clamp the bonus to what the item can still take,
+ * so a Legendary on a weapon one level from max does not advertise +4. */
+function assignCardRarity(c) {
+  if (!rarityAppliesTo(c.kind)) { c.rarity = 0; c.bonus = 0; return; }
+  const p = game.player;
+  let head = 99;
+  if (c.kind === 'weapon-up')   head = WEAPON_BY_ID[c.id].maxLevel - c.target;
+  else if (c.kind === 'weapon-new')  head = WEAPON_BY_ID[c.id].maxLevel - 1;
+  else if (c.kind === 'passive-up')  head = PASSIVE_BY_ID[c.id].maxLevel - c.target;
+  else if (c.kind === 'passive-new') head = PASSIVE_BY_ID[c.id].maxLevel - 1;
+  else if (c.kind === 'adapt-up' || c.kind === 'adapt-new') head = ADAPT_BY_ID[c.id].max - c.target;
+  let r = rollCardRarity();
+  while (r > 0 && CARD_RARITIES[r].bonus > head) r--;      // step down to something honest
+  c.rarity = r; c.bonus = Math.min(CARD_RARITIES[r].bonus, Math.max(0, head));
 }
 function openLevelUp() {
   if (game.state === 'apex') return;                 // apex takes precedence
@@ -5617,23 +5662,35 @@ function buildChoiceCard(c, i) {
   let icon, type, name, level, desc, fact, cls = 'card';
   if (c.kind === 'weapon-up' || c.kind === 'weapon-new') {
     const def = WEAPON_BY_ID[c.id]; cls += ' weapon';
-    icon = def.icon; type = 'Active Weapon' + tierBadge(weaponTier(c.id)); name = def.name; level = c.kind === 'weapon-new' ? 'NEW · Lvl 1' : 'Lvl ' + c.target;
+    const wLv = Math.min(def.maxLevel, (c.kind === 'weapon-new' ? 1 : c.target) + (c.bonus || 0));
+    icon = def.icon; type = 'Active Weapon' + tierBadge(weaponTier(c.id)); name = def.name;
+    level = (c.kind === 'weapon-new' ? 'NEW · ' : '') + 'Lvl ' + wLv;
     desc = c.kind === 'weapon-new' ? def.desc : def.levelText[c.target - 1]; fact = def.fact;
   } else if (c.kind === 'passive-up' || c.kind === 'passive-new') {
     const def = PASSIVE_BY_ID[c.id]; cls += ' passive';
-    icon = def.icon; type = 'Passive Trait' + tierBadge(passiveTier(c.id)); name = def.name; level = c.kind === 'passive-new' ? 'NEW · Tier 1' : 'Tier ' + c.target;
+    const pLv = Math.min(def.maxLevel, (c.kind === 'passive-new' ? 1 : c.target) + (c.bonus || 0));
+    icon = def.icon; type = 'Passive Trait' + tierBadge(passiveTier(c.id)); name = def.name;
+    level = (c.kind === 'passive-new' ? 'NEW · ' : '') + 'Tier ' + pLv;
     desc = def.tierText(c.target) + ' — ' + def.desc; fact = def.fact;
   } else if (c.kind === 'adapt-up' || c.kind === 'adapt-new') {
     const def = ADAPT_BY_ID[c.id]; cls += ' passive';
-    icon = def.icon; type = 'Adaptation'; name = def.name; level = c.kind === 'adapt-new' ? 'NEW · Tier 1' : 'Tier ' + c.target;
+    const aLv = Math.min(def.max, c.target + (c.bonus || 0));
+    icon = def.icon; type = 'Adaptation'; name = def.name;
+    level = (c.kind === 'adapt-new' ? 'NEW · ' : '') + 'Tier ' + aLv;
     desc = def.tierText(c.target) + ' — ' + def.desc; fact = def.fact;
   } else if (c.kind === 'heal') { cls += ' heal'; icon = '💚'; type = 'Recovery'; name = 'Cytoplasm Repair'; level = ''; desc = 'Restore 40% of max health instantly.'; fact = 'Cells repair their membranes by patching tears with internal vesicles within seconds of injury.'; }
   else if (c.kind === 'lucky-boost') { cls += ' apex'; icon = '🍀'; type = 'Lucky Mutation'; name = 'Beneficial Splice'; level = 'RANDOM BOOST'; desc = 'Gain a random permanent boost now — its rarity scales with your Luck.'; fact = 'Beneficial mutations are rare lucky rolls; selection seizes on them and amplifies them down the generations.'; }
   else { cls += ' heal'; icon = '🪙'; type = 'Resource'; name = 'Genetic Cache'; level = ''; desc = 'Gain 60 Genetic Code for the meta-lab.'; fact = 'DNA stores ~2 bits per base pair; your genome packs ~1.5 GB of data into every cell.'; }
+  const rar = CARD_RARITIES[c.rarity || 0];
+  if (c.rarity > 0) cls += ' rar-' + rar.id;
   card.className = cls; card.style.animationDelay = (i * 0.05) + 's';
+  if (c.rarity > 0) { card.style.borderColor = rar.color;
+    card.style.boxShadow = `0 0 ${8 + c.rarity * 6}px rgba(${rar.rgb},${0.18 + c.rarity * 0.08})`; }
   const ca = c.id && CARD_ART[c.id] && ART[CARD_ART[c.id]];      // hand-drawn upgrade icon
   const iconHtml = ca ? `<img class="ic-art" src="${ca.src}" alt="">` : icon;
-  card.innerHTML = `<div class="corner">${i + 1}</div><div class="ic-big" style="color:${cardColor(c)}">${iconHtml}</div>
+  const rarTag = rarityAppliesTo(c.kind)
+    ? `<div class="crar" style="color:${rar.color};border-color:${rar.color}55;background:rgba(${rar.rgb},0.10)">${rar.name}${c.bonus ? ' · +' + c.bonus : ''}</div>` : '';
+  card.innerHTML = `<div class="corner">${i + 1}</div>${rarTag}<div class="ic-big" style="color:${cardColor(c)}">${iconHtml}</div>
     <div class="ctype">${type}</div><div class="cname">${name}</div><div class="clevel">${level}</div>
     <div class="cdesc">${desc}</div><div class="cfact">🔬 ${fact}</div>`;
   card.onclick = () => chooseUpgrade(c);
@@ -5648,14 +5705,15 @@ function cardColor(c) {
 }
 function chooseUpgrade(c) {
   const p = game.player;
-  if (c.kind === 'weapon-up') { const w = p.weapons.find(w => w.id === c.id); w.level = c.target; }
-  else if (c.kind === 'weapon-new') { p.weapons.push({ id: c.id, level: 1, timer: 0, apex: false, apexId: null }); markCodex(c.id); }
-  else if (c.kind === 'passive-up') { p.passives[c.id] = c.target; recomputeStats(); markCodex(c.id); }
-  else if (c.kind === 'passive-new') { p.passives[c.id] = 1; recomputeStats(); markCodex(c.id); }
-  else if (c.kind === 'adapt-up' || c.kind === 'adapt-new') { p.adaptations[c.id] = c.target; recomputeStats(); }
+  const bonus = c.bonus || 0;                  // extra levels bought by this card's rarity
+  if (c.kind === 'weapon-up') { const w = p.weapons.find(w => w.id === c.id); w.level = Math.min(WEAPON_BY_ID[c.id].maxLevel, c.target + bonus); }
+  else if (c.kind === 'weapon-new') { p.weapons.push({ id: c.id, level: Math.min(WEAPON_BY_ID[c.id].maxLevel, 1 + bonus), timer: 0, apex: false, apexId: null }); markCodex(c.id); }
+  else if (c.kind === 'passive-up') { p.passives[c.id] = Math.min(PASSIVE_BY_ID[c.id].maxLevel, c.target + bonus); recomputeStats(); markCodex(c.id); }
+  else if (c.kind === 'passive-new') { p.passives[c.id] = Math.min(PASSIVE_BY_ID[c.id].maxLevel, 1 + bonus); recomputeStats(); markCodex(c.id); }
+  else if (c.kind === 'adapt-up' || c.kind === 'adapt-new') { p.adaptations[c.id] = Math.min(ADAPT_BY_ID[c.id].max, c.target + bonus); recomputeStats(); }
   else if (c.kind === 'lucky-boost') { const rw = grantChestBoost(); recomputeStats(); toast('🍀 ' + rw.rar.dot + ' ' + rw.stat.icon + ' ' + rw.stat.name + ' ' + rw.text, 2.8); }
-  else if (c.kind === 'heal') { p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.4); }
-  else if (c.kind === 'coins') { game.coinsThisRun += 60; }
+  else if (c.kind === 'heal') { p.hp = Math.min(p.maxHp, p.hp + p.maxHp * (0.4 + 0.12 * bonus)); }
+  else if (c.kind === 'coins') { game.coinsThisRun += 60 * (1 + bonus); }
   if (game.mode === 'swarm') mitosisSplit();   // every mitosis divides the colony
   refreshTray();
   game.pendingLevelUps = Math.max(0, game.pendingLevelUps - 1);
