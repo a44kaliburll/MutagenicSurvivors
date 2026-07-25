@@ -1482,10 +1482,10 @@ const ENEMIES = {
   algae: {
     id: 'algae', name: 'Chlorella Graze', icon: '🟢', color: '#9dff5f', glow: '#6dff3a',
     weight: 2, window: [0, 1080], freq: 0.5,
-    hp: 1, damage: 0, speed: 64, radius: 11, xp: 8, coinChance: 0.12, coin: 2,
+    hp: 16, damage: 0, speed: 64, radius: 11, xp: 8, coinChance: 0.12, coin: 2,
     behavior: 'prey',
     fact: 'Chlorella is a tiny edible green alga, packed with protein — predatory microbes engulf and digest it whole by phagocytosis.',
-    special: 'Harmless prey: ignores your weapons, flees slowly, and hides in toxic blooms. EAT it by touch for a big biomatter snack (and sometimes a heal).'
+    special: 'Harmless grazer: flees slowly and hides in toxic blooms. Shoot it for biomatter, or EAT it by touch for the same snack plus a chance of coins and a heal. A Chemoattractant drags every grazer on screen to you.'
   },
   amoeboid: {
     id: 'amoeboid', name: 'Amoeboid Pseudopod', icon: '🟣', color: '#c98bff', glow: '#b07bff',
@@ -2427,7 +2427,7 @@ function createPlayer() {
     },
     pickupRadius: 120,
     // Transient buffs
-    surge: 0, invulnTrail: 0, invertCtrl: 0, slowT: 0, powerSpeed: 0, frenzy: 0,
+    surge: 0, invulnTrail: 0, invertCtrl: 0, slowT: 0, powerSpeed: 0, frenzy: 0, preyLure: 0,
     // misc
     cloneTimer: 0, stillT: 0, evoLevel: -1,   // stationary timer; level Directed Evolution was taken (-1 = not)
   };
@@ -2574,7 +2574,6 @@ function spawnFloater(x, y, text, color, crit = false) {
 /* ---- Apply damage to an enemy ------------------------------------------ */
 function damageEnemy(e, amount, opts = {}) {
   if (e.dead) return;
-  if (e.eatable) return;                  // prey shrug off weapons — they're EATEN, not shot
   if (e.invulnShield) { if (!opts.silent) spawnFloater(e.x, e.y - e.r, 'IMMUNE', '#7fa8b8'); return; }
   // Acidic "armor strip" amplifies all damage taken while debuffed.
   let amt = amount * (1 + (e.amplify || 0));
@@ -2794,10 +2793,11 @@ const POWERS = {
   frenzy: { icon: '🔥', color: '#ff7a3a', name: 'Mitotic Frenzy', note: '+50% damage & fire rate · 8s' },
   freeze: { icon: '❄', color: '#9fe0ff', name: 'Cryo-Shock',     note: 'freezes the swarm · 3s' },
   bomb:   { icon: '💥', color: '#ff5a5a', name: 'Lysis Burst',    note: 'detonates the whole screen' },
+  lure:   { icon: '💠', color: '#6dffb0', name: 'Chemoattractant', note: 'grazers swim to you · 9s' },
 };
 /* Artwork for the power-up capsules; anything unmapped falls back to its glyph. */
-const POWER_ART = { magnet: 'chemMagnet', health: 'biomassBig', bomb: 'bioNuke', speed: 'iconSpeed', frenzy: 'iconOffense' };
-const POWER_BAG = ['magnet', 'magnet', 'magnet', 'health', 'health', 'health', 'speed', 'speed', 'frenzy', 'frenzy', 'freeze', 'bomb'];
+const POWER_ART = { magnet: 'chemMagnet', health: 'biomassBig', bomb: 'bioNuke', speed: 'iconSpeed', frenzy: 'iconOffense', lure: 'evoPoint' };
+const POWER_BAG = ['magnet', 'magnet', 'magnet', 'health', 'health', 'health', 'speed', 'speed', 'frenzy', 'frenzy', 'freeze', 'bomb', 'lure', 'lure'];
 function pickPowerType() { return pick(POWER_BAG); }
 /* Rare from normal kills; guaranteed from elites (bosses drop them on death). */
 function maybeDropPower(e) {
@@ -2815,6 +2815,14 @@ function applyPower(id) {
     p.powerSpeed = 8;
   } else if (id === 'frenzy') {
     p.frenzy = 8;
+  } else if (id === 'lure') {
+    // Chemotaxis: flood the dish with an attractant so every grazer swims in.
+    p.preyLure = 9;
+    let drawn = 0;
+    for (const e of game.enemies) if (!e.dead && e.eatable) drawn++;
+    spawnRing(p.x, p.y, POWERS.lure.color, camHalfDiag(), 0.7);
+    spawnParticles(p.x, p.y, POWERS.lure.color, 26, { speed: 220, life: 0.8 });
+    if (drawn) spawnFloater(p.x, p.y - p.r - 12, drawn + ' GRAZERS INBOUND', POWERS.lure.color);
   } else if (id === 'freeze') {
     for (const e of game.enemies) if (!e.dead && !e.boss) e.paralyze = Math.max(e.paralyze || 0, 3);
     game.flash = 0.3; game.flashColor = 'rgba(159,224,255,'; spawnRing(p.x, p.y, '#9fe0ff', camHalfDiag(), 0.55);
@@ -3644,7 +3652,11 @@ function updateEnemies(dt) {
         }
         case 'prey': {                                   // harmless grazer — flees slowly, hides in toxic blooms
           e.phase += dt * 1.6;
-          if (dToP < 340) {                              // player near -> flee, preferring a toxic bloom to cower in
+          if (p.preyLure > 0) {                          // Chemoattractant: chemotaxis straight up the gradient — to you
+            const wob = Math.cos(e.phase) * 0.18;
+            vx = Math.cos(a2p + wob) * e.speed * 2.2;
+            vy = Math.sin(a2p + wob) * e.speed * 2.2;
+          } else if (dToP < 340) {                       // player near -> flee, preferring a toxic bloom to cower in
             const bloom = nearestToxicHazard(e.x, e.y, 420);
             let ax, ay;
             if (bloom && dist(e.x, e.y, bloom.x, bloom.y) > bloom.r * 0.55) {
@@ -4057,6 +4069,7 @@ function updatePlayer(dt) {
   if (p.slipBoost > 0) p.slipBoost -= dt;
   if (p.powerSpeed > 0) p.powerSpeed -= dt;
   if (p.frenzy > 0) p.frenzy -= dt;
+  if (p.preyLure > 0) p.preyLure -= dt;
 
   // ---- shield + health regen ----
   if (p.shieldRegenDelay > 0) p.shieldRegenDelay -= dt;
@@ -4728,14 +4741,23 @@ function drawPrey(e, t) {
   g.addColorStop(0, 'rgba(157,255,95,0.45)'); g.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, e.r * 2.1, 0, TAU); ctx.fill();
   ctx.globalCompositeOperation = 'source-over';
-  ctx.fillStyle = 'rgba(120,230,90,0.95)';
+  ctx.fillStyle = e.hitFlash > 0 ? '#ffffff' : 'rgba(120,230,90,0.95)';   // grazers can be shot now
   ctx.beginPath(); ctx.ellipse(0, 0, e.r * wob, e.r / wob, e.angle, 0, TAU); ctx.fill();
   ctx.strokeStyle = 'rgba(205,255,150,0.85)'; ctx.lineWidth = 1.5; ctx.stroke();
   ctx.fillStyle = 'rgba(40,120,30,0.85)';
   for (let k = 0; k < 3; k++) { const a = e.phase + k * 2.1; ctx.beginPath(); ctx.arc(Math.cos(a) * e.r * 0.42, Math.sin(a) * e.r * 0.42, e.r * 0.2, 0, TAU); ctx.fill(); }
   ctx.restore();
+  // wounded pip, so a half-killed grazer is readable
+  if (e.hp < e.maxHp) { const w = e.r * 1.8, f = clamp(e.hp / e.maxHp, 0, 1);
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(e.x - w / 2, e.y - e.r - 8, w, 2.5);
+    ctx.fillStyle = '#9dff5f'; ctx.fillRect(e.x - w / 2, e.y - e.r - 8, w * f, 2.5); }
   const dp = dist(e.x, e.y, game.player.x, game.player.y);
-  if (dp < 210) { ctx.save(); ctx.globalAlpha = clamp((210 - dp) / 210, 0, 1) * 0.6; ctx.strokeStyle = '#9dff5f';
+  if (game.player.preyLure > 0) {           // being reeled in by the Chemoattractant
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    ctx.strokeStyle = 'rgba(109,255,176,0.75)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 5 + 3 * Math.sin(t * 9 + e.phase), 0, TAU); ctx.stroke();
+    ctx.restore();
+  } else if (dp < 210) { ctx.save(); ctx.globalAlpha = clamp((210 - dp) / 210, 0, 1) * 0.6; ctx.strokeStyle = '#9dff5f';
     ctx.setLineDash([4, 5]); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 7 + 2 * Math.sin(t * 6), 0, TAU); ctx.stroke(); ctx.setLineDash([]); ctx.restore(); }
 }
 function drawEnemies(t) {
@@ -5286,6 +5308,7 @@ function updateStatsOverlay() {
   const buffs = [];
   if (p.frenzy > 0) buffs.push('⚡ Frenzy ' + Math.ceil(p.frenzy) + 's');
   if (p.powerSpeed > 0) buffs.push('🏃 Sprint ' + Math.ceil(p.powerSpeed) + 's');
+  if (p.preyLure > 0) buffs.push('💠 Attractant ' + Math.ceil(p.preyLure) + 's');
   if (p.surge > 0) buffs.push('🌀 Surge');
   if (p.invulnTrail > 0) buffs.push('✨ Invuln');
   const bf = $('so-buffs'); if (bf) { if (buffs.length) { bf.style.display = 'block'; bf.textContent = buffs.join(' · '); } else bf.style.display = 'none'; }
@@ -5675,6 +5698,7 @@ function pauseStatsHTML(p) {
   const buffs = [];
   if (p.frenzy > 0) buffs.push('⚡ Mitotic Frenzy ' + Math.ceil(p.frenzy) + 's');
   if (p.powerSpeed > 0) buffs.push('🏃 Flagellar Sprint ' + Math.ceil(p.powerSpeed) + 's');
+  if (p.preyLure > 0) buffs.push('💠 Chemoattractant ' + Math.ceil(p.preyLure) + 's');
   if (p.surge > 0) buffs.push('🌀 Propulsion Surge');
   if (p.invulnTrail > 0) buffs.push('✨ Slipstream Invulnerability');
   return `<div class="ps-section"><h3>Effective Stats — green = boosted above baseline</h3><div class="ps-grid">${stats}</div></div>`
