@@ -2,16 +2,19 @@
 
 An educational **microbial survivors roguelite**. Pilot a single cell through a rising tide of viruses, bacteria, toxic spores and a macrophage boss — survive, level up, evolve your organelles, and trigger screen-clearing **Apex Mutations**. Or start as a lone human cell and **mitotically divide into a fighting colony** in the new **Cellular Swarm** mode. Every weapon, organelle and enemy is rooted in real cell biology, with the science explained in an in-game codex.
 
-The entire game is **one self-contained `index.html`** (Canvas2D, zero dependencies, saves to local storage). The same file is packaged into a **Windows `.exe`** (Electron) and an **Android `.apk`** (Capacitor) by CI.
+The game ships as an **installable app** — a **Windows `.exe`** (Electron) and an **Android `.apk`** (Capacitor), both built by CI. Under the hood the engine is a single Canvas2D `index.html` with zero runtime dependencies; the installers bundle it into a native shell.
 
 ---
 
-## ▶ Play
+## ▶ Install & play
 
-- **Browser:** open **`index.html`** in any modern browser (double-click or drag into a tab). That's the whole game.
-- **Windows / Android:** grab the latest build from the **[v1.0.0 Release](../../releases/tag/v1.0.0)**:
-  - `MutagenicSurvivors-Setup-1.0.0.exe` — Windows installer · `MutagenicSurvivors-Portable-1.0.0.exe` — portable, no install
-  - `MutagenicSurvivors-1.0.0.apk` — Android (sideload; enable "Install unknown apps")
+Grab the latest build from the **[v1.0.0 Release](../../releases/tag/v1.0.0)**:
+
+| Platform | Download |
+|---|---|
+| **Windows** (installer) | `MutagenicSurvivors-Setup-1.0.0.exe` |
+| **Windows** (portable, no install) | `MutagenicSurvivors-Portable-1.0.0.exe` |
+| **Android** | `MutagenicSurvivors-1.0.0.apk` — sideload; enable "Install unknown apps" |
 
 Progress saves locally. Use **💾 Save · Backup & Transfer** in the menu to move a save code between devices.
 
