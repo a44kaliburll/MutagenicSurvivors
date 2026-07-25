@@ -8,13 +8,13 @@ The game ships as an **installable app** — a **Windows `.exe`** (Electron) and
 
 ## ▶ Install & play
 
-Grab the latest build from the **[v1.1.0 Release](../../releases/tag/v1.1.0)**:
+Grab the latest build from the **[v1.2.0 Release](../../releases/tag/v1.2.0)**:
 
 | Platform | Download |
 |---|---|
-| **Windows** (installer) | `MutagenicSurvivors-Setup-1.1.0.exe` |
-| **Windows** (portable, no install) | `MutagenicSurvivors-Portable-1.1.0.exe` |
-| **Android** | `MutagenicSurvivors-1.1.0.apk` — sideload; enable "Install unknown apps" |
+| **Windows** (installer) | `MutagenicSurvivors-Setup-1.2.0.exe` |
+| **Windows** (portable, no install) | `MutagenicSurvivors-Portable-1.2.0.exe` |
+| **Android** | `MutagenicSurvivors-1.2.0.apk` — sideload; enable "Install unknown apps" |
 
 Progress saves locally. Use **💾 Save · Backup & Transfer** in the menu to move a save code between devices.
 
@@ -65,7 +65,7 @@ Progress saves locally. Use **💾 Save · Backup & Transfer** in the menu to mo
 
 ## 🖥 Desktop build (`.exe`)
 
-CI (`.github/workflows/build-desktop.yml`) builds it automatically on every push and attaches the `.exe` files to the v1.1.0 Release. To build locally (needs [Node.js](https://nodejs.org) 18+):
+CI (`.github/workflows/build-desktop.yml`) builds it automatically on every push and attaches the `.exe` files to the v1.2.0 Release. To build locally (needs [Node.js](https://nodejs.org) 18+):
 
 ```bash
 npm install        # Electron + electron-builder
