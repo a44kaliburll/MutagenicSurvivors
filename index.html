@@ -2068,6 +2068,7 @@ const ART_MANIFEST = {
   iconWings:   'environment_ui/icon_wings.png',
   // --- Phase 2: pickups & projectiles (drop-in SPR replacements) ---
   dart:    'highest_impact/dart_projectile.png',
+  dartSheet: 'highest_impact/dart_projectile_variants_sheet.png',
   toxglob: 'weapon_effects/toxglob_projectile.png',
   coin:    'pickups/genetic_coin.png',
   chest:   'pickups/loot_chest.png',
@@ -2088,6 +2089,37 @@ const ART_MANIFEST = {
   cryoGlyph:   'small_and_powerups/powerup_cryo_shock_glyph.png',
 };
 const TAIL_SWEEP_FRAMES = 4;        // flagellar_tail_sweep_4f.png
+/* dart_projectile_variants_sheet.png — five darts painted in the game palette,
+ * measured from the file itself. Rather than hard-coding which weapon gets
+ * which frame, every dart picks the variant nearest the colour the firing code
+ * already assigned it, so new weapons are matched automatically and a dart can
+ * never disagree with its own light trail. */
+const DART_VARIANTS = ['#2ff6ff', '#6dff8a', '#ff5fa2', '#ffd166', '#b07bff'];
+const _dartVarCache = new Map();
+function dartVariant(color) {
+  if (!color) return 0;
+  const hit = _dartVarCache.get(color); if (hit !== undefined) return hit;
+  const hex = c => { const m = /^#?([0-9a-f]{6})$/i.exec(c.trim());
+    if (!m) return null; const v = parseInt(m[1], 16);
+    return [(v >> 16) & 255, (v >> 8) & 255, v & 255]; };
+  // Match on hue, not raw RGB distance: straight Euclidean RGB over-weights the
+  // green channel and files a mint tracer (#9fffe0) under "green" when it reads
+  // cyan. Desaturated colours have no meaningful hue, so those fall back to RGB.
+  const hue = ([r, g, b]) => { const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    if (d < 26) return -1;                                  // effectively grey
+    let h; if (mx === r) h = ((g - b) / d) % 6; else if (mx === g) h = (b - r) / d + 2; else h = (r - g) / d + 4;
+    h *= 60; return h < 0 ? h + 360 : h; };
+  const c = hex(color); let best = 0;
+  if (c) {
+    const ch = hue(c); let bd = Infinity;
+    DART_VARIANTS.forEach((vc, i) => { const v = hex(vc), vh = hue(v);
+      let d;
+      if (ch < 0 || vh < 0) d = 1e6 + (v[0] - c[0]) ** 2 + (v[1] - c[1]) ** 2 + (v[2] - c[2]) ** 2;
+      else { const raw = Math.abs(vh - ch); d = Math.min(raw, 360 - raw); }
+      if (d < bd) { bd = d; best = i; } });
+  }
+  _dartVarCache.set(color, best); return best;
+}
 /* Upgrade art for the level-up cards, keyed by weapon/passive/adaptation id.
  * Anything unmapped keeps its emoji glyph.                                  */
 const CARD_ART = {
@@ -4890,7 +4922,14 @@ function drawProjectiles() {
   const arr = game.projectiles;
   for (let i = 0; i < arr.length; i++) {
     const b = arr[i]; if (!onScreen(b.x, b.y, 30)) continue;
-    if (b.spr) { ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.rot || 0); const s = (b.r * 2.6) / b.spr.width; ctx.scale(s, s); ctx.drawImage(b.spr, -b.spr.width / 2, -b.spr.height / 2); ctx.restore(); }
+    if (b.spr === SPR.dart && ART.dartSheet) {         // dart in its weapon's colour
+      const fw = ART.dartSheet.height, fi = dartVariant(b.color);
+      const s = (b.r * 2.6) / fw * ART_SCALE.dart;
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.rot || 0); ctx.scale(s, s);
+      ctx.drawImage(ART.dartSheet, fi * fw, 0, fw, fw, -fw / 2, -fw / 2, fw, fw);
+      ctx.restore();
+    }
+    else if (b.spr) { ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.rot || 0); const s = (b.r * 2.6) / b.spr.width; ctx.scale(s, s); ctx.drawImage(b.spr, -b.spr.width / 2, -b.spr.height / 2); ctx.restore(); }
     else { ctx.save(); ctx.shadowColor = b.color; ctx.shadowBlur = 12; ctx.fillStyle = b.color; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill(); ctx.restore(); }
   }
 }
