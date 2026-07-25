@@ -60,6 +60,10 @@
   @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
   @keyframes pop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
+  /* NB: assets/environment_ui/ui_glass_panel_frame.png was trialled here as a
+     9-slice border-image. Its corners are square and its edge weights uneven,
+     so stretching it to panel size read boxier and less even than this CSS
+     frame — kept the CSS. */
   .panel {
     background: var(--panel);
     border: 1px solid var(--panel-edge);
@@ -189,6 +193,8 @@
   .card:hover { transform: translateY(-6px) scale(1.02); border-color: var(--bio-cyan);
     box-shadow: 0 14px 40px rgba(47,246,255,0.25); }
   .card .ic-big { font-size: 46px; text-align: center; filter: drop-shadow(0 0 12px currentColor); }
+  .card .ic-big .ic-art { width: 54px; height: 54px; display: block; margin: 0 auto; }
+  .hud-chip .ic-art { width: 17px; height: 17px; display: block; }
   .card .ctype { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; text-align: center;
     margin-top: 6px; }
   .card .cname { font-size: 18px; font-weight: 800; text-align: center; margin-top: 4px; }
@@ -468,7 +474,7 @@
     <div class="xp-wrap"><div class="xp-bar" id="xp-bar"></div></div>
     <div class="mutagen-wrap" id="mutagen-wrap"><div class="mutagen-bar" id="mutagen-bar"></div></div>
     <div class="topbar">
-      <div class="hud-chip" id="level-chip"><span class="ic">🧬</span><span id="level-val">Lv 1</span></div>
+      <div class="hud-chip" id="level-chip"><span class="ic" id="level-ic">🧬</span><span id="level-val">Lv 1</span></div>
       <div style="flex:1; text-align:center;"><span id="timer">00:00</span></div>
       <div class="hud-chip" id="kills-chip"><span class="ic">☠</span><span id="kills-val">0</span></div>
       <div class="hud-chip" id="coin-chip"><span class="ic">🪙</span><span id="coin-val">0</span></div>
@@ -2049,6 +2055,15 @@ const ART_MANIFEST = {
   iconMutagen: 'environment_ui/icon_mutagen.png',
   iconSpeed:   'environment_ui/icon_speed.png',
   iconOffense: 'environment_ui/icon_offense.png',
+  iconArmor:   'environment_ui/icon_armor.png',
+  iconWings:   'environment_ui/icon_wings.png',
+};
+/* Upgrade art for the level-up cards, keyed by weapon/passive/adaptation id.
+ * Anything unmapped keeps its emoji glyph.                                  */
+const CARD_ART = {
+  cyto: 'iconArmor', motility: 'iconWings', reflex: 'iconWings',
+  atp: 'iconSpeed', ribo: 'iconOffense', potency: 'iconOffense',
+  phyto: 'chemMagnet', mitosis: 'iconMitosis', vitality: 'iconArmor',
 };
 /* Each PNG frames its subject with a different amount of padding/glow, so a
  * flat frame->hitbox scale would leave some bodies floating in empty space.
@@ -3952,7 +3967,9 @@ function openMutagenEvent() {
   const picks = avail.slice(0, 3);
   game.state = 'levelup'; sfx('mutation');
   game.flash = 0.3; game.flashColor = 'rgba(176,123,255,';
-  $('levelup-title').textContent = '☢ MUTAGENIC EVENT — FORCED EVOLUTION';
+  $('levelup-title').innerHTML = (ART.iconMutagen
+    ? `<img src="${ART.iconMutagen.src}" alt="" style="width:28px;height:28px;display:inline-block;vertical-align:-6px;margin-right:9px">`
+    : '☢ ') + 'MUTAGENIC EVENT — FORCED EVOLUTION';
   $('levelup-sub').textContent = 'Free radicals rewrite the colony’s DNA — choose a mutation. Every one has a price.';
   const wrap = $('levelup-cards'); wrap.innerHTML = '';
   picks.forEach((m, i) => {
@@ -4574,7 +4591,11 @@ function drawPlayer(t) {
   ctx.rotate(p.angle);
   ctx.scale(viz.elong, 1 / Math.sqrt(viz.elong));
   ctx.shadowColor = glow; ctx.shadowBlur = (p.surge > 0 || p.powerSpeed > 0 || p.invulnTrail > 0) ? 34 : 22;
-  if (ART.playerCell) {
+  if (ART.playerEvo && p.weapons && p.weapons.some(w => w.apex)) {
+    // An Apex Mutation has evolved — the cell takes on its mutated morphology.
+    const d = R * 2 * ART_SCALE.playerEvo;
+    ctx.drawImage(tintedArt(ART.playerEvo, viz.body[1], 0.34), -d / 2, -d / 2, d, d);
+  } else if (ART.playerCell) {
     // Hand-drawn membrane, cycling the 4-frame breathing animation and tinted
     // to this cell line so all 9 characters stay distinct from one base sprite.
     // Surface features (cilia, flagella, legs…) still draw on top below.
@@ -5153,6 +5174,14 @@ function updateHUD() {
   const mm = String(Math.floor(secs / 60)).padStart(2, '0'), ss = String(secs % 60).padStart(2, '0');
   $('timer').textContent = mm + ':' + ss + (game.mode === 'timed' ? ' / 20:00' : '');
   $('level-val').textContent = game.mode === 'swarm' ? ('🧫 ' + swarmCount()) : ('Lv ' + p.level);
+  // swarm runs badge the chip with the mitosis icon (only rewritten on change)
+  const lic = $('level-ic');
+  if (lic) {
+    const wantArt = game.mode === 'swarm' && !!ART.iconMitosis;
+    const isArt = !!(lic.firstChild && lic.firstChild.tagName === 'IMG');
+    if (wantArt && !isArt) lic.innerHTML = `<img class="ic-art" src="${ART.iconMitosis.src}" alt="">`;
+    else if (!wantArt && isArt) lic.textContent = '🧬';
+  }
   $('kills-val').textContent = game.kills.toLocaleString();
   $('coin-val').textContent = (SAVE.coins + game.coinsThisRun).toLocaleString();
   $('xp-bar').style.width = clamp(p.xp / p.xpNext * 100, 0, 100) + '%';
@@ -5388,7 +5417,9 @@ function buildChoiceCard(c, i) {
   else if (c.kind === 'lucky-boost') { cls += ' apex'; icon = '🍀'; type = 'Lucky Mutation'; name = 'Beneficial Splice'; level = 'RANDOM BOOST'; desc = 'Gain a random permanent boost now — its rarity scales with your Luck.'; fact = 'Beneficial mutations are rare lucky rolls; selection seizes on them and amplifies them down the generations.'; }
   else { cls += ' heal'; icon = '🪙'; type = 'Resource'; name = 'Genetic Cache'; level = ''; desc = 'Gain 60 Genetic Code for the meta-lab.'; fact = 'DNA stores ~2 bits per base pair; your genome packs ~1.5 GB of data into every cell.'; }
   card.className = cls; card.style.animationDelay = (i * 0.05) + 's';
-  card.innerHTML = `<div class="corner">${i + 1}</div><div class="ic-big" style="color:${cardColor(c)}">${icon}</div>
+  const ca = c.id && CARD_ART[c.id] && ART[CARD_ART[c.id]];      // hand-drawn upgrade icon
+  const iconHtml = ca ? `<img class="ic-art" src="${ca.src}" alt="">` : icon;
+  card.innerHTML = `<div class="corner">${i + 1}</div><div class="ic-big" style="color:${cardColor(c)}">${iconHtml}</div>
     <div class="ctype">${type}</div><div class="cname">${name}</div><div class="clevel">${level}</div>
     <div class="cdesc">${desc}</div><div class="cfact">🔬 ${fact}</div>`;
   card.onclick = () => chooseUpgrade(c);
