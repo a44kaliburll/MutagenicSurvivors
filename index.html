@@ -2066,7 +2066,60 @@ const ART_MANIFEST = {
   iconOffense: 'environment_ui/icon_offense.png',
   iconArmor:   'environment_ui/icon_armor.png',
   iconWings:   'environment_ui/icon_wings.png',
+  // --- Phase 2: pickups & projectiles (drop-in SPR replacements) ---
+  dart:    'highest_impact/dart_projectile.png',
+  dartSheet: 'highest_impact/dart_projectile_variants_sheet.png',
+  toxglob: 'weapon_effects/toxglob_projectile.png',
+  coin:    'pickups/genetic_coin.png',
+  chest:   'pickups/loot_chest.png',
+  nutrient:'pickups/nutrient_spore.png',
+  xp0: 'pickups/xp_biomatter_tier1.png', xp1: 'pickups/xp_biomatter_tier2.png',
+  xp2: 'pickups/xp_biomatter_tier3.png', xp3: 'pickups/xp_biomatter_tier4.png',
+  gluc0: 'pickups/glucose_tier1.png', gluc1: 'pickups/glucose_tier2.png',
+  gluc2: 'pickups/glucose_tier3.png', gluc3: 'pickups/glucose_tier4.png',
+  // --- Phase 2: art-only, drawn explicitly ---
+  grazer:      'highest_impact/chlorella_grazer.png',
+  tailSweep:   'highest_impact/flagellar_tail_sweep_4f.png',
+  fieldAura:   'weapon_effects/aura_cytoplasmic_field.png',
+  mucusAura:   'weapon_effects/aura_mucilage.png',
+  causticRing: 'weapon_effects/caustic_flood_ring.png',
+  sporeMine:   'weapon_effects/spore_burst_mine.png',
+  sporeBoom:   'weapon_effects/spore_burst_detonation.png',
+  boostPad:    'small_and_powerups/boost_pad.png',
+  cryoGlyph:   'small_and_powerups/powerup_cryo_shock_glyph.png',
 };
+const TAIL_SWEEP_FRAMES = 4;        // flagellar_tail_sweep_4f.png
+/* dart_projectile_variants_sheet.png — five darts painted in the game palette,
+ * measured from the file itself. Rather than hard-coding which weapon gets
+ * which frame, every dart picks the variant nearest the colour the firing code
+ * already assigned it, so new weapons are matched automatically and a dart can
+ * never disagree with its own light trail. */
+const DART_VARIANTS = ['#2ff6ff', '#6dff8a', '#ff5fa2', '#ffd166', '#b07bff'];
+const _dartVarCache = new Map();
+function dartVariant(color) {
+  if (!color) return 0;
+  const hit = _dartVarCache.get(color); if (hit !== undefined) return hit;
+  const hex = c => { const m = /^#?([0-9a-f]{6})$/i.exec(c.trim());
+    if (!m) return null; const v = parseInt(m[1], 16);
+    return [(v >> 16) & 255, (v >> 8) & 255, v & 255]; };
+  // Match on hue, not raw RGB distance: straight Euclidean RGB over-weights the
+  // green channel and files a mint tracer (#9fffe0) under "green" when it reads
+  // cyan. Desaturated colours have no meaningful hue, so those fall back to RGB.
+  const hue = ([r, g, b]) => { const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    if (d < 26) return -1;                                  // effectively grey
+    let h; if (mx === r) h = ((g - b) / d) % 6; else if (mx === g) h = (b - r) / d + 2; else h = (r - g) / d + 4;
+    h *= 60; return h < 0 ? h + 360 : h; };
+  const c = hex(color); let best = 0;
+  if (c) {
+    const ch = hue(c); let bd = Infinity;
+    DART_VARIANTS.forEach((vc, i) => { const v = hex(vc), vh = hue(v);
+      let d;
+      if (ch < 0 || vh < 0) d = 1e6 + (v[0] - c[0]) ** 2 + (v[1] - c[1]) ** 2 + (v[2] - c[2]) ** 2;
+      else { const raw = Math.abs(vh - ch); d = Math.min(raw, 360 - raw); }
+      if (d < bd) { bd = d; best = i; } });
+  }
+  _dartVarCache.set(color, best); return best;
+}
 /* Upgrade art for the level-up cards, keyed by weapon/passive/adaptation id.
  * Anything unmapped keeps its emoji glyph.                                  */
 const CARD_ART = {
@@ -2082,11 +2135,21 @@ const ART_SCALE = {
   virus: 1.33, subvirus: 1.33, bacterium: 1.33, spore: 1.75,
   amoeboid: 1.17, macrophage: 1.00, acid: 1.94, needle: 1.21,
   biomassBig: 1.66, cloneCell: 1.49, playerCell: 1.36, playerEvo: 1.20,
+  // Phase 2 — measured from each file's solid-alpha bounding box
+  dart: 1.25, toxglob: 1.35, coin: 1.23, chest: 1.42, nutrient: 1.17,
+  xp0: 1.88, xp1: 1.24, xp2: 1.21, xp3: 1.17,
+  gluc0: 1.52, gluc1: 1.23, gluc2: 1.26, gluc3: 1.41,
+  grazer: 1.27, sporeMine: 1.22, sporeBoom: 1.13,
+  fieldAura: 1.20, mucusAura: 1.00, causticRing: 1.09, boostPad: 1.22,
 };
 const PLAYER_ART_FRAMES = 4;        // player_spritesheet_128x128_4f.png
 /* Art whose glow runs all the way to the frame border, which would otherwise
  * show as a hard-edged square once scaled up. Feathered on load.           */
-const ART_FEATHER = { macrophage: 1 };
+/* Measured: these files carry glow all the way to the frame border (edge alpha
+ * up to 118), which would read as a hard-edged square once scaled onto the dark
+ * dish. Feathering the outer few percent removes the box; their solid content
+ * only reaches 71–91% of frame, so nothing meaningful is clipped. */
+const ART_FEATHER = { macrophage: 1, coin: 1, gluc3: 1, xp2: 1, xp3: 1, boostPad: 1, cryoGlyph: 1 };
 function feather(img, inner) {
   const c = document.createElement('canvas');
   c.width = img.width; c.height = img.height;
@@ -2800,7 +2863,7 @@ const POWERS = {
   lure:   { icon: '💠', color: '#6dffb0', name: 'Chemoattractant', note: 'grazers swim to you · 9s' },
 };
 /* Artwork for the power-up capsules; anything unmapped falls back to its glyph. */
-const POWER_ART = { magnet: 'chemMagnet', health: 'biomassBig', bomb: 'bioNuke', speed: 'iconSpeed', frenzy: 'iconOffense', lure: 'evoPoint' };
+const POWER_ART = { magnet: 'chemMagnet', health: 'biomassBig', bomb: 'bioNuke', speed: 'iconSpeed', frenzy: 'iconOffense', lure: 'evoPoint', freeze: 'cryoGlyph' };
 const POWER_BAG = ['magnet', 'magnet', 'magnet', 'health', 'health', 'health', 'speed', 'speed', 'frenzy', 'frenzy', 'freeze', 'bomb', 'lure', 'lure'];
 function pickPowerType() { return pick(POWER_BAG); }
 /* Rare from normal kills; guaranteed from elites (bosses drop them on death). */
@@ -3469,6 +3532,7 @@ function updateHazards(dt) {
 }
 function detonateSpore(h) {
   spawnParticles(h.x, h.y, '#ffd166', 12, { speed: 180 }); spawnRing(h.x, h.y, '#ffd166', h.blast, 0.3);
+  if (ART.sporeBoom) addFx({ kind: 'boom', x: h.x, y: h.y, range: h.blast, life: 0.36, maxLife: 0.36, color: '#ffd166' });
   const list = enemiesInRadius(h.x, h.y, h.blast);
   for (let j = 0; j < list.length; j++) { const e = list[j]; if (e.dead) continue;
     if (dist2(h.x, h.y, e.x, e.y) <= (h.blast + e.r) * (h.blast + e.r)) {
@@ -4605,23 +4669,37 @@ function drawPlayer(t) {
   if (p._fieldR && p.weapons.some(w => w.id === 'field')) {
     const fr = p._fieldR * (1 + 0.02 * Math.sin(t * 3));
     ctx.save(); ctx.translate(p.x, p.y);
+    if (ART.fieldAura) {                       // hand-drawn charged membrane field
+      const d = fr * 2 * ART_SCALE.fieldAura;
+      ctx.globalAlpha = 0.85; ctx.rotate(t * 0.25);
+      ctx.drawImage(ART.fieldAura, -d / 2, -d / 2, d, d);
+      ctx.restore();
+    } else {
     const fg = ctx.createRadialGradient(0, 0, fr * 0.4, 0, 0, fr);
     fg.addColorStop(0, 'rgba(95,200,255,0.03)'); fg.addColorStop(0.8, 'rgba(95,200,255,0.10)'); fg.addColorStop(1, 'rgba(120,210,255,0.22)');
     ctx.fillStyle = fg; ctx.beginPath(); ctx.arc(0, 0, fr, 0, TAU); ctx.fill();
     ctx.globalAlpha = 0.5; ctx.strokeStyle = 'rgba(150,225,255,0.6)'; ctx.lineWidth = 2;
     ctx.setLineDash([10, 8]); ctx.lineDashOffset = -t * 24; ctx.beginPath(); ctx.arc(0, 0, fr, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
     ctx.restore();
+    }
   }
   // Mucilage Aura — a sticky biofilm halo (slimier, slower-pulsing than the Field)
   if (p._mucusR && p.weapons.some(w => w.id === 'mucus')) {
     const mr = p._mucusR * (1 + 0.015 * Math.sin(t * 2.2));
     ctx.save(); ctx.translate(p.x, p.y);
+    if (ART.mucusAura) {                       // hand-drawn sticky biofilm halo
+      const d = mr * 2 * ART_SCALE.mucusAura;
+      ctx.globalAlpha = 0.6; ctx.rotate(-t * 0.15);
+      ctx.drawImage(ART.mucusAura, -d / 2, -d / 2, d, d);
+      ctx.restore();
+    } else {
     const mg = ctx.createRadialGradient(0, 0, mr * 0.3, 0, 0, mr);
     mg.addColorStop(0, 'rgba(176,123,255,0.03)'); mg.addColorStop(0.75, 'rgba(150,100,235,0.10)'); mg.addColorStop(1, 'rgba(190,140,255,0.20)');
     ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(0, 0, mr, 0, TAU); ctx.fill();
     ctx.globalAlpha = 0.45; ctx.strokeStyle = 'rgba(200,160,255,0.55)'; ctx.lineWidth = 2;
     ctx.setLineDash([4, 10]); ctx.lineDashOffset = t * 16; ctx.beginPath(); ctx.arc(0, 0, mr, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
     ctx.restore();
+    }
   }
   ctx.save(); ctx.translate(p.x, p.y);
   const lowHp = p.hp / p.maxHp < 0.3;
@@ -4757,11 +4835,18 @@ function drawPrey(e, t) {
   g.addColorStop(0, 'rgba(157,255,95,0.45)'); g.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, e.r * 2.1, 0, TAU); ctx.fill();
   ctx.globalCompositeOperation = 'source-over';
-  ctx.fillStyle = e.hitFlash > 0 ? '#ffffff' : 'rgba(120,230,90,0.95)';   // grazers can be shot now
-  ctx.beginPath(); ctx.ellipse(0, 0, e.r * wob, e.r / wob, e.angle, 0, TAU); ctx.fill();
-  ctx.strokeStyle = 'rgba(205,255,150,0.85)'; ctx.lineWidth = 1.5; ctx.stroke();
-  ctx.fillStyle = 'rgba(40,120,30,0.85)';
-  for (let k = 0; k < 3; k++) { const a = e.phase + k * 2.1; ctx.beginPath(); ctx.arc(Math.cos(a) * e.r * 0.42, Math.sin(a) * e.r * 0.42, e.r * 0.2, 0, TAU); ctx.fill(); }
+  if (ART.grazer) {                                   // hand-drawn Chlorella
+    const d = e.r * 2 * ART_SCALE.grazer * wob;
+    ctx.rotate(e.angle);
+    if (e.hitFlash > 0) { ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 18; }
+    ctx.drawImage(ART.grazer, -d / 2, -d / 2, d, d);
+  } else {
+    ctx.fillStyle = e.hitFlash > 0 ? '#ffffff' : 'rgba(120,230,90,0.95)';   // grazers can be shot now
+    ctx.beginPath(); ctx.ellipse(0, 0, e.r * wob, e.r / wob, e.angle, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(205,255,150,0.85)'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = 'rgba(40,120,30,0.85)';
+    for (let k = 0; k < 3; k++) { const a = e.phase + k * 2.1; ctx.beginPath(); ctx.arc(Math.cos(a) * e.r * 0.42, Math.sin(a) * e.r * 0.42, e.r * 0.2, 0, TAU); ctx.fill(); }
+  }
   ctx.restore();
   // wounded pip, so a half-killed grazer is readable
   if (e.hp < e.maxHp) { const w = e.r * 1.8, f = clamp(e.hp / e.maxHp, 0, 1);
@@ -4837,7 +4922,14 @@ function drawProjectiles() {
   const arr = game.projectiles;
   for (let i = 0; i < arr.length; i++) {
     const b = arr[i]; if (!onScreen(b.x, b.y, 30)) continue;
-    if (b.spr) { ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.rot || 0); const s = (b.r * 2.6) / b.spr.width; ctx.scale(s, s); ctx.drawImage(b.spr, -b.spr.width / 2, -b.spr.height / 2); ctx.restore(); }
+    if (b.spr === SPR.dart && ART.dartSheet) {         // dart in its weapon's colour
+      const fw = ART.dartSheet.height, fi = dartVariant(b.color);
+      const s = (b.r * 2.6) / fw * ART_SCALE.dart;
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.rot || 0); ctx.scale(s, s);
+      ctx.drawImage(ART.dartSheet, fi * fw, 0, fw, fw, -fw / 2, -fw / 2, fw, fw);
+      ctx.restore();
+    }
+    else if (b.spr) { ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.rot || 0); const s = (b.r * 2.6) / b.spr.width; ctx.scale(s, s); ctx.drawImage(b.spr, -b.spr.width / 2, -b.spr.height / 2); ctx.restore(); }
     else { ctx.save(); ctx.shadowColor = b.color; ctx.shadowBlur = 12; ctx.fillStyle = b.color; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill(); ctx.restore(); }
   }
 }
@@ -4903,8 +4995,17 @@ function drawHazards(t) {
     const fade = clamp(h.life / Math.max(0.001, h.maxLife), 0, 1);
     if (h.kind === 'spore') {
       const r = h.armed ? h.r * (1 + 0.3 * Math.sin(t * 10)) : h.r;
-      ctx.save(); ctx.shadowColor = '#ffd166'; ctx.shadowBlur = h.armed ? 14 : 6;
-      ctx.fillStyle = h.armed ? '#ffe08a' : '#9a7a3a'; ctx.beginPath(); ctx.arc(h.x, h.y, r, 0, TAU); ctx.fill(); ctx.restore();
+      ctx.save();
+      if (ART.sporeMine) {                       // hand-drawn mine; dimmed until armed
+        const d = r * 2 * ART_SCALE.sporeMine;
+        ctx.globalAlpha = h.armed ? 1 : 0.55;
+        ctx.translate(h.x, h.y); ctx.rotate(t * (h.armed ? 1.6 : 0.4));
+        ctx.drawImage(ART.sporeMine, -d / 2, -d / 2, d, d);
+      } else {
+        ctx.shadowColor = '#ffd166'; ctx.shadowBlur = h.armed ? 14 : 6;
+        ctx.fillStyle = h.armed ? '#ffe08a' : '#9a7a3a'; ctx.beginPath(); ctx.arc(h.x, h.y, r, 0, TAU); ctx.fill();
+      }
+      ctx.restore();
     } else {
       // toxic bloom: blobby, mottled, growing into place — reads "organic & dangerous"
       const grow = clamp((game.time - (h.born || 0)) / 1.6, 0.35, 1);
@@ -4932,7 +5033,17 @@ function drawEffects() {
   for (const f of game.effects) {
     const k = f.life / f.maxLife;
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    if (f.kind === 'whip' && ART.whipArc) {            // hand-drawn cilia sweep
+    if (f.kind === 'wave' && ART.tailSweep) {
+      // Flagellar Tail Strike — plays its 4-frame whip animation across the
+      // effect's short life, tinted so the Bilateral Symmetry side-waves stay
+      // distinguishable from the main strike.
+      ctx.translate(f.x, f.y); ctx.rotate(f.ang);
+      ctx.globalAlpha = Math.min(1, k * 1.6);
+      const fw = ART.tailSweep.height;
+      const fi = Math.min(TAIL_SWEEP_FRAMES - 1, Math.floor((1 - k) * TAIL_SWEEP_FRAMES));
+      const d = f.range * 2 * (1.25 - k * 0.25);
+      ctx.drawImage(tintedArt(ART.tailSweep, f.color, 0.65), fi * fw, 0, fw, fw, -d / 2, -d / 2, d, d);
+    } else if (f.kind === 'whip' && ART.whipArc) {
       ctx.translate(f.x, f.y); ctx.rotate(f.ang);
       ctx.globalAlpha = k; const d = f.range * 2;
       ctx.drawImage(ART.whipArc, -d / 2, -d / 2, d, d);
@@ -4940,6 +5051,14 @@ function drawEffects() {
       ctx.translate(f.x, f.y); ctx.rotate(f.ang);
       ctx.fillStyle = f.kind === 'whip' ? `rgba(125,255,154,${0.5 * k})` : `rgba(255,95,162,${0.55 * k})`;
       ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, f.range * (f.kind === 'wave' ? (1.4 - k * 0.4) : 1), -f.arc / 2, f.arc / 2); ctx.closePath(); ctx.fill();
+    } else if (f.kind === 'boom' && ART.sporeBoom) {     // hand-drawn spore detonation
+      ctx.globalAlpha = k;
+      const d = f.range * 2 * ART_SCALE.sporeBoom * (1.5 - k * 0.5);
+      ctx.drawImage(ART.sporeBoom, f.x - d / 2, f.y - d / 2, d, d);
+    } else if (f.kind === 'tide' && ART.causticRing) {   // hand-drawn caustic wash
+      ctx.globalAlpha = 0.85 * k;
+      const d = f.r * 2 * ART_SCALE.causticRing;
+      ctx.drawImage(ART.causticRing, f.x - d / 2, f.y - d / 2, d, d);
     } else if (f.kind === 'tide') {
       ctx.strokeStyle = `rgba(157,255,95,${0.6 * k})`; ctx.lineWidth = 26; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, TAU); ctx.stroke();
     }
@@ -5063,9 +5182,14 @@ function drawBoostPads(t) {
     ctx.save();
     ctx.globalAlpha = alpha;
     // soft fill
-    const g = ctx.createRadialGradient(pad.x, pad.y, 4, pad.x, pad.y, pad.r);
-    g.addColorStop(0, `rgba(${rar.rgb},0.22)`); g.addColorStop(0.8, `rgba(${rar.rgb},0.10)`); g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(pad.x, pad.y, pad.r * pulse, 0, TAU); ctx.fill();
+    if (ART.boostPad) {                        // hand-drawn pad, tinted to its rarity
+      const d = pad.r * 2 * ART_SCALE.boostPad * pulse;
+      ctx.drawImage(tintedArt(ART.boostPad, `rgb(${rar.rgb})`, 0.55), pad.x - d / 2, pad.y - d / 2, d, d);
+    } else {
+      const g = ctx.createRadialGradient(pad.x, pad.y, 4, pad.x, pad.y, pad.r);
+      g.addColorStop(0, `rgba(${rar.rgb},0.22)`); g.addColorStop(0.8, `rgba(${rar.rgb},0.10)`); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(pad.x, pad.y, pad.r * pulse, 0, TAU); ctx.fill();
+    }
     // rim
     ctx.strokeStyle = `rgba(${rar.rgb},0.75)`; ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(pad.x, pad.y, pad.r * pulse, 0, TAU); ctx.stroke();
@@ -6082,9 +6206,23 @@ function buildDevTabs() {
   for (const t of DEV_TABS) { const el = document.createElement('div'); el.className = 'codex-tab' + (t.id === devTab ? ' active' : '');
     el.textContent = t.label; el.onclick = () => { devTab = t.id; buildDevTabs(); buildDev(); }; wrap.appendChild(el); }
 }
+/* When an enemy actually appears, derived from the wave tables the spawner
+ * really reads. The `window` / `freq` fields on the enemy defs are vestigial —
+ * nothing consults them — so reporting those was wrong in both directions:
+ * it claimed the Virus stops at 5:00 (it does not) and implied the Swarm
+ * invaders spawn in every mode for 166 minutes (they are Swarm-exclusive). */
 function devWindow(d) {
-  if (d.spawnAt) return 'at ' + d.spawnAt.map(fmtTime).join(' & ');
-  if (d.window && d.window[0] >= 0) return fmtTime(d.window[0]) + ' – ' + fmtTime(d.window[1]);
+  if (d.boss) return 'boss — scripted';
+  // A wave entry covers 2 minutes; the final entry repeats for the rest of the run.
+  const scan = table => { let first = -1, last = -1;
+    for (let i = 0; i < table.length; i++) if ((table[i].mix || {})[d.id] > 0) { if (first < 0) first = i; last = i; }
+    return first < 0 ? null : { first, last, openEnd: last === table.length - 1 }; };
+  const span = r => fmtTime(r.first * 120) + ' – ' + (r.openEnd ? 'end' : fmtTime((r.last + 1) * 120));
+  const std = scan(WAVES), sw = scan(SWARM_WAVES);
+  if (d.elite) return 'elite — recurring' + (std || sw ? '' : (d.id === 'cancer' ? ' · 🧫 Swarm' : ' · Timed/Endless'));
+  if (std && sw) return span(std) + ' · 🧫 Swarm ' + span(sw);
+  if (std) return span(std) + ' · Timed/Endless';
+  if (sw) return '🧫 Cellular Swarm only · ' + span(sw);
   return '—';
 }
 function devScale(d, t) {
