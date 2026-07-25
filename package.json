@@ -2,7 +2,7 @@
   "name": "mutagenic-survivors",
   "productName": "Mutagenic Survivors",
   "version": "1.0.0",
-  "description": "Mutagenic Survivors — an educational microbial survivors roguelite in a single self-contained index.html (Canvas2D). Achievement-gated armory, Apex mutations, a 12-track procedural soundtrack, and desktop (.exe) + Android (.apk) builds.",
+  "description": "Mutagenic Survivors — an educational microbial survivors roguelite (Canvas2D). Achievement-gated armory, Apex mutations, the Cellular Swarm mitosis mode, and a 12-track procedural soundtrack. Ships as installable desktop (.exe) and Android (.apk) builds.",
   "main": "main.js",
   "author": "PlutonianSurvivors",
   "license": "MIT",
