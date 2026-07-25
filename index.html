@@ -514,7 +514,7 @@
   <div class="overlay show" id="menu-main">
     <div class="title">MUTAGENIC SURVIVORS</div>
     <div class="subtitle">Survive the Microbial Apocalypse · Evolve · Mutate</div>
-    <div class="version-tag" id="version-tag">v1.1.0</div>
+    <div class="version-tag" id="version-tag">v1.2.0</div>
     <div class="menu-actions">
       <button class="btn primary" id="btn-continue" data-act="continue" style="display:none">▶ CONTINUE RUN</button>
       <button class="btn" data-act="play">▶ BEGIN INCUBATION</button>
@@ -2031,7 +2031,7 @@ const SPR = {}; // sprite atlas, populated in buildSprites()
  * ======================================================================== */
 /* Keep in step with the "version" field in package.json — it is what the title
  * screen reports, so a stale install is identifiable at a glance. */
-const GAME_VERSION = '1.1.0';
+const GAME_VERSION = '1.2.0';
 const ART = {};
 const ART_BASE = 'assets/';
 /* Keys that collide with an SPR slot replace that procedural sprite;       *
@@ -2518,8 +2518,12 @@ function recomputeStats() {
   p.mult.damageMul *= mgDmg; p.mult.area *= mgArea; p.speed *= mgSpeed;
   p.mult.cooldown *= mgCd; p.mult.pickup *= mgPickup; p.mult.ecoGain *= mgEco;
   p.mult.flatReduce += mgArmor; p.mult.crit += mgCrit;
-  // Pickup radius in world units.
+  // Pickup radius in world units. Flash the ring whenever it actually grows —
+  // a single Phytoplankton tier is only +24px, which is otherwise impossible
+  // to notice and reads as "my upgrade did nothing".
+  const prevPickupR = p.pickupRadius;
   p.pickupRadius = 120 * p.mult.pickup;
+  if (prevPickupR !== undefined && p.pickupRadius > prevPickupR + 0.5) p.pickupFlash = 1.6;
 }
 
 /* ======================================================================== *
@@ -4023,7 +4027,7 @@ function chooseMutagen(id) {
   const m = MUTAGEN_BY_ID[id];
   hideOverlay('levelup-modal');
   bigBanner('☢ MUTATED: ' + m.name, 2.4); sfx('mutation');
-  resumeRun();
+  resumeFromChoice();
 }
 
 function updatePlayer(dt) {
@@ -4070,6 +4074,7 @@ function updatePlayer(dt) {
   if (p.powerSpeed > 0) p.powerSpeed -= dt;
   if (p.frenzy > 0) p.frenzy -= dt;
   if (p.preyLure > 0) p.preyLure -= dt;
+  if (p.pickupFlash > 0) p.pickupFlash -= dt;
 
   // ---- shield + health regen ----
   if (p.shieldRegenDelay > 0) p.shieldRegenDelay -= dt;
@@ -4195,7 +4200,7 @@ function closeChest() {
   if (game.state !== 'chest') return;
   clearTimeout(_chestTimer);
   hideOverlay('chest-modal');
-  if (game.player && game.player.hp > 0) game.state = 'running';
+  resumeFromChoice();
 }
 /* An apex is available when a weapon is maxed (Lvl8), its paired passive is   *
  * >= Lvl1, and that base weapon hasn't already been evolved/offered.         */
@@ -4585,6 +4590,17 @@ function drawDishRim(t) {
 
 function drawPlayer(t) {
   const p = game.player, viz = charViz();
+  // Vacuum radius — always faintly drawn so the Phytoplankton upgrades are
+  // legible, and briefly lit when the radius actually grows.
+  if (p.pickupRadius > 0) {
+    const fl = Math.max(0, p.pickupFlash || 0);
+    ctx.save(); ctx.translate(p.x, p.y);
+    ctx.globalAlpha = 0.06 + 0.30 * fl;
+    ctx.strokeStyle = '#b07bff'; ctx.lineWidth = fl > 0 ? 2.5 : 1.5;
+    ctx.setLineDash([9, 13]); ctx.lineDashOffset = -t * 18;
+    ctx.beginPath(); ctx.arc(0, 0, p.pickupRadius * (1 + 0.03 * fl), 0, TAU); ctx.stroke();
+    ctx.setLineDash([]); ctx.restore();
+  }
   // Cytoplasmic Field aura (drawn under the cell so it reads as an enveloping field)
   if (p._fieldR && p.weapons.some(w => w.id === 'field')) {
     const fr = p._fieldR * (1 + 0.02 * Math.sin(t * 3));
@@ -5490,7 +5506,7 @@ function chooseUpgrade(c) {
   game.pendingLevelUps = Math.max(0, game.pendingLevelUps - 1);
   hideOverlay('levelup-modal');
   if (game.pendingLevelUps > 0) setTimeout(openLevelUp, 60);
-  else resumeRun();
+  else resumeFromChoice();
 }
 function renderRerollBar() {
   const bar = $('reroll-bar');
@@ -5525,9 +5541,9 @@ function chooseApex(apexDef) {
   refreshTray(); hideOverlay('apex-modal');
   bigBanner('⚛ EVOLVED: ' + apexDef.name, 3);
   markCodex('apex_' + apexDef.id);
-  resumeRun();
+  resumeFromChoice();
 }
-$('apex-skip').onclick = () => { hideOverlay('apex-modal'); resumeRun(); };
+$('apex-skip').onclick = () => { hideOverlay('apex-modal'); resumeFromChoice(); };
 
 /* ---- Mutation choice modal (objective reward) ---- */
 function getMutationChoices() {
@@ -5537,7 +5553,7 @@ function getMutationChoices() {
 }
 function openMutationChoice() {
   const choices = getMutationChoices();
-  if (!choices.length) { gainCoins(150); bigBanner('🧬 GENOME SATURATED — +150🪙', 2.6); resumeRun(); return; }
+  if (!choices.length) { gainCoins(150); bigBanner('🧬 GENOME SATURATED — +150🪙', 2.6); resumeFromChoice(); return; }
   game.state = 'mutation'; sfx('mutation');
   const wrap = $('mutation-cards'); wrap.innerHTML = '';
   choices.forEach((m, i) => wrap.appendChild(buildMutationCard(m, i)));
@@ -5559,7 +5575,7 @@ function chooseMutation(m) {
   recomputeStats(); refreshTray();
   hideOverlay('mutation-modal');
   bigBanner('🧬 MUTATION: ' + m.name + (mut(m.id) > 1 ? '  ×' + mut(m.id) : ''), 3);
-  resumeRun();
+  resumeFromChoice();
 }
 
 /* ---- Run lifecycle ---- */
@@ -5607,6 +5623,20 @@ function startRun(mode) {
   setTimeout(() => { if (game.state === 'running') toast('🎵 ' + Music.cur.name, 2.2); }, 2900);
 }
 function resumeRun() { if (game.player && game.player.hp > 0) { game.state = 'running'; hideOverlay('pause-modal'); } }
+/* Coming back from a CHOICE (level-up, apex, mutation, mutagen, chest).
+ * The swarm froze exactly where it stood — usually packed against you — so a
+ * plain resume hands you a free hit you had no chance to react to. Give a
+ * short grace window to get clear. Deliberately not used by the pause menu,
+ * which would turn pausing into free invulnerability. */
+const CHOICE_GRACE = 0.9;
+function resumeFromChoice() {
+  const p = game.player;
+  if (p && p.hp > 0) {
+    p.invuln = Math.max(p.invuln || 0, CHOICE_GRACE);
+    spawnRing(p.x, p.y, '#9fe0ff', p.r * 3.2, 0.45);
+  }
+  resumeRun();
+}
 const PAUSE_TABS = [{ id: 'stats', label: '📊 Stats' }, { id: 'arsenal', label: '🧬 Arsenal' }, { id: 'music', label: '🎵 Music' }];
 let pauseTab = 'stats';
 function togglePause() {
@@ -6271,6 +6301,10 @@ function stepGame(dt) {
   updateHazards(dt);
   updateEnemies(dt);
   updatePickups(dt);
+  // Collecting an orb can open a level-up (or chest/apex) part-way through the
+  // tick. Stop simulating the instant that happens so nothing else resolves
+  // against a player who is already staring at a choice screen.
+  if (game.state !== 'running') return;
   updateEffects(dt);
   updatePlayer(dt);
   if (game.mode === 'swarm') updateSwarm(dt);
