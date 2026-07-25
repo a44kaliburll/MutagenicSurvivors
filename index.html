@@ -2088,7 +2088,16 @@ const ART_MANIFEST = {
   boostPad:    'small_and_powerups/boost_pad.png',
   cryoGlyph:   'small_and_powerups/powerup_cryo_shock_glyph.png',
 };
-const TAIL_SWEEP_FRAMES = 4;        // flagellar_tail_sweep_4f.png
+/* flagellar_tail_sweep_4f.png — 4 frames of 128px. The tail is NOT drawn
+ * centred: measured across all four frames its root sits at (19, 65) and the
+ * tip whips out to about x=110, so the stroke lives in the left-of-centre band
+ * and reaches ~71% of the frame width. Anchoring the frame centre on the cell
+ * (the obvious thing) leaves the root floating ~45px off to one side and the
+ * tail reads as a detached arc rather than something attached to the cell.
+ * These constants pin the root to the cell and scale so the tip lands on the
+ * strike's actual damage range. */
+const TAIL_SWEEP_FRAMES = 4;
+const TAIL_ROOT_X = 19 / 128, TAIL_ROOT_Y = 65 / 128, TAIL_REACH = 0.71;
 /* dart_projectile_variants_sheet.png — five darts painted in the game palette,
  * measured from the file itself. Rather than hard-coding which weapon gets
  * which frame, every dart picks the variant nearest the colour the firing code
@@ -5040,9 +5049,13 @@ function drawEffects() {
       ctx.translate(f.x, f.y); ctx.rotate(f.ang);
       ctx.globalAlpha = Math.min(1, k * 1.6);
       const fw = ART.tailSweep.height;
-      const fi = Math.min(TAIL_SWEEP_FRAMES - 1, Math.floor((1 - k) * TAIL_SWEEP_FRAMES));
-      const d = f.range * 2 * (1.25 - k * 0.25);
-      ctx.drawImage(tintedArt(ART.tailSweep, f.color, 0.65), fi * fw, 0, fw, fw, -d / 2, -d / 2, d, d);
+      // clamp both ends: a freshly-spawned effect has k >= 1, which floors to a
+      // negative frame index and silently draws nothing
+      const fi = clamp(Math.floor((1 - k) * TAIL_SWEEP_FRAMES), 0, TAIL_SWEEP_FRAMES - 1);
+      const d = f.range / TAIL_REACH;                 // tip lands on the damage range
+      // root pinned to the cell, so the tail grows out of the membrane
+      ctx.drawImage(tintedArt(ART.tailSweep, f.color, 0.65), fi * fw, 0, fw, fw,
+        -TAIL_ROOT_X * d, -TAIL_ROOT_Y * d, d, d);
     } else if (f.kind === 'whip' && ART.whipArc) {
       ctx.translate(f.x, f.y); ctx.rotate(f.ang);
       ctx.globalAlpha = k; const d = f.range * 2;
