@@ -9,6 +9,7 @@ mobile/node_modules/
 mobile/android/
 mobile/.gradle/
 mobile/www/index.html
+mobile/www/assets/
 mobile/assets/icon.png
 mobile/assets/icon-foreground.png
 mobile/assets/icon-background.png

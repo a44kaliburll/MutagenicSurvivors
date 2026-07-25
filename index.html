@@ -2008,6 +2008,103 @@ function blob(g, r, body, rim, coreAlpha = 0.9) {
 
 const SPR = {}; // sprite atlas, populated in buildSprites()
 
+/* ======================================================================== *
+ *  ART — hand-drawn artwork from assets/, layered over the procedural set. *
+ *                                                                          *
+ *  buildSprites() still generates every sprite procedurally at boot, so the *
+ *  game is playable from the first frame and degrades gracefully if a file  *
+ *  is missing. Each PNG that loads then takes over its slot. drawEnemies /  *
+ *  drawProjectiles scale from `sprite.width`, so artwork of any dimension   *
+ *  drops straight in without touching their maths.                         *
+ * ======================================================================== */
+const ART = {};
+const ART_BASE = 'assets/';
+/* Keys that collide with an SPR slot replace that procedural sprite;       *
+ * the remainder are art-only and drawn explicitly by the render code.      */
+const ART_MANIFEST = {
+  // --- enemies (drop-in SPR replacements) ---
+  virus:      'enemies/enemy_bacteriophage.png',
+  subvirus:   'enemies/enemy_bacteriophage.png',
+  bacterium:  'enemies/enemy_flagellate_runner.png',
+  spore:      'enemies/enemy_spore_shooter.png',
+  amoeboid:   'enemies/enemy_ciliate_tank.png',
+  macrophage: 'enemies/enemy_apex_mutant_boss.png',
+  // --- projectiles & pickups (drop-in) ---
+  acid:       'weapons_and_fx/fx_acid_sac_projectile.png',
+  needle:     'weapons_and_fx/fx_bio_spike.png',
+  biomassBig: 'pickups/pickup_lipid_health.png',
+  // --- art-only: drawn explicitly ---
+  playerCell:  'player/player_spritesheet_128x128_4f.png',
+  playerEvo:   'player/player_microbe_evolved.png',
+  cloneCell:   'player/player_mitosis_clone.png',
+  bgTile:      'environment_ui/bg_petri_dish_tile.png',
+  vignette:    'environment_ui/ui_microscope_lens_vignette.png',
+  whipArc:     'weapons_and_fx/fx_cilia_whip_arc.png',
+  hazardPool:  'weapons_and_fx/fx_acid_hazard_pool.png',
+  rupture:     'weapons_and_fx/fx_cell_rupture_particles.png',
+  evoPoint:    'pickups/pickup_mutagen_evo_point.png',
+  bioNuke:     'pickups/pickup_bio_nuke.png',
+  chemMagnet:  'pickups/pickup_chem_magnet.png',
+  iconMitosis: 'environment_ui/icon_mitosis.png',
+  iconMutagen: 'environment_ui/icon_mutagen.png',
+  iconSpeed:   'environment_ui/icon_speed.png',
+  iconOffense: 'environment_ui/icon_offense.png',
+};
+/* Each PNG frames its subject with a different amount of padding/glow, so a
+ * flat frame->hitbox scale would leave some bodies floating in empty space.
+ * These factors (measured from each file's solid-alpha bounding box) make the
+ * drawn body fill its hitbox. Only applied when the artwork actually loaded. */
+const ART_SCALE = {
+  virus: 1.33, subvirus: 1.33, bacterium: 1.33, spore: 1.75,
+  amoeboid: 1.17, macrophage: 1.00, acid: 1.94, needle: 1.21,
+  biomassBig: 1.66, cloneCell: 1.49, playerCell: 1.36, playerEvo: 1.20,
+};
+const PLAYER_ART_FRAMES = 4;        // player_spritesheet_128x128_4f.png
+/* Art whose glow runs all the way to the frame border, which would otherwise
+ * show as a hard-edged square once scaled up. Feathered on load.           */
+const ART_FEATHER = { macrophage: 1 };
+function feather(img, inner) {
+  const c = document.createElement('canvas');
+  c.width = img.width; c.height = img.height;
+  const g = c.getContext('2d');
+  g.drawImage(img, 0, 0);
+  g.globalCompositeOperation = 'destination-in';   // mask alpha, no pixel reads
+  const cx = c.width / 2, cy = c.height / 2, R = Math.min(c.width, c.height) / 2;
+  const grad = g.createRadialGradient(cx, cy, R * inner, cx, cy, R);
+  grad.addColorStop(0, 'rgba(0,0,0,1)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = grad; g.fillRect(0, 0, c.width, c.height);
+  return c;
+}
+function loadArt() {
+  for (const key in ART_MANIFEST) {
+    const img = new Image();
+    img.onload = () => {
+      const use = ART_FEATHER[key] ? feather(img, 0.97) : img;
+      ART[key] = use; if (SPR[key]) SPR[key] = use;
+    };
+    img.onerror = () => { /* missing file → keep the procedural sprite */ };
+    img.src = ART_BASE + ART_MANIFEST[key];
+  }
+}
+/* Re-tint artwork to a cell's colour identity while keeping its shading, so
+ * all 9 characters stay visually distinct from one shared base sprite.
+ * Cached: one offscreen canvas per (image, colour, strength).             */
+const _tintCache = new Map();
+function tintedArt(img, color, strength) {
+  if (!img || !img.width) return img;
+  const s = strength == null ? 0.5 : strength;
+  const k = img.src + '|' + color + '|' + s;
+  const hit = _tintCache.get(k); if (hit) return hit;
+  const c = document.createElement('canvas');
+  c.width = img.width; c.height = img.height;
+  const g = c.getContext('2d');
+  g.drawImage(img, 0, 0);
+  g.globalCompositeOperation = 'source-atop';   // tint only the drawn pixels
+  g.globalAlpha = s; g.fillStyle = color;
+  g.fillRect(0, 0, c.width, c.height);
+  _tintCache.set(k, c); return c;
+}
+
 function buildSprites() {
   // --- Lysogenic Virus: spiky green capsid -------------------------------
   // --- Lysogenic Virus: faceted icosahedral capsid with receptor spikes ---
@@ -2663,6 +2760,8 @@ const POWERS = {
   freeze: { icon: '❄', color: '#9fe0ff', name: 'Cryo-Shock',     note: 'freezes the swarm · 3s' },
   bomb:   { icon: '💥', color: '#ff5a5a', name: 'Lysis Burst',    note: 'detonates the whole screen' },
 };
+/* Artwork for the power-up capsules; anything unmapped falls back to its glyph. */
+const POWER_ART = { magnet: 'chemMagnet', health: 'biomassBig', bomb: 'bioNuke', speed: 'iconSpeed', frenzy: 'iconOffense' };
 const POWER_BAG = ['magnet', 'magnet', 'magnet', 'health', 'health', 'health', 'speed', 'speed', 'frenzy', 'frenzy', 'freeze', 'bomb'];
 function pickPowerType() { return pick(POWER_BAG); }
 /* Rare from normal kills; guaranteed from elites (bosses drop them on death). */
@@ -3798,10 +3897,17 @@ function drawSwarm(t) {
     g.addColorStop(0, 'rgba(157,255,95,0.4)'); g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, f.r * 2, 0, TAU); ctx.fill();
     ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = f.hitFlash > 0 ? '#ffffff' : 'rgba(150,235,110,0.95)';
-    ctx.beginPath(); ctx.ellipse(0, 0, f.r * wob, f.r / wob, f.angle, 0, TAU); ctx.fill();
-    ctx.strokeStyle = 'rgba(205,255,150,0.8)'; ctx.lineWidth = 1.4; ctx.stroke();
-    ctx.fillStyle = 'rgba(40,110,30,0.85)'; ctx.beginPath(); ctx.arc(0, 0, f.r * 0.4, 0, TAU); ctx.fill();
+    if (ART.cloneCell) {                       // hand-drawn daughter cell
+      const d = f.r * 2 * ART_SCALE.cloneCell * wob;
+      ctx.rotate(f.angle);
+      if (f.hitFlash > 0) { ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 16; }
+      ctx.drawImage(ART.cloneCell, -d / 2, -d / 2, d, d);
+    } else {
+      ctx.fillStyle = f.hitFlash > 0 ? '#ffffff' : 'rgba(150,235,110,0.95)';
+      ctx.beginPath(); ctx.ellipse(0, 0, f.r * wob, f.r / wob, f.angle, 0, TAU); ctx.fill();
+      ctx.strokeStyle = 'rgba(205,255,150,0.8)'; ctx.lineWidth = 1.4; ctx.stroke();
+      ctx.fillStyle = 'rgba(40,110,30,0.85)'; ctx.beginPath(); ctx.arc(0, 0, f.r * 0.4, 0, TAU); ctx.fill();
+    }
     ctx.restore();
     if (f.hp < f.maxHp) { const w = f.r * 1.8, hpf = clamp(f.hp / f.maxHp, 0, 1);
       ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(f.x - w / 2, f.y - f.r - 7, w, 2.5);
@@ -4383,7 +4489,20 @@ function render(time) {
   if (game.state !== 'menu' && game.player) drawMinimap();
 }
 
+let _bgPattern = null;
 function drawGrid(cam) {
+  // Hand-drawn agar texture, tiled in world space so it scrolls with the dish
+  // and clipped to the rim (everything beyond stays void).
+  if (ART.bgTile) {
+    if (!_bgPattern) _bgPattern = ctx.createPattern(ART.bgTile, 'repeat');
+    if (_bgPattern) {
+      ctx.save();
+      ctx.beginPath(); ctx.arc(0, 0, DISH_R, 0, TAU); ctx.clip();
+      ctx.globalAlpha = 0.5; ctx.fillStyle = _bgPattern;
+      ctx.fillRect(cam.x - view.w / 2, cam.y - view.h / 2, view.w, view.h);
+      ctx.restore();
+    }
+  }
   const step = 70, dr2 = DISH_R * DISH_R;
   const x0 = Math.floor((cam.x - view.w / 2) / step) * step;
   const y0 = Math.floor((cam.y - view.h / 2) / step) * step;
@@ -4455,14 +4574,24 @@ function drawPlayer(t) {
   ctx.rotate(p.angle);
   ctx.scale(viz.elong, 1 / Math.sqrt(viz.elong));
   ctx.shadowColor = glow; ctx.shadowBlur = (p.surge > 0 || p.powerSpeed > 0 || p.invulnTrail > 0) ? 34 : 22;
-  ctx.beginPath();
-  const lobes = 14, wobK = viz.feature === 'pseudopods' ? 0.15 : 0.07;
-  for (let i = 0; i <= lobes; i++) { const a = i / lobes * TAU; const rr = R * (1 + wobK * Math.sin(a * 3 + t * 3));
-    const x = Math.cos(a) * rr, y = Math.sin(a) * rr; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
-  ctx.closePath();
-  const g = ctx.createRadialGradient(-R * 0.18, -R * 0.18, 2, 0, 0, R);
-  g.addColorStop(0, viz.body[0]); g.addColorStop(0.5, viz.body[1]); g.addColorStop(1, viz.body[2]);
-  ctx.fillStyle = g; ctx.fill();
+  if (ART.playerCell) {
+    // Hand-drawn membrane, cycling the 4-frame breathing animation and tinted
+    // to this cell line so all 9 characters stay distinct from one base sprite.
+    // Surface features (cilia, flagella, legs…) still draw on top below.
+    const sheet = tintedArt(ART.playerCell, viz.body[1], 0.55);
+    const fw = ART.playerCell.height, fi = Math.floor(t * 7) % PLAYER_ART_FRAMES;
+    const d = R * 2 * ART_SCALE.playerCell;
+    ctx.drawImage(sheet, fi * fw, 0, fw, fw, -d / 2, -d / 2, d, d);
+  } else {
+    ctx.beginPath();
+    const lobes = 14, wobK = viz.feature === 'pseudopods' ? 0.15 : 0.07;
+    for (let i = 0; i <= lobes; i++) { const a = i / lobes * TAU; const rr = R * (1 + wobK * Math.sin(a * 3 + t * 3));
+      const x = Math.cos(a) * rr, y = Math.sin(a) * rr; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    ctx.closePath();
+    const g = ctx.createRadialGradient(-R * 0.18, -R * 0.18, 2, 0, 0, R);
+    g.addColorStop(0, viz.body[0]); g.addColorStop(0.5, viz.body[1]); g.addColorStop(1, viz.body[2]);
+    ctx.fillStyle = g; ctx.fill();
+  }
   ctx.restore();
   ctx.shadowBlur = 0;
 
@@ -4575,8 +4704,11 @@ function drawEnemies(t) {
     if (!onScreen(e.x, e.y, e.r + 30)) continue;
     if (e.eatable) { drawPrey(e, t); continue; }
     const SWARM_SPR = { influenza: 'virus', ecoli: 'bacterium', parasite: 'spore', cancer: 'amoeboid' };
-    const spr = SPR[e.type] || SPR[SWARM_SPR[e.type]] || SPR.virus;
-    const scale = (e.r * 2) / spr.width * (e.boss ? 1 : 1.15);
+    const sprKey = SPR[e.type] ? e.type : (SWARM_SPR[e.type] || 'virus');
+    const spr = SPR[sprKey] || SPR.virus;
+    // artwork carries its own padding factor; procedural sprites keep the old fudge
+    const pad = (ART[sprKey] === spr) ? (ART_SCALE[sprKey] || 1) : (e.boss ? 1 : 1.15);
+    const scale = (e.r * 2) / spr.width * pad;
     ctx.save(); ctx.translate(e.x, e.y);
     if (e.behavior !== 'mortar') ctx.rotate(e.angle + (e.type === 'virus' ? t * 1.5 : 0));
     ctx.scale(scale, scale);
@@ -4642,8 +4774,11 @@ function drawPickups(t) {
       ctx.shadowColor = def.color; ctx.shadowBlur = 18;
       ctx.fillStyle = 'rgba(8,20,28,0.92)'; ctx.beginPath(); ctx.arc(0, 0, 14, 0, TAU); ctx.fill();
       ctx.lineWidth = 2.5; ctx.strokeStyle = def.color; ctx.beginPath(); ctx.arc(0, 0, 14, 0, TAU); ctx.stroke();
-      ctx.shadowBlur = 0; ctx.font = '16px Segoe UI, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#fff'; ctx.fillText(def.icon, 0, 1);
+      ctx.shadowBlur = 0;
+      const pArt = ART[POWER_ART[pk.value]];
+      if (pArt) { ctx.drawImage(pArt, -11, -11, 22, 22); }     // hand-drawn power glyph
+      else { ctx.font = '16px Segoe UI, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#fff'; ctx.fillText(def.icon, 0, 1); }
       ctx.restore(); continue;
     }
     if (pk.kind === 'radical') {                            // free radical — a jittery, spiky toxic mote
@@ -4697,11 +4832,18 @@ function drawHazards(t) {
       const r = h.r * grow, ph = t * 0.8 + i;
       const rim = h.color.replace(/[\d.]+\)$/, '0.6)');
       ctx.save();
-      const grad = ctx.createRadialGradient(h.x, h.y, 1, h.x, h.y, r);
-      grad.addColorStop(0, h.color); grad.addColorStop(0.7, h.color.replace(/[\d.]+\)$/, '0.10)')); grad.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.globalAlpha = 0.45 + 0.5 * fade; ctx.fillStyle = grad; bloomPath(h.x, h.y, r, ph, 0.16, 5); ctx.fill();
-      ctx.globalAlpha = 0.35 * fade; ctx.fillStyle = rim; bloomPath(h.x, h.y, r * 0.55, -ph * 1.4, 0.22, 6); ctx.fill();   // mottled core
-      ctx.globalAlpha = 0.55 * fade; ctx.strokeStyle = rim; ctx.lineWidth = 2; bloomPath(h.x, h.y, r * 0.95, ph, 0.16, 5); ctx.stroke();
+      if (ART.hazardPool) {                       // hand-drawn organic pool, tinted per hazard
+        // the artwork carries its own mottling and edge, so it draws alone
+        const d = r * 2.3;
+        ctx.globalAlpha = 0.26 + 0.28 * fade;
+        ctx.drawImage(tintedArt(ART.hazardPool, rim, 0.55), h.x - d / 2, h.y - d / 2, d, d);
+      } else {
+        const grad = ctx.createRadialGradient(h.x, h.y, 1, h.x, h.y, r);
+        grad.addColorStop(0, h.color); grad.addColorStop(0.7, h.color.replace(/[\d.]+\)$/, '0.10)')); grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.globalAlpha = 0.45 + 0.5 * fade; ctx.fillStyle = grad; bloomPath(h.x, h.y, r, ph, 0.16, 5); ctx.fill();
+        ctx.globalAlpha = 0.35 * fade; ctx.fillStyle = rim; bloomPath(h.x, h.y, r * 0.55, -ph * 1.4, 0.22, 6); ctx.fill();   // mottled core
+        ctx.globalAlpha = 0.55 * fade; ctx.strokeStyle = rim; ctx.lineWidth = 2; bloomPath(h.x, h.y, r * 0.95, ph, 0.16, 5); ctx.stroke();
+      }
       ctx.restore();
     }
   }
@@ -4711,7 +4853,11 @@ function drawEffects() {
   for (const f of game.effects) {
     const k = f.life / f.maxLife;
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    if (f.kind === 'whip' || f.kind === 'wave') {
+    if (f.kind === 'whip' && ART.whipArc) {            // hand-drawn cilia sweep
+      ctx.translate(f.x, f.y); ctx.rotate(f.ang);
+      ctx.globalAlpha = k; const d = f.range * 2;
+      ctx.drawImage(ART.whipArc, -d / 2, -d / 2, d, d);
+    } else if (f.kind === 'whip' || f.kind === 'wave') {
       ctx.translate(f.x, f.y); ctx.rotate(f.ang);
       ctx.fillStyle = f.kind === 'whip' ? `rgba(125,255,154,${0.5 * k})` : `rgba(255,95,162,${0.55 * k})`;
       ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, f.range * (f.kind === 'wave' ? (1.4 - k * 0.4) : 1), -f.arc / 2, f.arc / 2); ctx.closePath(); ctx.fill();
@@ -4752,6 +4898,15 @@ function drawVignette() {
   const dark = ctx.createRadialGradient(cx, cy, R * 0.82, cx, cy, Math.hypot(view.w, view.h) / 1.4);
   dark.addColorStop(0, 'rgba(2,7,11,0)'); dark.addColorStop(0.6, 'rgba(2,7,11,0.26)'); dark.addColorStop(1, 'rgba(1,4,7,0.58)');
   ctx.fillStyle = dark; ctx.fillRect(0, 0, view.w, view.h);
+  // hand-drawn microscope lens ring over the gradient falloff
+  if (ART.vignette) {
+    // sized past the screen diagonal so the lens ring sits just beyond the
+    // corners and reads as vignetting, not as arcs drawn across the field
+    ctx.save(); ctx.globalAlpha = 0.55;
+    const d = Math.hypot(view.w, view.h) * 1.15;
+    ctx.drawImage(ART.vignette, cx - d / 2, cy - d / 2, d, d);
+    ctx.restore();
+  }
   ctx.save(); ctx.fillStyle = 'rgba(205,240,255,0.07)';
   for (let i = 0; i < 6; i++) { const a = i * 1.7, rr = R * (0.7 + 0.26 * ((i * 0.31) % 1));
     ctx.beginPath(); ctx.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, 2 + (i % 3), 0, TAU); ctx.fill(); }
@@ -6084,6 +6239,7 @@ function init() {
   Sound.init();
   Music.init();
   buildSprites();
+  loadArt();            // hand-drawn art swaps in over the procedural sprites
   setupCanvas();
   setupInput();
   setupSaveModal();

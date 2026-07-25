@@ -2,7 +2,7 @@
 
 An educational **microbial survivors roguelite**. Pilot a single cell through a rising tide of viruses, bacteria, toxic spores and a macrophage boss — survive, level up, evolve your organelles, and trigger screen-clearing **Apex Mutations**. Or start as a lone human cell and **mitotically divide into a fighting colony** in the new **Cellular Swarm** mode. Every weapon, organelle and enemy is rooted in real cell biology, with the science explained in an in-game codex.
 
-The game ships as an **installable app** — a **Windows `.exe`** (Electron) and an **Android `.apk`** (Capacitor), both built by CI. Under the hood the engine is a single Canvas2D `index.html` with zero runtime dependencies; the installers bundle it into a native shell.
+The game ships as an **installable app** — a **Windows `.exe`** (Electron) and an **Android `.apk`** (Capacitor), both built by CI. Under the hood the engine is a single Canvas2D `index.html` with zero runtime dependencies, drawing a hand-painted sprite set from `assets/`; the installers bundle both into a native shell.
 
 ---
 
@@ -92,15 +92,24 @@ npm run stage && npm run icons && npm run add && npm run apk
 | Path | Purpose |
 |------|---------|
 | `index.html` | **The whole game** — markup, styles and engine in one file |
+| `assets/` | Hand-painted sprite set (enemies, player, pickups, FX, UI) loaded at runtime |
 | `main.js` | Electron main process (opens a window, loads `index.html`) |
 | `package.json` | App metadata + `electron-builder` packaging config |
 | `build/icon.png` | 1024² app icon (reused for Windows `.ico` and Android launcher icons) |
-| `mobile/` | Capacitor Android shell (`www/` + generated `android/` are git-ignored, rebuilt from `index.html`) |
+| `mobile/` | Capacitor Android shell (`www/` + generated `android/` are git-ignored, rebuilt from `index.html` + `assets/`) |
 | `.github/workflows/build-desktop.yml` | CI → Windows `.exe` |
 | `.github/workflows/build-android.yml` | CI → Android `.apk` |
 
-`node_modules/`, `dist/`, and the generated `mobile/android` + `mobile/www/index.html` are git-ignored — CI and local builds regenerate them.
+`node_modules/`, `dist/`, and the generated `mobile/android` + `mobile/www/` are git-ignored — CI and local builds regenerate them.
+
+### 🎨 Artwork
+
+Sprites live in `assets/` and are loaded by the `ART` layer at boot. Every sprite
+is still generated procedurally by `buildSprites()` first, so the artwork is a
+progressive enhancement: the game runs from the first frame and falls back to the
+generated look if a file is missing. To swap in new art, drop a replacement PNG at
+the same path — no code change needed.
 
 ---
 
-*Educational survivors prototype · Canvas2D · single-file · all biology facts are real.*
+*Educational survivors prototype · Canvas2D · all biology facts are real.*

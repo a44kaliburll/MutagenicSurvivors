@@ -6,7 +6,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "stage": "node -e \"const fs=require('fs');fs.mkdirSync('www',{recursive:true});fs.mkdirSync('assets',{recursive:true});fs.copyFileSync('../index.html','www/index.html');fs.copyFileSync('../build/icon.png','assets/icon.png')\"",
+    "stage": "node -e \"const fs=require('fs');fs.mkdirSync('www',{recursive:true});fs.mkdirSync('assets',{recursive:true});fs.copyFileSync('../index.html','www/index.html');fs.cpSync('../assets','www/assets',{recursive:true});fs.copyFileSync('../build/icon.png','assets/icon.png')\"",
     "icons": "capacitor-assets generate --android --iconBackgroundColor #05070d --iconBackgroundColorDark #05070d",
     "add": "cap add android",
     "sync": "cap sync android",
