@@ -531,6 +531,12 @@
         <button class="btn ghost small" id="btn-music" data-act="music" style="min-width:0">🎵 Music: On</button>
         <input id="vol-slider" type="range" min="0" max="100" value="60" title="Volume" style="width:130px; accent-color:#2ff6ff;" />
       </div>
+      <div class="row" style="margin-top:8px; gap:10px; align-items:center;">
+        <span id="fx-label" class="hint" style="margin:0; min-width:190px; text-align:right;">☀ Flash &amp; Effects: 100%</span>
+        <input id="fx-slider" type="range" min="0" max="100" value="100"
+               title="Lower this to soften screen flashes and weapon effects (light sensitivity)"
+               style="width:130px; accent-color:#b07bff;" />
+      </div>
     </div>
     <div class="hint">
       Move: <span class="kbd">W</span><span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>
@@ -1671,6 +1677,7 @@ const DEFAULT_SAVE = () => ({
   passives: {},                                     // achievement-unlocked organelles (id -> true)
   lastChar: 'paramecium',                           // last picked cell
   sound: { on: true, vol: 0.6, music: true, track: null },  // audio prefs (track: pinned soundtrack index, null = shuffle)
+  fx: { intensity: 1 },                             // 0..1 visual intensity (photosensitivity comfort)
   suspended: null           // snapshot of an in-progress run (for "Continue Run")
 });
 let SAVE = DEFAULT_SAVE();
@@ -1796,6 +1803,24 @@ const Sound = {
   }
 };
 function sfx(name) { Sound.play(name); }
+
+/* ---- Visual intensity (accessibility) ----------------------------------- *
+ * One slider damps the things that actually strobe: full-screen flashes,     *
+ * weapon/impact effects, particle bursts and screen shake.                   *
+ *                                                                           *
+ * Flashes scale all the way to zero — they are pure polish and the single    *
+ * biggest photosensitivity trigger, so removing them costs nothing you need  *
+ * to play. World effects keep a floor instead: at 0% they dim to 20% rather  *
+ * than vanishing, because a weapon you cannot see firing is unplayable, not  *
+ * accessible.                                                               */
+const FX = {
+  intensity: 1,
+  init() { const f = SAVE.fx; this.intensity = (f && typeof f.intensity === 'number') ? clamp(f.intensity, 0, 1) : 1; },
+  set(v) { this.intensity = clamp(v, 0, 1); SAVE.fx = { intensity: this.intensity }; commitSave(); },
+  flash(a) { return a * this.intensity; },                 // full-screen: to zero
+  world(a) { return a * (0.2 + 0.8 * this.intensity); },   // in-world: floored at 20%
+  shake(a) { return a * this.intensity; },                 // camera kick rides along
+};
 
 /* ======================================================================== *
  *  SECTION 8c — CHIPTUNE MUSIC SEQUENCER                                     *
@@ -4637,8 +4662,9 @@ function render(time) {
   ctx.fillStyle = bg; ctx.fillRect(0, 0, view.w, view.h);
 
   const cam = game.camera;
-  const sx = game.shake ? (RNG() - 0.5) * game.shake : 0;
-  const sy = game.shake ? (RNG() - 0.5) * game.shake : 0;
+  const shakeAmp = FX.shake(game.shake || 0);
+  const sx = shakeAmp ? (RNG() - 0.5) * shakeAmp : 0;
+  const sy = shakeAmp ? (RNG() - 0.5) * shakeAmp : 0;
   const ox = view.w / 2 - cam.x + sx, oy = view.h / 2 - cam.y + sy;
 
   // ---- parallax ambient depth blobs ----
@@ -4676,7 +4702,7 @@ function render(time) {
 
   // ---- screen-space overlays ----
   drawVignette();
-  if (game.flash > 0) { ctx.fillStyle = game.flashColor + Math.max(0, game.flash) + ')'; ctx.fillRect(0, 0, view.w, view.h); }
+  if (game.flash > 0 && FX.intensity > 0) { ctx.fillStyle = game.flashColor + FX.flash(Math.max(0, game.flash)) + ')'; ctx.fillRect(0, 0, view.w, view.h); }
   if (game.boss && !game.boss.dead) drawBossBar();
   if (game.state !== 'menu' && game.player) drawMinimap();
 }
@@ -4961,7 +4987,7 @@ function drawEnemies(t) {
       ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, TAU); ctx.stroke(); ctx.restore();
     }
     // hit flash
-    if (e.hitFlash > 0) { ctx.save(); ctx.globalAlpha = e.hitFlash * 4; ctx.globalCompositeOperation = 'lighter';
+    if (e.hitFlash > 0) { ctx.save(); ctx.globalAlpha = FX.world(e.hitFlash * 4); ctx.globalCompositeOperation = 'lighter';
       ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, TAU); ctx.fill(); ctx.restore(); }
     const tint = tintFor(e);
     if (tint) { ctx.save(); ctx.globalAlpha = 0.35; ctx.fillStyle = tint; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, TAU); ctx.fill(); ctx.restore(); }
@@ -5105,13 +5131,15 @@ function drawHazards(t) {
 function drawEffects() {
   for (const f of game.effects) {
     const k = f.life / f.maxLife;
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    ctx.save();
+    // additive blending is the glare; below half intensity fall back to normal
+    ctx.globalCompositeOperation = FX.intensity > 0.5 ? 'lighter' : 'source-over';
     if (f.kind === 'wave' && ART.tailSweep) {
       // Flagellar Tail Strike — plays its 4-frame whip animation across the
       // effect's short life, tinted so the Bilateral Symmetry side-waves stay
       // distinguishable from the main strike.
       ctx.translate(f.x, f.y); ctx.rotate(f.ang);
-      ctx.globalAlpha = Math.min(1, k * 1.6);
+      ctx.globalAlpha = FX.world(Math.min(1, k * 1.6));
       const fw = ART.tailSweep.height;
       // clamp both ends: a freshly-spawned effect has k >= 1, which floors to a
       // negative frame index and silently draws nothing
@@ -5122,22 +5150,22 @@ function drawEffects() {
         -TAIL_ROOT_X * d, -TAIL_ROOT_Y * d, d, d);
     } else if (f.kind === 'whip' && ART.whipArc) {
       ctx.translate(f.x, f.y); ctx.rotate(f.ang);
-      ctx.globalAlpha = k; const d = f.range * 2;
+      ctx.globalAlpha = FX.world(k); const d = f.range * 2;
       ctx.drawImage(ART.whipArc, -d / 2, -d / 2, d, d);
     } else if (f.kind === 'whip' || f.kind === 'wave') {
       ctx.translate(f.x, f.y); ctx.rotate(f.ang);
-      ctx.fillStyle = f.kind === 'whip' ? `rgba(125,255,154,${0.5 * k})` : `rgba(255,95,162,${0.55 * k})`;
+      ctx.fillStyle = f.kind === 'whip' ? `rgba(125,255,154,${FX.world(0.5 * k)})` : `rgba(255,95,162,${FX.world(0.55 * k)})`;
       ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, f.range * (f.kind === 'wave' ? (1.4 - k * 0.4) : 1), -f.arc / 2, f.arc / 2); ctx.closePath(); ctx.fill();
     } else if (f.kind === 'boom' && ART.sporeBoom) {     // hand-drawn spore detonation
-      ctx.globalAlpha = k;
+      ctx.globalAlpha = FX.world(k);
       const d = f.range * 2 * ART_SCALE.sporeBoom * (1.5 - k * 0.5);
       ctx.drawImage(ART.sporeBoom, f.x - d / 2, f.y - d / 2, d, d);
     } else if (f.kind === 'tide' && ART.causticRing) {   // hand-drawn caustic wash
-      ctx.globalAlpha = 0.85 * k;
+      ctx.globalAlpha = FX.world(0.85 * k);
       const d = f.r * 2 * ART_SCALE.causticRing;
       ctx.drawImage(ART.causticRing, f.x - d / 2, f.y - d / 2, d, d);
     } else if (f.kind === 'tide') {
-      ctx.strokeStyle = `rgba(157,255,95,${0.6 * k})`; ctx.lineWidth = 26; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = `rgba(157,255,95,${FX.world(0.6 * k)})`; ctx.lineWidth = 26; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, TAU); ctx.stroke();
     }
     ctx.restore();
   }
@@ -5148,8 +5176,8 @@ function drawParticles() {
   const arr = game.particles;
   for (let i = 0; i < arr.length; i++) {
     const pt = arr[i]; const k = pt.life / pt.maxLife;
-    if (pt.ring) { ctx.globalAlpha = k * 0.8; ctx.strokeStyle = pt.color; ctx.lineWidth = 2 + 3 * (1 - k); ctx.beginPath(); ctx.arc(pt.x, pt.y, lerp(pt.r0, pt.r1, 1 - k), 0, TAU); ctx.stroke(); }
-    else { ctx.globalAlpha = k; ctx.fillStyle = pt.color; ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.size, 0, TAU); ctx.fill(); }
+    if (pt.ring) { ctx.globalAlpha = FX.world(k * 0.8); ctx.strokeStyle = pt.color; ctx.lineWidth = 2 + 3 * (1 - k); ctx.beginPath(); ctx.arc(pt.x, pt.y, lerp(pt.r0, pt.r1, 1 - k), 0, TAU); ctx.stroke(); }
+    else { ctx.globalAlpha = FX.world(k); ctx.fillStyle = pt.color; ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.size, 0, TAU); ctx.fill(); }
   }
   ctx.restore();
 }
@@ -6620,6 +6648,14 @@ function init() {
   const sb = $('btn-sound'); if (sb) sb.textContent = Sound.on ? '🔊 Sound: On' : '🔇 Sound: Off';
   const mb = $('btn-music'); if (mb) mb.textContent = Music.on ? '🎵 Music: On' : '🎵 Music: Off';
   const vs = $('vol-slider'); if (vs) { vs.value = Math.round(Sound.vol * 100); vs.addEventListener('input', () => Sound.setVol(vs.value / 100)); }
+  // Visual intensity: one control for flashes, weapon effects and shake.
+  FX.init();
+  const fxs = $('fx-slider'), fxl = $('fx-label');
+  const paintFx = () => { if (fxl) fxl.textContent = '☀ Flash & Effects: ' + Math.round(FX.intensity * 100) + '%'
+      + (FX.intensity === 0 ? ' (flashes off)' : ''); };
+  if (fxs) { fxs.value = Math.round(FX.intensity * 100);
+    fxs.addEventListener('input', () => { FX.set(fxs.value / 100); paintFx(); }); }
+  paintFx();
   // Persist the run if the player tabs away or closes the page mid-fight.
   document.addEventListener('visibilitychange', () => { if (document.hidden) saveRunSnapshot(); });
   window.addEventListener('beforeunload', () => { saveRunSnapshot(); });
