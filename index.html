@@ -1423,6 +1423,33 @@ const CARD_RARITIES = [
   { id: 'legendary', name: 'LEGENDARY', color: '#ff9d3a', rgb: '255,157,58',  weight: 1,  bonus: 4 },
 ];
 function rollCardRarity() { return luckyIndex(CARD_RARITIES.map(r => r.weight), curLuck()); }
+/* A weapon's rarity is stamped on the instance when you pick it up and stays
+ * with that copy for the run, so a Legendary Lv1 really is stronger than a
+ * Common Lv1 — it is not just "a few levels early". Only fields that scale
+ * safely are touched: integers like count/pierce/hits would change behaviour
+ * rather than strength, and fractions like slow/paralyze/scalar would break
+ * past 1.0, so both are left alone. */
+const RARITY_STATS = [
+  { dmg: 1.00, cd: 1.00, area: 1.00 },   // Common
+  { dmg: 1.14, cd: 0.96, area: 1.04 },   // Uncommon
+  { dmg: 1.30, cd: 0.92, area: 1.08 },   // Rare
+  { dmg: 1.50, cd: 0.87, area: 1.13 },   // Epic
+  { dmg: 1.75, cd: 0.82, area: 1.18 },   // Legendary
+];
+const RARITY_AREA_FIELDS = ['blast', 'explodeRadius', 'poolRadius', 'radius', 'range', 'orbit', 'knockback'];
+/* Resolve a weapon instance's stats INCLUDING its rarity. Every read — the
+ * fire loop, the arsenal panel, the level-up card — goes through here so the
+ * numbers you are shown are the numbers that fire. */
+function weaponStatsOf(w, lvl, rarityIdx) {
+  const def = WEAPON_BY_ID[w.id !== undefined ? w.id : w];
+  const s = Object.assign({}, def.getStats(lvl !== undefined ? lvl : w.level));
+  const r = RARITY_STATS[rarityIdx !== undefined ? rarityIdx : (w.rarity || 0)];
+  if (!r || r.dmg === 1) return s;
+  if (typeof s.damage === 'number') s.damage *= r.dmg;
+  if (typeof s.cooldown === 'number') s.cooldown *= r.cd;
+  for (const k of RARITY_AREA_FIELDS) if (typeof s[k] === 'number' && s[k]) s[k] *= r.area;
+  return s;
+}
 /* Which choice kinds can actually bank extra levels. Heal/coins scale their
  * value instead; a one-shot like the lucky boost has nothing to scale, so it
  * always reads Common rather than dangling a meaningless Legendary. */
@@ -2519,7 +2546,7 @@ function createPlayer() {
     // Progression
     level: 1, xp: 0, xpNext: xpForLevel(1),
     // Registries
-    weapons: [],                 // [{id, level, timer, apex, apexId}]
+    weapons: [],                 // [{id, level, timer, apex, apexId, rarity}]
     passives: {},                // id -> tier (the six organelles)
     adaptations: {},             // id -> tier (secondary stat passives)
     // Derived multipliers (recomputed on any change) — fed into the pipelines
@@ -3375,7 +3402,7 @@ function updateWeapons(dt) {
   const p = game.player;
   for (const w of p.weapons) {
     const def = WEAPON_BY_ID[w.id];
-    const s = def.getStats(w.level);
+    const s = weaponStatsOf(w);          // includes this copy's rarity
     // Apex routing & cadence
     const apexId = w.apexId;
     const fireFn = FIRE[apexId === 'vortex' ? 'vortex' : apexId === 'caustic' ? 'caustic' :
@@ -5511,8 +5538,8 @@ const STAT_LABEL = {
   speed: 'velocity', knockback: 'knock', arc: 'arc', cloudDur: 'cloud·s', cloudDps: 'cloud/s',
   count2: '', surgeDur: 'surge·s',
 };
-function weaponSummary(def, lvl) {
-  const s = def.getStats(lvl), out = [];
+function weaponSummary(def, lvl, rarityIdx) {
+  const s = weaponStatsOf({ id: def.id }, lvl, rarityIdx || 0), out = [];
   for (const k in s) {
     if (typeof s[k] !== 'number' || !s[k] || !(k in STAT_LABEL) || STAT_LABEL[k] === '') continue;
     let v = s[k];
@@ -5532,7 +5559,9 @@ function refreshTray() {
     const w = p.weapons[i];
     const slot = document.createElement('div'); slot.className = 'slot' + (w ? (w.apex ? ' apex' : '') : ' empty');
     if (w) { const def = WEAPON_BY_ID[w.id]; slot.innerHTML = `<span>${w.apex ? APEX_BY_BASE[w.id].icon : def.icon}</span><span class="lvl">${w.apex ? 'MAX' : w.level}</span>`;
-      slot.title = (w.apex ? APEX_BY_BASE[w.id].name : def.name); }
+      const wr = CARD_RARITIES[w.rarity || 0];
+      if ((w.rarity || 0) > 0 && !w.apex) { slot.style.borderColor = wr.color; slot.style.boxShadow = `0 0 8px rgba(${wr.rgb},0.5)`; }
+      slot.title = (w.apex ? APEX_BY_BASE[w.id].name : def.name) + ((w.rarity || 0) > 0 ? ' · ' + wr.name : ''); }
     ws.appendChild(slot);
   }
   const pIds = Object.keys(p.passives);
@@ -5625,9 +5654,9 @@ function assignCardRarity(c) {
   if (!rarityAppliesTo(c.kind)) { c.rarity = 0; c.bonus = 0; return; }
   const p = game.player;
   let head = 99;
-  if (c.kind === 'weapon-up')   head = WEAPON_BY_ID[c.id].maxLevel - c.target;
-  else if (c.kind === 'weapon-new')  head = WEAPON_BY_ID[c.id].maxLevel - 1;
-  else if (c.kind === 'passive-up')  head = PASSIVE_BY_ID[c.id].maxLevel - c.target;
+  // weapons bank rarity, not levels, so they are never headroom-limited
+  if (c.kind === 'weapon-up' || c.kind === 'weapon-new') { c.rarity = rollCardRarity(); c.bonus = 0; return; }
+  if (c.kind === 'passive-up')  head = PASSIVE_BY_ID[c.id].maxLevel - c.target;
   else if (c.kind === 'passive-new') head = PASSIVE_BY_ID[c.id].maxLevel - 1;
   else if (c.kind === 'adapt-up' || c.kind === 'adapt-new') head = ADAPT_BY_ID[c.id].max - c.target;
   let r = rollCardRarity();
@@ -5653,10 +5682,20 @@ function buildChoiceCard(c, i) {
   let icon, type, name, level, desc, fact, cls = 'card';
   if (c.kind === 'weapon-up' || c.kind === 'weapon-new') {
     const def = WEAPON_BY_ID[c.id]; cls += ' weapon';
-    const wLv = Math.min(def.maxLevel, (c.kind === 'weapon-new' ? 1 : c.target) + (c.bonus || 0));
+    const wLv = c.kind === 'weapon-new' ? 1 : c.target;
     icon = def.icon; type = 'Active Weapon' + tierBadge(weaponTier(c.id)); name = def.name;
     level = (c.kind === 'weapon-new' ? 'NEW · ' : '') + 'Lvl ' + wLv;
-    desc = c.kind === 'weapon-new' ? def.desc : def.levelText[c.target - 1]; fact = def.fact;
+    desc = c.kind === 'weapon-new' ? def.desc : def.levelText[c.target - 1];
+    // spell out what this copy's rarity is worth, and whether it refines one you hold
+    const rs = RARITY_STATS[c.rarity || 0];
+    if (rs && rs.dmg > 1) {
+      const held = (game.player.weapons.find(w => w.id === c.id) || {}).rarity || 0;
+      const refines = c.kind === 'weapon-up' && c.rarity > held;
+      desc += `<br/><span style="color:${CARD_RARITIES[c.rarity].color}">`
+        + (refines ? `↑ Refines your ${CARD_RARITIES[held].name} copy — ` : '')
+        + `+${Math.round((rs.dmg - 1) * 100)}% damage · −${Math.round((1 - rs.cd) * 100)}% cooldown · +${Math.round((rs.area - 1) * 100)}% area</span>`;
+    }
+    fact = def.fact;
   } else if (c.kind === 'passive-up' || c.kind === 'passive-new') {
     const def = PASSIVE_BY_ID[c.id]; cls += ' passive';
     const pLv = Math.min(def.maxLevel, (c.kind === 'passive-new' ? 1 : c.target) + (c.bonus || 0));
@@ -5697,8 +5736,13 @@ function cardColor(c) {
 function chooseUpgrade(c) {
   const p = game.player;
   const bonus = c.bonus || 0;                  // extra levels bought by this card's rarity
-  if (c.kind === 'weapon-up') { const w = p.weapons.find(w => w.id === c.id); w.level = Math.min(WEAPON_BY_ID[c.id].maxLevel, c.target + bonus); }
-  else if (c.kind === 'weapon-new') { p.weapons.push({ id: c.id, level: Math.min(WEAPON_BY_ID[c.id].maxLevel, 1 + bonus), timer: 0, apex: false, apexId: null }); markCodex(c.id); }
+  if (c.kind === 'weapon-up') {
+    const w = p.weapons.find(w => w.id === c.id);
+    w.level = Math.min(WEAPON_BY_ID[c.id].maxLevel, c.target);
+    // a rarer card refines the copy you already own; it can never downgrade it
+    if ((c.rarity || 0) > (w.rarity || 0)) w.rarity = c.rarity;
+  }
+  else if (c.kind === 'weapon-new') { p.weapons.push({ id: c.id, level: 1, timer: 0, apex: false, apexId: null, rarity: c.rarity || 0 }); markCodex(c.id); }
   else if (c.kind === 'passive-up') { p.passives[c.id] = Math.min(PASSIVE_BY_ID[c.id].maxLevel, c.target + bonus); recomputeStats(); markCodex(c.id); }
   else if (c.kind === 'passive-new') { p.passives[c.id] = Math.min(PASSIVE_BY_ID[c.id].maxLevel, 1 + bonus); recomputeStats(); markCodex(c.id); }
   else if (c.kind === 'adapt-up' || c.kind === 'adapt-new') { p.adaptations[c.id] = Math.min(ADAPT_BY_ID[c.id].max, c.target + bonus); recomputeStats(); }
@@ -5946,7 +5990,7 @@ function pauseArsenalHTML(p) {
     const icon = apexDef ? apexDef.icon : def.icon, name = apexDef ? apexDef.name : def.name;
     const lv = w.apex ? 'APEX' : ('Lv ' + w.level + '/' + def.maxLevel);
     const desc = apexDef ? apexDef.desc : def.desc;
-    const summary = apexDef ? '' : `<div class="ps-item-s">${weaponSummary(def, w.level)}</div>`;
+    const summary = apexDef ? '' : `<div class="ps-item-s">${weaponSummary(def, w.level, w.rarity || 0)}</div>`;
     h += `<div class="ps-item${apexDef ? ' apex' : ''}"><div class="ps-item-h"><span class="ps-item-ic" style="color:${def.color}">${icon}</span><span class="ps-item-nm">${name}</span><span class="ps-item-lv">${lv}</span></div><div class="ps-item-d">${desc}</div>${summary}</div>`;
   }
   h += '</div></div>';
@@ -6061,7 +6105,7 @@ function serializeRun() {
       x: p.x, y: p.y, angle: p.angle,
       baseMaxHp: p.baseMaxHp, maxShield: p.maxShield, shieldHp: p.shieldHp, hp: p.hp, armor: p.armor,
       level: p.level, xp: p.xp, xpNext: p.xpNext,
-      weapons: p.weapons.map(w => ({ id: w.id, level: w.level, apex: !!w.apex, apexId: w.apexId || null })),
+      weapons: p.weapons.map(w => ({ id: w.id, level: w.level, apex: !!w.apex, apexId: w.apexId || null, rarity: w.rarity || 0 })),
       passives: Object.assign({}, p.passives),
       adaptations: Object.assign({}, p.adaptations || {}),
       evoLevel: p.evoLevel,
@@ -6102,7 +6146,7 @@ function resumeSavedRun() {
   p.x = ps.x; p.y = ps.y; p.angle = ps.angle || 0;
   p.baseMaxHp = ps.baseMaxHp; p.armor = ps.armor || 0; p.maxShield = ps.maxShield || 30;
   p.level = ps.level; p.xp = ps.xp; p.xpNext = ps.xpNext || xpForLevel(p.level);
-  p.weapons = (ps.weapons || []).map(w => ({ id: w.id, level: w.level, timer: 0, apex: !!w.apex, apexId: w.apexId || null }));
+  p.weapons = (ps.weapons || []).map(w => ({ id: w.id, level: w.level, timer: 0, apex: !!w.apex, apexId: w.apexId || null, rarity: w.rarity || 0 }));
   p.passives = Object.assign({}, ps.passives || {});
   p.adaptations = Object.assign({}, ps.adaptations || {});
   p.evoLevel = ps.evoLevel != null ? ps.evoLevel : -1;   // Directed Evolution surge anchor
