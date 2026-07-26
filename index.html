@@ -1130,17 +1130,10 @@ const PASSIVE_META = {
 };
 function weaponTier(id)  { return (WEAPON_META[id]  || {}).tier || 'C'; }
 function passiveTier(id) { return (PASSIVE_META[id] || {}).tier || 'C'; }
-/* Tier drives how often a NEW weapon/organelle is offered, not just the badge
- * on the card. Previously the badge was cosmetic — an S-tier item showed up as
- * readily as a D-tier one the moment it unlocked, so the ladder meant nothing
- * once everything was unlocked. Rarer entries are now genuinely scarcer, and
- * Luck is what buys them back: at max Luck a tier-S offer is nearly as likely
- * as a tier-D one, which gives the stat a purpose beyond chest rolls. */
-const TIER_RARITY = { D: 1.0, C: 0.78, B: 0.58, A: 0.40, S: 0.26 };
-function tierWeight(tier, luck) {
-  const base = TIER_RARITY[tier] !== undefined ? TIER_RARITY[tier] : 0.78;
-  return base + (1 - base) * clamp(luck, 0, 1);      // Luck lifts the rare end
-}
+/* NB: tier is the UNLOCK ladder and nothing more — it labels the card so you
+ * can see where an item sits in the progression. It deliberately does not skew
+ * how often something is offered; per-card CARD_RARITIES is the one rarity
+ * system that affects a roll, and two competing ladders only muddied it. */
 
 /* ======================================================================== *
  *  SECTION 3b — SECONDARY PASSIVES ("ADAPTATIONS")                           *
@@ -5578,9 +5571,8 @@ function getLevelUpChoices() {
     const sp = [];
     for (const w of p.weapons) { const def = WEAPON_BY_ID[w.id]; if (!w.apex && w.level < def.maxLevel) sp.push({ kind: 'weapon-up', id: w.id, target: w.level + 1, weight: 10 }); }
     for (const id in p.passives) { const def = PASSIVE_BY_ID[id]; if (p.passives[id] < def.maxLevel) sp.push({ kind: 'passive-up', id, target: p.passives[id] + 1, weight: 8 }); }
-    const swLuck = p.mult.luck || 0;
-    if (p.weapons.length < 6) for (const def of WEAPONS) if (!p.weapons.find(w => w.id === def.id)) sp.push({ kind: 'weapon-new', id: def.id, target: 1, weight: 7 * tierWeight(weaponTier(def.id), swLuck) });
-    if (Object.keys(p.passives).length < 6) for (const def of PASSIVES) if (!(def.id in p.passives)) sp.push({ kind: 'passive-new', id: def.id, target: 1, weight: 6 * tierWeight(passiveTier(def.id), swLuck) });
+    if (p.weapons.length < 6) for (const def of WEAPONS) if (!p.weapons.find(w => w.id === def.id)) sp.push({ kind: 'weapon-new', id: def.id, target: 1, weight: 7 });
+    if (Object.keys(p.passives).length < 6) for (const def of PASSIVES) if (!(def.id in p.passives)) sp.push({ kind: 'passive-new', id: def.id, target: 1, weight: 6 });
     const out = [], seen = new Set(); let g2 = 0;
     while (out.length < 3 && sp.length && g2++ < 200) {
       let total = 0; for (const o of sp) if (!seen.has(o.kind + o.id)) total += o.weight;
@@ -5595,15 +5587,14 @@ function getLevelUpChoices() {
   }
   const hasWeaponSlot = p.weapons.length < 6;
   const hasPassiveSlot = Object.keys(p.passives).length < 6;
-  const tierLuck = p.mult.luck || 0;
   // upgrade owned weapons
   for (const w of p.weapons) { const def = WEAPON_BY_ID[w.id]; if (!w.apex && w.level < def.maxLevel) pool.push({ kind: 'weapon-up', id: w.id, target: w.level + 1, weight: 10 }); }
   // upgrade owned passives
   for (const id in p.passives) { const def = PASSIVE_BY_ID[id]; if (p.passives[id] < def.maxLevel) pool.push({ kind: 'passive-up', id, target: p.passives[id] + 1, weight: 9 }); }
   // new weapons (only those unlocked via achievements / cell-line play)
-  if (hasWeaponSlot) for (const def of WEAPONS) if (!p.weapons.find(w => w.id === def.id) && weaponUnlocked(def.id)) pool.push({ kind: 'weapon-new', id: def.id, target: 1, weight: 7 * tierWeight(weaponTier(def.id), tierLuck) });
+  if (hasWeaponSlot) for (const def of WEAPONS) if (!p.weapons.find(w => w.id === def.id) && weaponUnlocked(def.id)) pool.push({ kind: 'weapon-new', id: def.id, target: 1, weight: 7 });
   // new passives (likewise gated)
-  if (hasPassiveSlot) for (const def of PASSIVES) if (!(def.id in p.passives) && passiveUnlocked(def.id)) pool.push({ kind: 'passive-new', id: def.id, target: 1, weight: 6 * tierWeight(passiveTier(def.id), tierLuck) });
+  if (hasPassiveSlot) for (const def of PASSIVES) if (!(def.id in p.passives) && passiveUnlocked(def.id)) pool.push({ kind: 'passive-new', id: def.id, target: 1, weight: 6 });
   // secondary adaptations (always offerable, stack to max — they don't use a slot)
   for (const def of ADAPTATIONS) { const cur = p.adaptations[def.id] || 0; if (cur < def.max) pool.push({ kind: cur ? 'adapt-up' : 'adapt-new', id: def.id, target: cur + 1, weight: cur ? 6 : 5 }); }
   // fallbacks — LUCK thins out the filler and floats in a "Lucky Mutation" card
