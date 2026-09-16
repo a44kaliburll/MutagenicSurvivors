@@ -36,6 +36,10 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # The action's default also requests the retired 'tools' package,
+          # which current sdkmanager no longer serves and fails on.
+          packages: platform-tools
 
       - name: Stage the game + icon into the Capacitor project
         # The game is one self-contained file; copy it in as the WebView's index,
