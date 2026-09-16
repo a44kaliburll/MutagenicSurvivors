@@ -6,6 +6,26 @@ The game ships as an **installable app** — a **Windows `.exe`** (Electron) and
 
 ---
 
+## Local playability and polish update
+
+### Laboratory visual overhaul
+
+The title screen is now a laboratory observation station with an animated, annotated specimen, microscope ticks, and a responsive instrument layout. Gameplay uses a seeded, cached culture-medium texture, translucent player membranes with organelles, and new cached illustrations for viruses, bacteria, spores, amoeboids, and macrophages. Character selection includes specimen portraits. Panels, cards, and the HUD share a muted glass-and-specimen-label palette; dangerous effects and pickup colors remain distinct. The illustration is stylized rather than to biological scale. The menu illustration honors reduced-motion preferences and draws at 20 fps; decorative generation does not consume gameplay randomness.
+
+- Redesigned title layout with a three-step field guide and clearer primary action.
+- Contextual combat guidance: opening instructions, XP progress, wave countdown, and a low-health warning.
+- Pause → Comfort offers independent camera shake, particles, damage numbers, and guidance settings. Reduced-motion preferences disable camera shake by default.
+- Switching away pauses active combat and clears movement input. Save-code fields and menu Tab navigation no longer trigger gameplay shortcuts.
+- Movement smoothing now scales with frame time. Decorative particles are capped at 600, and HUD updates run at 10 Hz while canvas rendering remains full speed.
+- Recycled objects are cleared before reuse, preventing stale projectile and particle flags.
+- Simulation stops when objective or damage updates leave the running state.
+- Cellular Swarm snapshots now retain followers, mutagen progress, and applied mutations, with mutations restored before player stats are calculated.
+- Custom choice cards and pause tabs support keyboard activation and visible focus.
+
+Run `npm test` with Node 22+ for the dependency-free regression suite. For a browser preview, serve this folder with `python -m http.server 8765 --bind 127.0.0.1` and visit `http://127.0.0.1:8765`.
+
+Validation: 11 automated regression checks plus browser smoke checks for menu selection, live combat, pause, comfort controls, and continue-run. Windows/Android packaging and full-length balance playtests have not been performed for this update. Existing snapshots created before this update cannot recover colony data that was never saved. Run snapshots still rebuild transient enemies, pickups, and objectives when resumed.
+
 ## ▶ Install & play
 
 Grab the latest build from the **[v1.3.0 Release](../../releases/tag/v1.3.0)**:

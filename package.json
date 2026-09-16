@@ -8,6 +8,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
+    "test": "node --test --experimental-test-isolation=none tests/regression.test.js",
     "start": "electron .",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
