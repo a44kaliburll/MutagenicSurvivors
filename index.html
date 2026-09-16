@@ -471,6 +471,77 @@
     .card { min-height: 0; }
     .menu-actions { margin-top: 8px; }
   }
+
+  :focus-visible { outline: 3px solid var(--bio-amber); outline-offset: 4px; }
+  #menu-main { background: radial-gradient(ellipse at 20% 15%, #12434d99, transparent 55%), radial-gradient(ellipse at 85% 75%, #40276388, transparent 55%), #030a12eb; }
+  #menu-main .title { max-width: 1050px; font-size: clamp(34px, 6.5vw, 78px); letter-spacing: 3px; }
+  #menu-main .menu-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(700px, 100%); gap: 6px; margin-top: 20px; }
+  #menu-main .menu-actions > .btn { min-width: 0; margin: 0; }
+  #menu-main .menu-actions > .row, #btn-continue { grid-column: 1 / -1; }
+  #menu-main [data-act="play"] { background: linear-gradient(120deg, #14745d, #12515c); border-color: #6dff8a; }
+  .field-guide { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; max-width: 800px; margin: 20px auto 0; }
+  .field-guide div { padding: 14px; background: #0a1e2dbb; border: 1px solid #32606b; border-radius: 12px; color: #adcbd5; font-size: 13px; line-height: 1.5; }
+  .field-guide strong { display: block; color: #9fffd2; margin-bottom: 4px; letter-spacing: 1px; }
+  #run-guide { position:absolute; top:72px; left:18px; max-width: min(430px, 75vw); font-size:12px; color:#b8d8e2; line-height:1.6; background:#031019bb; padding:8px 12px; border-left:2px solid #6dff8a; border-radius:0 8px 8px 0; }
+  #hp-wrap.low-health #hp-track { outline: 2px solid #ff8178; box-shadow:0 0 16px #ff5a5a66; }
+  .comfort-option { display:flex; align-items:center; gap:10px; padding:14px; border-bottom:1px solid #31505e; }
+  .comfort-option input { accent-color:#6dff8a; width:20px; height:20px; }
+  @media(max-width:600px) { .field-guide { gap:6px; } .field-guide div { padding:9px; font-size:11px; } #menu-main .btn { font-size:13px; padding:12px 8px; } #run-guide { top:68px; font-size:11px; } }
+  @media(max-height:650px) { .field-guide { display:none; } #menu-main { justify-content:flex-start; } }
+  @media(prefers-reduced-motion:reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
+
+  /* Laboratory visual system: warm specimen labels, dark optical instrument panels. */
+  :root { --bg-0:#050f12; --bg-1:#0b1d20; --ink:#e1ede1; --ink-dim:#93aaa6; --bio-cyan:#85d8c5; --bio-green:#c1df99; --panel:rgba(9,25,28,.97); --panel-edge:rgba(163,200,182,.26); --rad:5px; --font:'Segoe UI',system-ui,sans-serif; }
+  #menu-main { display:none; padding:28px 5vw 18px; background:radial-gradient(ellipse at 73% 42%,#21493e55,transparent 55%),linear-gradient(125deg,#08191c,#071013); backdrop-filter:none; justify-content:flex-start; }
+  #menu-main.show { display:flex; }
+  .lab-masthead,.lab-footer { width:100%; display:flex; justify-content:space-between; align-items:center; gap:16px; font:10px/1.6 Consolas,monospace; letter-spacing:1.6px; color:#9bb4aa; flex-shrink:0; }
+  .lab-masthead { border-bottom:1px solid #55756655; padding-bottom:17px; }
+  .lab-masthead b { font:32px Georgia,serif; color:#d4e5a8; margin-right:14px; vertical-align:middle; }
+  .lab-masthead i { display:inline-block; width:6px; height:6px; margin-left:12px; border-radius:50%; background:#c1df99; }
+  .lab-layout { width:100%; max-width:1440px; display:grid; grid-template-columns:1fr 1fr; gap:4vw; align-items:center; flex:1; padding:30px 0; }
+  .lab-eyebrow { font:10px Consolas,monospace; letter-spacing:2px; color:#c3d897; margin:0 0 22px; }
+  #menu-main .title { color:#e7ecde; background:none; text-shadow:none; text-align:left; font-size:clamp(42px,4.5vw,76px); font-weight:450; line-height:1.02; letter-spacing:-2.5px; }
+  #menu-main .title em { color:#c4dc99; font-family:Georgia,serif; font-weight:normal; }
+  .lab-description { max-width:460px; margin:20px 0; color:#a9bcb6; font-size:14px; line-height:1.8; }
+  .lab-tags { display:flex; gap:20px; font:9px Consolas,monospace; letter-spacing:1.2px; color:#b1c5bb; }
+  #menu-main .menu-actions { width:100%; max-width:500px; gap:7px; margin-top:25px; }
+  .btn { border-radius:4px; font-size:13px; letter-spacing:.3px; box-shadow:none; background:#17312c66; }
+  .btn:hover { background:#2c493e; box-shadow:none; transform:translateY(-1px); }
+  #menu-main .menu-actions > .btn { padding:12px 14px; text-align:left; font-size:12px; }
+  #menu-main [data-act="play"] { grid-column:1 / -1; background:#c5dca2; color:#16271f; border-color:#c5dca2; font-weight:750; font-size:15px; padding:16px; }
+  #menu-main [data-act="play"]:hover { background:#deedc2; }
+  #menu-main .menu-actions > .row { justify-content:flex-start; gap:6px !important; margin-top:0 !important; }
+  #menu-main .row .btn { padding:6px 2px; margin:0 8px 0 0; font-size:11px; border:0; }
+  #menu-main #fx-label { text-align:left !important; min-width:170px !important; font-size:10px; }
+  .specimen-plate { position:relative; margin:0; border:1px solid #6e947455; background:radial-gradient(ellipse,#23443844,#0c202033 60%); border-radius:5px; }
+  #specimen-preview { display:block; width:100%; height:auto; aspect-ratio:1; }
+  .plate-top,.plate-bottom { position:absolute; left:20px; right:20px; display:flex; justify-content:space-between; color:#a2bbad; font:9px/1.7 Consolas,monospace; letter-spacing:1px; pointer-events:none; }
+  .plate-top { top:18px; } .plate-bottom { bottom:45px; font-size:8px; } .plate-bottom b { font-weight:normal; color:#d1dfba; } .live-marker { color:#c4dc99; }
+  .specimen-plate figcaption { color:#91ad9f; text-align:center; font:italic 13px Georgia,serif; padding:0 10px 14px; }
+  .lab-footer { border-top:1px solid #55756655; padding-top:14px; font-size:8px; letter-spacing:1px; }
+  .version-tag,#version-tag { font:inherit; color:inherit; margin-left:8px; }
+  .overlay { background:rgba(3,12,15,.85); }
+  .panel { border-radius:5px; border-top:2px solid #c4dc99; box-shadow:0 24px 80px #0008; background:linear-gradient(140deg,#142a2c,#081719); }
+  .modal-head h2,#pause-modal h2 { color:#d4e4b4; letter-spacing:3px; font-weight:500; }
+  .card { border-radius:5px; background:linear-gradient(145deg,#193432,#0a1c20); box-shadow:none; }
+  .card:hover { border-color:#d1e0a9; box-shadow:0 4px 20px #0005; }
+  .card::before { opacity:.35; }
+  .codex-tab { border-radius:3px; font:12px Consolas,monospace; }
+  #hud .topbar { background:linear-gradient(#071619ed,#071619b0); border-bottom:1px solid #9fb78d33; top:8px; height:56px; }
+  .hud-chip { background:transparent; border:0; border-radius:0; font:13px Consolas,monospace; backdrop-filter:none; }
+  #timer { font:19px Consolas,monospace; color:#dce7c9; text-shadow:none; }
+  #run-guide { border-color:#c5da9d; background:#071619cf; color:#b5cabe; font:11px/1.7 Consolas,monospace; top:78px; }
+  .slot { border-radius:5px; border-color:#92b39a66; background:#0b201edb; box-shadow:none; }
+  .tray-label { font:9px Consolas,monospace; color:#abc0ac; }
+  #hp-track { border-radius:3px; background:#071317; border-color:#98bca466; }
+  #hp-fill { background:linear-gradient(90deg,#4c9484,#c7dfa1); box-shadow:none; }
+  #hp-text { font-family:Consolas,monospace; }
+  .xp-bar { background:linear-gradient(90deg,#62988e,#d0dda9); box-shadow:none; }
+  .toast { border-radius:3px; background:#102523ed; border-color:#99b79266; font-family:Consolas,monospace; }
+  @media(max-width:850px) { #menu-main { padding:18px 5vw; } .lab-layout { gap:20px; } #menu-main .title { font-size:44px; } .lab-masthead { font-size:8px; letter-spacing:1px; } .lab-description { font-size:12px; } .lab-tags { gap:10px; font-size:8px; } }
+  @media(max-width:650px) { .lab-layout { grid-template-columns:1fr; padding-top:24px; } .specimen-plate { max-width:400px; width:100%; justify-self:center; order:-1; } #specimen-preview { max-height:180px; object-fit:contain; } .plate-bottom { display:none; } .plate-top { font-size:8px; } .lab-eyebrow { margin-bottom:15px; } #menu-main .title { font-size:38px; letter-spacing:-1.8px; } .lab-footer { flex-wrap:wrap; font-size:8px; } .lab-masthead>span:last-child { display:none; } .lab-description { margin:15px 0; } }
+  @media(max-height:650px) and (min-width:651px) { .lab-layout { padding:20px 0; } #menu-main .title { font-size:44px; } .lab-description { margin:12px 0; } .lab-eyebrow { margin-bottom:12px; } #menu-main .menu-actions { margin-top:15px; } }
+
 </style>
 </head>
 <body>
@@ -488,6 +559,7 @@
       <div class="hud-chip" id="coin-chip"><span class="ic">🪙</span><span id="coin-val">0</span></div>
       <button class="hud-chip" id="btn-pause" data-act="pause-btn" title="Pause (Esc)" aria-label="Pause" style="pointer-events:auto; cursor:pointer; color:var(--ink); font-family:inherit;">⏸</button>
     </div>
+    <div id="run-guide"></div>
     <div id="objective"></div>
     <div id="banner"></div>
     <div id="tray">
@@ -515,17 +587,21 @@
 
   <!-- ===== Main menu ===== -->
   <div class="overlay show" id="menu-main">
-    <div class="title">MUTAGENIC SURVIVORS</div>
-    <div class="subtitle">Survive the Microbial Apocalypse · Evolve · Mutate</div>
-    <div class="version-tag" id="version-tag">v1.3.0</div>
+    <header class="lab-masthead"><span><b>µ</b> MUTAGENIC / LIFE SCIENCES</span><span>LIVE CULTURE SIMULATOR <i></i></span></header>
+    <div class="lab-layout">
+      <section class="lab-copy">
+        <div class="lab-eyebrow">EXPERIMENT 001 — ADAPTIVE SURVIVAL</div>
+        <h1 class="title">Small cell.<br>Unbound <em>potential.</em></h1>
+        <p class="lab-description">A living world beneath the lens. Cultivate your organism, splice its genome, and survive a microscopic ecosystem that never stops evolving.</p>
+        <div class="lab-tags"><span>01 / CULTIVATE</span><span>02 / EVOLVE</span><span>03 / SURVIVE</span></div>
     <div class="menu-actions">
       <button class="btn primary" id="btn-continue" data-act="continue" style="display:none">▶ CONTINUE RUN</button>
-      <button class="btn" data-act="play">▶ BEGIN INCUBATION</button>
-      <button class="btn" data-act="shop">🧪 Genome Lab (Meta-Upgrades)</button>
-      <button class="btn" data-act="codex">📖 Bio-Codex</button>
-      <button class="btn" data-act="soundtrack">🎵 Soundtrack</button>
-      <button class="btn" data-act="dev">🔧 Asset Inspector (Dev)</button>
-      <button class="btn ghost small" data-act="savedata">💾 Save · Backup &amp; Transfer</button>
+      <button class="btn" data-act="play">Begin experiment ↗</button>
+      <button class="btn" data-act="shop">Genome lab</button>
+      <button class="btn" data-act="codex">Specimen archive</button>
+      <button class="btn" data-act="soundtrack">Sound chamber</button>
+      <button class="btn" data-act="dev">Research inventory</button>
+      <button class="btn ghost small" data-act="savedata">Export / import research</button>
       <div class="row" style="margin-top:8px; gap:12px;">
         <button class="btn ghost small" id="btn-sound" data-act="sound" style="min-width:0">🔊 Sound: On</button>
         <button class="btn ghost small" id="btn-music" data-act="music" style="min-width:0">🎵 Music: On</button>
@@ -538,20 +614,22 @@
                style="width:130px; accent-color:#b07bff;" />
       </div>
     </div>
-    <div class="hint">
-      Move: <span class="kbd">W</span><span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>
-      / <span class="kbd">Arrows</span> / Mouse-hold · Weapons fire automatically<br/>
-      Pause: <span class="kbd">Esc</span> (full stats &amp; arsenal) · Quick stats peek: <span class="kbd">Tab</span> · Reroll: <span class="kbd">R</span> · Map: <span class="kbd">M</span> · Music track: <span class="kbd">N</span><br/>
-      🎮 Controller: Left stick / D-pad move · <span class="kbd">A</span> select · <span class="kbd">B</span> back · <span class="kbd">X</span> reroll · <span class="kbd">LB</span> stats · <span class="kbd">Start</span> pause
+      </section>
+      <figure class="specimen-plate">
+        <div class="plate-top"><span>SPECIMEN / P. CAUDATUM</span><span class="live-marker">● LIVE</span></div>
+        <canvas id="specimen-preview" width="720" height="720" role="img" aria-label="Microscope illustration of a translucent cell with a nucleus, mitochondria and cilia"></canvas>
+        <div class="plate-bottom"><span>PHASE CONTRAST<br><b>OBSERVATION CHAMBER 01</b></span><span>━━━<br>ILLUSTRATIVE SCALE</span></div>
+        <figcaption>One cell. Countless possible futures.</figcaption>
+      </figure>
     </div>
-    <div class="credit">Educational survivors prototype · Canvas2D · hand-painted sprite set</div>
+    <footer class="lab-footer"><span>MUTAGENIC SURVIVORS <span id="version-tag">v1.3.0</span></span><span>WASD / ARROWS · AUTO-FIRE · ESC TO PAUSE</span><span>LOCAL RESEARCH / AUTO-SAVED</span></footer>
   </div>
 
   <!-- ===== Mode select ===== -->
   <div class="overlay" id="mode-modal">
     <div class="panel col">
       <div class="modal-head"><h2>SELECT INCUBATION PROTOCOL</h2>
-        <p>Both modes share evolutions, the bestiary, and the Apex Mutation system.</p></div>
+        <p>Choose a classic survival run or grow a colony through mitosis.</p></div>
       <div class="cards" id="mode-cards"></div>
       <div class="row"><button class="btn ghost small" data-act="back-main">← Back</button></div>
     </div>
@@ -1678,6 +1756,7 @@ const DEFAULT_SAVE = () => ({
   lastChar: 'paramecium',                           // last picked cell
   sound: { on: true, vol: 0.6, music: true, track: null },  // audio prefs (track: pinned soundtrack index, null = shuffle)
   fx: { intensity: 1 },                             // 0..1 visual intensity (photosensitivity comfort)
+  comfort: {},
   suspended: null           // snapshot of an in-progress run (for "Continue Run")
 });
 let SAVE = DEFAULT_SAVE();
@@ -1819,7 +1898,7 @@ const FX = {
   set(v) { this.intensity = clamp(v, 0, 1); SAVE.fx = { intensity: this.intensity }; commitSave(); },
   flash(a) { return a * this.intensity; },                 // full-screen: to zero
   world(a) { return a * (0.2 + 0.8 * this.intensity); },   // in-world: floored at 20%
-  shake(a) { return a * this.intensity; },                 // camera kick rides along
+  shake(a) { return comfort().shake ? a * this.intensity : 0; },                 // camera kick rides along
 };
 
 /* ======================================================================== *
@@ -2268,7 +2347,7 @@ function loadArt() {
     const img = new Image();
     img.onload = () => {
       const use = ART_FEATHER[key] ? feather(img, 0.97) : img;
-      ART[key] = use; if (SPR[key]) SPR[key] = use;
+      ART[key] = use; if (SPR[key] && !LAB_SPRITE_KEYS.includes(key)) SPR[key] = use;
       updateVersionTag();
     };
     img.onerror = () => { _artFailed++; updateVersionTag(); };   // keep the procedural sprite
@@ -2508,7 +2587,7 @@ class Quadtree {
 function makePool(factory) {
   const free = [];
   return {
-    obtain() { return free.length ? free.pop() : factory(); },
+    obtain() { const o = free.length ? free.pop() : factory(); for (const k of Object.keys(o)) delete o[k]; return o; },
     release(o) { free.push(o); },
     size() { return free.length; }
   };
@@ -2707,6 +2786,8 @@ function computeDamage(base, flat = 0, forceCrit = null) {
 
 /* ---- Particles ---------------------------------------------------------- */
 function spawnParticles(x, y, color, n, opts = {}) {
+  if (!comfort().particles) return;
+  n = Math.min(n, Math.max(0, 600 - game.particles.length));
   const speed = opts.speed || 120, life = opts.life || 0.5, size = opts.size || 3;
   for (let i = 0; i < n; i++) {
     const a = rand(0, TAU), s = rand(speed * 0.2, speed);
@@ -2718,6 +2799,7 @@ function spawnParticles(x, y, color, n, opts = {}) {
   }
 }
 function spawnRing(x, y, color, radius, life = 0.4) {
+  if (!comfort().particles || game.particles.length >= 600) return;
   const pt = particlePool.obtain();
   pt.x = x; pt.y = y; pt.dx = 0; pt.dy = 0; pt.life = pt.maxLife = life;
   pt.color = color; pt.ring = true; pt.r0 = radius * 0.2; pt.r1 = radius; pt.size = 0;
@@ -2725,6 +2807,7 @@ function spawnRing(x, y, color, radius, life = 0.4) {
 }
 /* ---- Floating combat text ---------------------------------------------- */
 function spawnFloater(x, y, text, color, crit = false) {
+  if (!comfort().numbers && /^[-+]?\d/.test(String(text))) return;
   if (game.floaters.length > 80) return;            // cap to keep DOM/draw light
   game.floaters.push({ x, y: y - 10, text, color, life: crit ? 0.9 : 0.65, crit, vy: -38 + rand(-8, 8), vx: rand(-12, 12) });
 }
@@ -4208,7 +4291,8 @@ function updatePlayer(dt) {
       makeHazard({ kind: 'slime', x: p.x, y: p.y, r: 38, life: 2.4, slow: 0.4, color: 'rgba(190,235,40,0.13)' });
     }
   }
-  p.dx = lerp(p.dx, ix * spd, 0.25); p.dy = lerp(p.dy, iy * spd, 0.25);
+  const response = 1 - Math.pow(0.75, dt * 60);
+  p.dx = lerp(p.dx, ix * spd, response); p.dy = lerp(p.dy, iy * spd, response);
   p.x += p.dx * dt; p.y += p.dy * dt;
   // PETRI-DISH WALL: stop at the rim and slide along it (no passing through).
   { const d = Math.hypot(p.x, p.y), lim = DISH_R - p.r - 4;
@@ -4658,7 +4742,7 @@ function render(time) {
   ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
   // base petri-dish gradient (screen space)
   const bg = ctx.createRadialGradient(view.w / 2, view.h * 0.42, 60, view.w / 2, view.h / 2, Math.hypot(view.w, view.h) / 1.4);
-  bg.addColorStop(0, '#082030'); bg.addColorStop(0.6, '#04121b'); bg.addColorStop(1, '#020609');
+  bg.addColorStop(0, '#193b38'); bg.addColorStop(0.6, '#102b2b'); bg.addColorStop(1, '#061417');
   ctx.fillStyle = bg; ctx.fillRect(0, 0, view.w, view.h);
 
   const cam = game.camera;
@@ -4702,6 +4786,8 @@ function render(time) {
 
   // ---- screen-space overlays ----
   drawVignette();
+  drawInstrumentReticle();
+  if (game.state === 'menu') drawSpecimenPreview(time);
   if (game.flash > 0 && FX.intensity > 0) { ctx.fillStyle = game.flashColor + FX.flash(Math.max(0, game.flash)) + ')'; ctx.fillRect(0, 0, view.w, view.h); }
   if (game.boss && !game.boss.dead) drawBossBar();
   if (game.state !== 'menu' && game.player) drawMinimap();
@@ -4709,24 +4795,10 @@ function render(time) {
 
 let _bgPattern = null;
 function drawGrid(cam) {
-  // Hand-drawn agar texture, tiled in world space so it scrolls with the dish
-  // and clipped to the rim (everything beyond stays void).
-  if (ART.bgTile) {
-    if (!_bgPattern) _bgPattern = ctx.createPattern(ART.bgTile, 'repeat');
-    if (_bgPattern) {
-      ctx.save();
-      ctx.beginPath(); ctx.arc(0, 0, DISH_R, 0, TAU); ctx.clip();
-      ctx.globalAlpha = 0.5; ctx.fillStyle = _bgPattern;
-      ctx.fillRect(cam.x - view.w / 2, cam.y - view.h / 2, view.w, view.h);
-      ctx.restore();
-    }
-  }
-  const step = 70, dr2 = DISH_R * DISH_R;
-  const x0 = Math.floor((cam.x - view.w / 2) / step) * step;
-  const y0 = Math.floor((cam.y - view.h / 2) / step) * step;
-  ctx.fillStyle = 'rgba(74,226,255,0.05)';
-  for (let x = x0; x < cam.x + view.w / 2 + step; x += step)
-    for (let y = y0; y < cam.y + view.h / 2 + step; y += step) { if (x * x + y * y > dr2) continue; ctx.beginPath(); ctx.arc(x, y, 1.4, 0, TAU); ctx.fill(); }
+  if (!_bgPattern) _bgPattern = ctx.createPattern(buildCultureTexture(), 'repeat');
+  ctx.save(); ctx.beginPath(); ctx.arc(0,0,DISH_R,0,TAU); ctx.clip();
+  ctx.fillStyle = _bgPattern; ctx.fillRect(cam.x-view.w/2,cam.y-view.h/2,view.w,view.h);
+  ctx.restore();
 }
 /* Petri-dish floor: a faint agar-gel tint filling the dish so the inside reads as
  * culture medium and everything beyond the rim is the dark void. */
@@ -4817,28 +4889,7 @@ function drawPlayer(t) {
   ctx.rotate(p.angle);
   ctx.scale(viz.elong, 1 / Math.sqrt(viz.elong));
   ctx.shadowColor = glow; ctx.shadowBlur = (p.surge > 0 || p.powerSpeed > 0 || p.invulnTrail > 0) ? 34 : 22;
-  if (ART.playerEvo && p.weapons && p.weapons.some(w => w.apex)) {
-    // An Apex Mutation has evolved — the cell takes on its mutated morphology.
-    const d = R * 2 * ART_SCALE.playerEvo;
-    ctx.drawImage(tintedArt(ART.playerEvo, viz.body[1], 0.34), -d / 2, -d / 2, d, d);
-  } else if (ART.playerCell) {
-    // Hand-drawn membrane, cycling the 4-frame breathing animation and tinted
-    // to this cell line so all 9 characters stay distinct from one base sprite.
-    // Surface features (cilia, flagella, legs…) still draw on top below.
-    const sheet = tintedArt(ART.playerCell, viz.body[1], 0.55);
-    const fw = ART.playerCell.height, fi = Math.floor(t * 7) % PLAYER_ART_FRAMES;
-    const d = R * 2 * ART_SCALE.playerCell;
-    ctx.drawImage(sheet, fi * fw, 0, fw, fw, -d / 2, -d / 2, d, d);
-  } else {
-    ctx.beginPath();
-    const lobes = 14, wobK = viz.feature === 'pseudopods' ? 0.15 : 0.07;
-    for (let i = 0; i <= lobes; i++) { const a = i / lobes * TAU; const rr = R * (1 + wobK * Math.sin(a * 3 + t * 3));
-      const x = Math.cos(a) * rr, y = Math.sin(a) * rr; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
-    ctx.closePath();
-    const g = ctx.createRadialGradient(-R * 0.18, -R * 0.18, 2, 0, 0, R);
-    g.addColorStop(0, viz.body[0]); g.addColorStop(0.5, viz.body[1]); g.addColorStop(1, viz.body[2]);
-    ctx.fillStyle = g; ctx.fill();
-  }
+  drawLivingCell(ctx, R, viz.glow, t, p.weapons.some(w => w.apex) ? 0.14 : 0.055);
   ctx.restore();
   ctx.shadowBlur = 0;
 
@@ -5390,26 +5441,44 @@ function drawMinimap() {
 /* ======================================================================== *
  *  SECTION 19 — INPUT SYSTEM (keyboard, mouse-hold, touch joystick)          *
  * ======================================================================== */
+function comfort() { return Object.assign({ shake: !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches, particles: true, numbers: true, guide: true }, SAVE.comfort || {}); }
+function comfortHTML() {
+  return '<h3>Make the dish comfortable</h3><p class="hint">These preferences save automatically and never change combat difficulty.</p>' +
+    [['shake','Camera shake'],['particles','Decorative particles'],['numbers','Damage numbers'],['guide','Combat guidance']].map(([id,label]) =>
+      `<label class="comfort-option"><input type="checkbox" ${comfort()[id] ? 'checked' : ''} onchange="SAVE.comfort = {...comfort(), ${id}:this.checked}; commitSave()">${label}</label>`).join('');
+}
+function resetInput() {
+  input.up = input.down = input.left = input.right = input.mouseDown = false;
+  input.stick = null; input._fromPad = false;
+  const stick = document.getElementById('stick'); if (stick) stick.style.display = 'none';
+}
+function pauseOnLeave() {
+  resetInput();
+  if (game.state === 'running' && game.victoryT <= 0) togglePause();
+  saveRunSnapshot();
+}
 function setupInput() {
   const keymap = {
     'w': 'up', 'arrowup': 'up', 's': 'down', 'arrowdown': 'down',
     'a': 'left', 'arrowleft': 'left', 'd': 'right', 'arrowright': 'right'
   };
   addEventListener('keydown', (e) => {
+    if (e.target?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
     const k = e.key.toLowerCase();
-    if (keymap[k]) { input[keymap[k]] = true; e.preventDefault(); }
+    if (keymap[k] && game.state === 'running') { input[keymap[k]] = true; e.preventDefault(); }
+    if (e.repeat) return;
     if (game.state === 'chest' && (k === ' ' || k === 'enter' || k === 'escape' || k === 'spacebar')) { e.preventDefault(); closeChest(); return; }
     if (game.victoryT > 0 && (k === 'escape' || k === 'enter' || k === ' ' || k === 'spacebar')) { e.preventDefault(); finishVictory(); return; }   // skip the victory lap
     if (k === 'escape') togglePause();
     if (k === 'm') game.showMinimap = !game.showMinimap;
     if (k === 'n' && game.state === 'running') toast('🎵 ' + Music.nextTrack(), 1.8);   // cycle music track
-    if (k === 'tab') { e.preventDefault(); toggleStatsOverlay(); }
+    if (k === 'tab' && game.state === 'running') { e.preventDefault(); toggleStatsOverlay(); }
     if (k === 'r' && game.state === 'levelup') doReroll();
     if (game.state === 'levelup' && k >= '1' && k <= '4') { const idx = +k - 1; const cards = document.querySelectorAll('#levelup-cards .card'); if (cards[idx]) cards[idx].click(); }
     if (game.state === 'mutation' && k >= '1' && k <= '3') { const idx = +k - 1; const cards = document.querySelectorAll('#mutation-cards .card'); if (cards[idx]) cards[idx].click(); }
   });
   addEventListener('keyup', (e) => { const k = e.key.toLowerCase(); if (keymap[k]) input[keymap[k]] = false; });
-  addEventListener('blur', () => { input.up = input.down = input.left = input.right = false; input.mouseDown = false; });
+  addEventListener('blur', pauseOnLeave);
 
   const cv = document.getElementById('game');
   cv.addEventListener('mousemove', (e) => { input.mx = e.clientX; input.my = e.clientY; });
@@ -5419,7 +5488,9 @@ function setupInput() {
   // touch joystick (left thumb) — appears on first touch
   const stick = document.getElementById('stick'), nub = stick.querySelector('.nub');
   let touchId = null, baseX = 0, baseY = 0;
+  addEventListener('blur', () => { touchId = null; });
   cv.addEventListener('touchstart', (e) => {
+    if (game.state !== 'running' || touchId !== null) return;
     const tch = e.changedTouches[0]; touchId = tch.identifier; baseX = tch.clientX; baseY = tch.clientY;
     stick.style.display = 'block'; stick.style.left = (baseX - 60) + 'px'; stick.style.top = (baseY - 60) + 'px';
     input.stick = { x: 0, y: 0 }; e.preventDefault();
@@ -5442,7 +5513,18 @@ function setupInput() {
  *  SECTION 20 — UI CONTROLLERS (HUD, menus, modals, shop, codex)            *
  * ======================================================================== */
 const $ = (id) => document.getElementById(id);
-function showOverlay(id) { $(id).classList.add('show'); }
+function showOverlay(id) {
+  const overlay = $(id); overlay.classList.add('show');
+  overlay.querySelectorAll('.card, .codex-tab').forEach(el => {
+    if (el.onclick && !el.classList.contains('locked')) { el.tabIndex = 0; el.setAttribute('role', 'button'); }
+  });
+}
+// Native keyboard activation for the game's custom choice cards and tabs.
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && !e.repeat && e.target.matches?.('[role="button"]')) {
+    e.preventDefault(); e.target.click();
+  }
+});
 function hideOverlay(id) { $(id).classList.remove('show'); }
 function hideAllOverlays() { document.querySelectorAll('.overlay').forEach(o => o.classList.remove('show')); }
 
@@ -5476,6 +5558,13 @@ function updateHUD() {
   if (mw) { if (game.mode === 'swarm') { mw.classList.add('show'); $('mutagen-bar').style.width = clamp(game.mutagen.cur / game.mutagen.max * 100, 0, 100) + '%'; } else mw.classList.remove('show'); }
   const hpPct = clamp(p.hp / p.maxHp, 0, 1) * 100;
   $('hp-fill').style.width = hpPct + '%';
+  $('hp-wrap').classList.toggle('low-health', hpPct <= 25);
+  const guide = $('run-guide');
+  guide.style.display = comfort().guide ? '' : 'none';
+  const wave = currentWave(game.time);
+  guide.textContent = hpPct <= 25 ? 'LOW HEALTH · Create space and look for healing pickups.'
+    : game.time < 25 ? (game.mode === 'swarm' ? 'Collect glucose to divide. Avoid free radicals. Keep the colony moving.' : 'Move to survive · Weapons fire automatically · Collect glowing biomatter to evolve.')
+    : wave.name + ' · ' + (game.mode === 'swarm' ? 'Glucose: ' : 'Next level: ') + Math.floor(p.xp) + ' / ' + p.xpNext + (game.time < 1080 ? ' · Next wave in ' + Math.ceil(120 - game.time % 120) + 's' : '');
   $('shield-fill').style.width = clamp(p.shieldHp / p.maxHp, 0, 1) * 100 + '%';
   $('hp-text').textContent = Math.ceil(p.hp) + ' / ' + p.maxHp + (p.shieldHp > 0 ? '  ⛨' + Math.ceil(p.shieldHp) : '');
 }
@@ -5858,6 +5947,7 @@ function chooseMutation(m) {
 function setHud(v) { $('hud').style.display = v ? 'block' : 'none'; }
 
 function startRun(mode) {
+  resetInput();
   clearSuspended();                 // a fresh run discards any suspended one
   _autosaveT = 0;
   RNG = makeRNG((Math.random() * 1e9) | 0);
@@ -5898,7 +5988,7 @@ function startRun(mode) {
   Music.setIntensity(0); Music.randomTrack(); Music.start();
   setTimeout(() => { if (game.state === 'running') toast('🎵 ' + Music.cur.name, 2.2); }, 2900);
 }
-function resumeRun() { if (game.player && game.player.hp > 0) { game.state = 'running'; hideOverlay('pause-modal'); } }
+function resumeRun() { resetInput(); if (game.player && game.player.hp > 0) { game.state = 'running'; hideOverlay('pause-modal'); } }
 /* Coming back from a CHOICE (level-up, apex, mutation, mutagen, chest).
  * The swarm froze exactly where it stood — usually packed against you — so a
  * plain resume hands you a free hit you had no chance to react to. Give a
@@ -5913,11 +6003,12 @@ function resumeFromChoice() {
   }
   resumeRun();
 }
-const PAUSE_TABS = [{ id: 'stats', label: '📊 Stats' }, { id: 'arsenal', label: '🧬 Arsenal' }, { id: 'music', label: '🎵 Music' }];
+const PAUSE_TABS = [{ id: 'stats', label: '📊 Stats' }, { id: 'arsenal', label: '🧬 Arsenal' }, { id: 'music', label: '🎵 Music' }, { id: 'comfort', label: '⚙ Comfort' }];
 let pauseTab = 'stats';
 function togglePause() {
   if (game.victoryT > 0) return;            // don't pause during the victory lap
   if (game.state === 'running') {
+    resetInput();
     game.state = 'paused';
     buildPauseTabs(); renderPause();
     showOverlay('pause-modal');
@@ -5927,6 +6018,7 @@ function buildPauseTabs() {
   const w = $('pause-tabs'); w.innerHTML = '';
   for (const t of PAUSE_TABS) {
     const e = document.createElement('div'); e.className = 'codex-tab' + (t.id === pauseTab ? ' active' : '');
+    e.tabIndex = 0; e.setAttribute('role', 'button');
     e.textContent = t.label; e.onclick = () => { pauseTab = t.id; buildPauseTabs(); renderPause(); };
     w.appendChild(e);
   }
@@ -5936,7 +6028,7 @@ function renderPause() {
   const mm = Math.floor(game.time / 60), ss = Math.floor(game.time % 60), ch = CHAR_BY_ID[game.character];
   $('pause-sub').textContent = (ch ? ch.icon + ' ' + ch.name : 'Cell') + '  ·  ' + mm + ':' + String(ss).padStart(2, '0') + '  ·  Level ' + p.level;
   $('pause-body').innerHTML = pauseTab === 'arsenal' ? pauseArsenalHTML(p)
-    : pauseTab === 'music' ? pauseMusicHTML(p) : pauseStatsHTML(p);
+    : pauseTab === 'music' ? pauseMusicHTML(p) : pauseTab === 'comfort' ? comfortHTML() : pauseStatsHTML(p);
 }
 /* Shared soundtrack-picker rows (used by the pause-menu Music tab AND the
  * title-screen Soundtrack jukebox). A 🔀 Shuffle row + one row per track:
@@ -6138,6 +6230,9 @@ function serializeRun() {
       adaptations: Object.assign({}, p.adaptations || {}),
       evoLevel: p.evoLevel,
     },
+    swarm: game.swarm.map(c => ({ ...c })),
+    mutagen: { ...game.mutagen }, mutagensApplied: { ...game.mutagensApplied },
+    mutagenReady: game.mutagenReady,
     savedAt: Date.now(),
   };
 }
@@ -6179,9 +6274,15 @@ function resumeSavedRun() {
   p.adaptations = Object.assign({}, ps.adaptations || {});
   p.evoLevel = ps.evoLevel != null ? ps.evoLevel : -1;   // Directed Evolution surge anchor
   game.player = p;
+  game.mutagensApplied = { ...(snap.mutagensApplied || {}) };
   recomputeStats();                                  // rebuild derived multipliers + maxHp from baseMaxHp + passives
   p.hp = clamp(ps.hp != null ? ps.hp : p.maxHp, 1, p.maxHp);
   p.shieldHp = clamp(ps.shieldHp != null ? ps.shieldHp : p.maxShield, 0, p.maxShield);
+  game.swarm = (snap.swarm || []).map(c => ({ ...c }));
+  game.mutagen = Object.assign({ cur: 0, max: 100 }, snap.mutagen || {});
+  game.mutagensApplied = { ...(snap.mutagensApplied || {}) };
+  game.mutagenReady = !!snap.mutagenReady;
+  resetInput();
   game.camera.x = p.x; game.camera.y = p.y;
 
   game.director = createDirector();
@@ -6201,7 +6302,7 @@ function resumeSavedRun() {
   if (snap.boss) toast('Macrophage Sentinel re-engaged', 2.2);
   Music.randomTrack(); if (snap.boss) Music.beginBoss(); else Music.setIntensity(0);
   Music.start();
-  if (game.pendingLevelUps > 0) setTimeout(openLevelUp, 220);
+  if (game.pendingLevelUps > 0) openLevelUp();
 }
 
 /* Pause-menu "Save & Quit": snapshot now, return to the menu (coins are NOT  *
@@ -6220,7 +6321,7 @@ function backToMenu() {
     const s = SAVE.suspended;
     if (s && s.player) {
       cont.style.display = '';
-      cont.textContent = `▶ CONTINUE RUN — ${fmtTime(s.time)} · Lv ${s.player.level} · ${s.mode === 'endless' ? 'Endless' : 'Extinction'}`;
+      cont.textContent = `▶ CONTINUE RUN — ${fmtTime(s.time)} · Lv ${s.player.level} · ${s.mode === 'swarm' ? 'Cellular Swarm' : s.mode === 'endless' ? 'Endless' : 'Extinction'}`;
     } else { cont.style.display = 'none'; }
   }
   showOverlay('menu-main');
@@ -6329,7 +6430,7 @@ function openCharSelect() {
     if (m.pickup) bits.push('+' + Math.round((m.pickup - 1) * 100) + '% Pickup');
     if (c.passiveStart) bits.push('starts: ' + PASSIVE_BY_ID[c.passiveStart.id].name);
     card.innerHTML = `<div class="corner">${i + 1}</div>
-      <div class="ic-big" style="color:${c.color}">${unlocked ? c.icon : '🔒'}</div>
+      <div class="ic-big" style="color:${c.color}">${unlocked ? '<img alt="' + c.name + ' specimen" src="' + specimenPortrait(c) + '" style="width:96px;height:96px;object-fit:contain">' : '🔒'}</div>
       <div class="ctype">${unlocked ? c.cell : 'Locked cell line'}</div>
       <div class="cname">${unlocked ? c.name : '???'}</div>
       <div class="clevel">${unlocked ? (w.icon + ' ' + w.name) : ''}</div>
@@ -6583,13 +6684,17 @@ function stepGame(dt) {
     updateDirector(dt);
   }
   updateEnvironment(dt);
+  if (game.state !== 'running') return;
   updateBoostPads(dt);
+  if (game.state !== 'running') return;
   updateObjective(dt);
+  if (game.state !== 'running') return;
   updateWeapons(dt);
   updateClones(dt);
   updateProjectiles(dt);
   updateHazards(dt);
   updateEnemies(dt);
+  if (game.state !== 'running') return;
   updatePickups(dt);
   // Collecting an orb can open a level-up (or chest/apex) part-way through the
   // tick. Stop simulating the instant that happens so nothing else resolves
@@ -6597,6 +6702,7 @@ function stepGame(dt) {
   if (game.state !== 'running') return;
   updateEffects(dt);
   updatePlayer(dt);
+  if (game.state !== 'running') return;
   if (game.mode === 'swarm') updateSwarm(dt);
   if (game.mode === 'swarm' && game.mutagenReady && game.state === 'running') openMutagenEvent();
   updateParticles(dt);
@@ -6605,7 +6711,7 @@ function stepGame(dt) {
   if (_autosaveT >= 5 && game.victoryT <= 0) { _autosaveT = 0; saveRunSnapshot(); }
 }
 
-let lastTime = 0;
+let lastTime = 0, lastHudTime = 0;
 function frame(now) {
   // Schedule the next frame FIRST: an exception below then costs one frame's
   // work, not the entire game (a dead rAF chain looks like a total freeze).
@@ -6617,7 +6723,7 @@ function frame(now) {
   game.dt = dt;
   if (game.state === 'running') stepGame(dt);
   render(now);
-  if (game.state !== 'menu' && game.player) { updateHUD(); updateObjectiveHUD(); updateStatsOverlay(); }
+  if (game.state !== 'menu' && game.player && now - lastHudTime >= 100) { lastHudTime = now; updateHUD(); updateObjectiveHUD(); updateStatsOverlay(); }
 }
 
 /* Surface unexpected runtime errors as a visible banner — a silent failure  *
@@ -6633,11 +6739,141 @@ window.addEventListener('error', (ev) => {
   } catch (e) { /* never let the reporter itself throw */ }
 });
 
+/* Optical illustration layer. Decorative randomness uses its own seed so
+ * rendering never changes enemy spawns, loot rolls, or run balance. */
+const LAB_SPRITE_KEYS = ['virus','subvirus','bacterium','spore','amoeboid','macrophage'];
+const specimenPortraits = new Map();
+function specimenPortrait(c) {
+  if (!specimenPortraits.has(c.id)) {
+    const image=makeSprite(160,(g,r)=>{
+      const viz=CHAR_VIZ[c.id]; g.scale(viz.elong,1/Math.sqrt(viz.elong));
+      drawLivingCell(g,r*.57,c.color,1,viz.feature==='pseudopods'?.14:.055);
+      g.strokeStyle=c.color; g.lineWidth=1;
+      for(let i=0;i<24;i++){const a=i/24*TAU;g.beginPath();g.moveTo(Math.cos(a)*r*.58,Math.sin(a)*r*.58);g.lineTo(Math.cos(a+.025)*r*.66,Math.sin(a+.025)*r*.66);g.stroke();}
+    });
+    specimenPortraits.set(c.id,image.toDataURL());
+  }
+  return specimenPortraits.get(c.id);
+}
+function membranePath(g, r, t, wobble = 0.055) {
+  g.beginPath();
+  for (let i=0;i<=64;i++) {
+    const a=i/64*TAU, d=r*(1+wobble*Math.sin(a*3+t*.7)+wobble*.4*Math.cos(a*5-t*.4));
+    i ? g.lineTo(Math.cos(a)*d,Math.sin(a)*d) : g.moveTo(Math.cos(a)*d,Math.sin(a)*d);
+  }
+  g.closePath();
+}
+function drawLivingCell(g, r, color, t=0, wobble=.055) {
+  g.save(); g.shadowBlur=0;
+  const body=g.createRadialGradient(-r*.3,-r*.4,r*.06,0,0,r*1.12);
+  body.addColorStop(0,'#b7ddbd77'); body.addColorStop(.45,'#508e7855'); body.addColorStop(.83,'#163d3677'); body.addColorStop(1,color);
+  membranePath(g,r,t,wobble); g.fillStyle=body; g.fill();
+  g.strokeStyle=color; g.lineWidth=Math.max(1,r*.018); g.stroke();
+  membranePath(g,r*.94,t,wobble); g.strokeStyle='#d8eadc88'; g.lineWidth=Math.max(.5,r*.008); g.stroke();
+  // Cytoplasmic granules, stable positions with a gentle internal drift.
+  g.fillStyle='#e1edbd66';
+  for(let i=0;i<38;i++) { const a=i*2.39996+t*.035, d=r*(.26+((i*17)%61)/100);
+    g.beginPath(); g.arc(Math.cos(a)*d,Math.sin(a)*d,r*(.009+(i%3)*.004),0,TAU); g.fill(); }
+  // Mitochondria with folded inner membranes.
+  for(let i=0;i<5;i++) {
+    const a=i*1.31+.4, d=r*(.5+(i%2)*.15);
+    g.save(); g.translate(Math.cos(a)*d,Math.sin(a)*d); g.rotate(a+.6);
+    g.fillStyle='#c5a96588'; g.strokeStyle='#e7d59b'; g.lineWidth=Math.max(.5,r*.009);
+    g.beginPath(); g.ellipse(0,0,r*.14,r*.065,0,0,TAU); g.fill(); g.stroke();
+    g.beginPath(); for(let j=0;j<9;j++){ const x=-r*.10+j*r*.025,y=Math.sin(j*2.5)*r*.04; j?g.lineTo(x,y):g.moveTo(x,y); } g.stroke(); g.restore();
+  }
+  // Nucleus, nucleolus and chromatin threads.
+  const ng=g.createRadialGradient(-r*.1,-r*.08,0,0,0,r*.33);
+  ng.addColorStop(0,'#ccbadd'); ng.addColorStop(.4,'#827d9d'); ng.addColorStop(1,'#353d5888');
+  g.fillStyle=ng; g.strokeStyle='#c8b6d999'; g.lineWidth=Math.max(1,r*.014);
+  g.beginPath(); g.ellipse(-r*.07,r*.02,r*.31,r*.27,-.4,0,TAU); g.fill(); g.stroke();
+  g.strokeStyle='#e3c9dc88'; g.lineWidth=Math.max(.6,r*.012);
+  for(let k=0;k<3;k++) { g.beginPath(); for(let j=0;j<=14;j++){ const x=-r*.28+j*r*.027,y=r*(-.1+k*.095)+Math.sin(j*.8+k)*r*.04; j?g.lineTo(x,y):g.moveTo(x,y); } g.stroke(); }
+  g.fillStyle='#e9d5c5'; g.beginPath(); g.arc(-r*.12,-r*.055,r*.07,0,TAU); g.fill();
+  // Vacuoles retain the transparent appearance of a wet specimen.
+  for(let k=0;k<3;k++){ const a=k*2.1+.9; g.fillStyle='#a9d8ce18'; g.strokeStyle='#c1e3da66'; g.lineWidth=Math.max(.6,r*.01); g.beginPath(); g.arc(Math.cos(a)*r*.63,Math.sin(a)*r*.63,r*(.08+k*.018),0,TAU); g.fill(); g.stroke(); }
+  g.strokeStyle='#ecffe9aa'; g.lineWidth=Math.max(1,r*.018); g.beginPath(); g.arc(0,0,r*.91,3.5,4.8); g.stroke();
+  g.restore();
+}
+function buildLabSprites() {
+  for (const [key,color,shape] of [['virus','#d1df91','virus'],['subvirus','#d1df91','virus'],['bacterium','#8bc9cd','rod'],['spore','#d8ac79','spore'],['amoeboid','#bf9fc5','cell'],['macrophage','#dc9296','cell']]) {
+    SPR[key]=makeSprite(key==='macrophage'?256:128,(g,r)=>{
+      if(shape==='cell') { drawLivingCell(g,r*.83,color,1,.14); return; }
+      if(shape==='rod') {
+        g.strokeStyle='#b7e7dfaa'; g.lineWidth=1.1; g.beginPath();
+        for(let i=0;i<30;i++){ const x=-r*.5-i*r*.014,y=Math.sin(i*.4)*r*.08; i?g.lineTo(x,y):g.moveTo(x,y); } g.stroke();
+        g.save(); g.scale(1,.48);
+        const grad=g.createLinearGradient(0,-r,0,r); grad.addColorStop(0,'#d2e9d8');grad.addColorStop(.35,'#659b9e');grad.addColorStop(1,'#224f59');
+        g.fillStyle=grad;g.strokeStyle=color;g.lineWidth=2;g.beginPath();g.ellipse(0,0,r*.75,r*.75,0,0,TAU);g.fill();g.stroke();g.restore();
+        g.strokeStyle='#ebdfaba0';g.lineWidth=1.5;g.beginPath();for(let i=0;i<24;i++){ const x=-r*.45+i*r*.04,y=Math.sin(i*.8)*r*.16;i?g.lineTo(x,y):g.moveTo(x,y); }g.stroke();
+        g.fillStyle='#e4f0d3aa';for(let i=0;i<14;i++){g.beginPath();g.arc(Math.cos(i*2.4)*r*.6,Math.sin(i*2.4)*r*.23,1.5,0,TAU);g.fill();}return;
+      }
+      const R=r*.60;
+      g.strokeStyle=color;g.fillStyle=color;g.lineWidth=2;
+      for(let i=0;i<12;i++){const a=i/12*TAU,x=Math.cos(a),y=Math.sin(a);g.beginPath();g.moveTo(x*R,y*R);g.lineTo(x*r*.85,y*r*.85);g.stroke();g.beginPath();g.arc(x*r*.85,y*r*.85,shape==='virus'?r*.055:r*.024,0,TAU);g.fill();}
+      const grad=g.createRadialGradient(-R*.3,-R*.3,0,0,0,R);grad.addColorStop(0,color);grad.addColorStop(.65,shape==='virus'?'#677f46':'#99734f');grad.addColorStop(1,'#273a30');
+      g.fillStyle=grad;g.beginPath();g.arc(0,0,R,0,TAU);g.fill();g.strokeStyle=color;g.lineWidth=1.5;g.stroke();
+      g.strokeStyle='#e7eed499';g.lineWidth=1;for(let i=0;i<6;i++){const a=i/6*TAU;g.beginPath();g.moveTo(0,0);g.lineTo(Math.cos(a)*R,Math.sin(a)*R);g.stroke();}
+      g.fillStyle='#233c36';g.beginPath();g.arc(0,0,R*.32,0,TAU);g.fill();g.strokeStyle='#d6deaaaa';g.beginPath();for(let i=0;i<18;i++){const a=i*.8,d=R*.025*i; i?g.lineTo(Math.cos(a)*d,Math.sin(a)*d):g.moveTo(0,0);}g.stroke();
+    });
+  }
+}
+function buildCultureTexture() {
+  const tile=document.createElement('canvas');tile.width=tile.height=768;
+  const g=tile.getContext('2d'),random=makeRNG(43192);
+  // Faint out-of-focus tissue, never bright enough to resemble live threats.
+  for(let i=0;i<65;i++){
+    const x=random()*768,y=random()*768,r=14+random()*55;
+    g.save();g.translate(x,y);g.rotate(random()*TAU);g.scale(1,.6+random()*.6);
+    g.fillStyle='#92b79b05';g.strokeStyle='#a4ceb311';g.lineWidth=1.3;
+    g.beginPath();g.ellipse(0,0,r,r*.8,0,0,TAU);g.fill();g.stroke();
+    g.strokeStyle='#a8c8a70b';g.beginPath();g.ellipse(0,0,r*.88,r*.7,0,0,TAU);g.stroke();
+    g.fillStyle='#bcbbdc0b';g.beginPath();g.arc(r*.12,0,r*.22,0,TAU);g.fill();g.restore();
+  }
+  for(let i=0;i<1800;i++){g.fillStyle=i%2?'#c7dabc09':'#010c1117';g.fillRect(random()*768,random()*768,1+random()*2,1+random()*2);}
+  // Sparse etched measurement marks replace the arcade dot grid.
+  g.strokeStyle='#c5dbba13';g.lineWidth=1;
+  for(let x=96;x<768;x+=192)for(let y=96;y<768;y+=192){g.beginPath();g.moveTo(x-4,y);g.lineTo(x+4,y);g.moveTo(x,y-4);g.lineTo(x,y+4);g.stroke();}
+  return tile;
+}
+let specimenFrame=-1;
+function drawSpecimenPreview(now) {
+  const cv=document.getElementById('specimen-preview');if(!cv)return;
+  const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const tick=reduced?0:Math.floor(now/50);if(tick===specimenFrame)return;specimenFrame=tick;
+  const g=cv.getContext('2d'),t=reduced?0:now/1000;
+  g.clearRect(0,0,720,720);g.save();g.translate(360,350);
+  const bg=g.createRadialGradient(0,0,40,0,0,310);bg.addColorStop(0,'#63856a33');bg.addColorStop(1,'#20423800');g.fillStyle=bg;g.fillRect(-360,-350,720,720);
+  g.strokeStyle='#b6c8a926';g.lineWidth=1;
+  for(const r of [260,280]){g.beginPath();g.arc(0,0,r,0,TAU);g.stroke();}
+  for(let i=0;i<72;i++){const a=i/72*TAU,r=i%6===0?270:276;g.beginPath();g.moveTo(Math.cos(a)*r,Math.sin(a)*r);g.lineTo(Math.cos(a)*280,Math.sin(a)*280);g.stroke();}
+  g.save();g.rotate(-.5+Math.sin(t*.15)*.025);g.scale(1.12,.86);
+  // Dozens of cilia on an enlarged observational specimen.
+  g.strokeStyle='#b9d4ac77';g.lineWidth=1;
+  for(let i=0;i<78;i++){const a=i/78*TAU,r=174*(1+.055*Math.sin(a*3+t*.7)+.022*Math.cos(a*5-t*.4));g.beginPath();g.moveTo(Math.cos(a)*r,Math.sin(a)*r);g.quadraticCurveTo(Math.cos(a+.018)*(r+10),Math.sin(a+.018)*(r+10),Math.cos(a+.035)*(r+16+Math.sin(i+t*2)*3),Math.sin(a+.035)*(r+16+Math.sin(i+t*2)*3));g.stroke();}
+  drawLivingCell(g,174,'#b8dbaa',t);g.restore();
+  // Satellite microbes stay distinct from the annotated central specimen.
+  for(let i=0;i<3;i++){const a=i*2.1+t*.015,d=230;g.save();g.translate(Math.cos(a)*d,Math.sin(a)*d);g.rotate(a);g.globalAlpha=.45;g.scale(1,.7);drawLivingCell(g,18+i*7,'#8fb4a7',t+i);g.restore();}
+  g.font='10px Consolas,monospace';g.lineWidth=1;
+  const label=(text,x,y,tx,ty)=>{g.strokeStyle='#bdcda369';g.fillStyle='#dce5c5';g.beginPath();g.moveTo(x,y);g.lineTo(tx+(tx<0?65:-10),ty-4);g.lineTo(tx,ty-4);g.stroke();g.beginPath();g.arc(x,y,2,0,TAU);g.fill();g.fillText(text,tx,ty-12);};
+  label('NUCLEUS',-15,0,-270,-95);label('CELL MEMBRANE',145,-76,190,-150);label('MITOCHONDRIA',75,67,166,170);
+  g.fillStyle='#91ae9c';g.font='9px Consolas,monospace';g.fillText('MORPHOLOGY / ADAPTIVE',-112,313);g.restore();
+}
+function drawInstrumentReticle() {
+  if(game.state==='menu')return;
+  ctx.save();ctx.strokeStyle='#c8dab332';ctx.lineWidth=1;
+  const y=view.h-105;
+  ctx.beginPath();ctx.moveTo(24,y);ctx.lineTo(104,y);
+  for(let i=0;i<=8;i++){ctx.moveTo(24+i*10,y);ctx.lineTo(24+i*10,y-(i%4===0?8:4));}ctx.stroke();
+  ctx.font='8px Consolas,monospace';ctx.fillStyle='#b5c8ad88';ctx.fillText('CULTURE FIELD / LIVE',24,y+15);
+  ctx.restore();
+}
 function init() {
   loadSave();
   Sound.init();
   Music.init();
   buildSprites();
+  buildLabSprites();
   loadArt();            // hand-drawn art swaps in over the procedural sprites
   updateVersionTag();
   setupCanvas();
@@ -6657,7 +6893,7 @@ function init() {
     fxs.addEventListener('input', () => { FX.set(fxs.value / 100); paintFx(); }); }
   paintFx();
   // Persist the run if the player tabs away or closes the page mid-fight.
-  document.addEventListener('visibilitychange', () => { if (document.hidden) saveRunSnapshot(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pauseOnLeave(); });
   window.addEventListener('beforeunload', () => { saveRunSnapshot(); });
   setHud(false);
   backToMenu();
